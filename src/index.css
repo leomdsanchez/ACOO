@@ -1,0 +1,100 @@
+:root {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #f8f5ef;
+  background:
+    radial-gradient(circle at top, rgba(242, 114, 44, 0.18), transparent 28%),
+    linear-gradient(160deg, #0e1b1d 0%, #13292b 45%, #091214 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 4rem 0 5rem;
+}
+
+.hero {
+  max-width: 44rem;
+  margin-bottom: 2.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 0.72rem;
+  color: #f2a65a;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 0.95;
+}
+
+.lede {
+  margin: 1rem 0 0;
+  font-size: 1.1rem;
+  color: rgba(248, 245, 239, 0.78);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.35rem;
+  border: 1px solid rgba(248, 245, 239, 0.1);
+  border-radius: 1.2rem;
+  background: rgba(7, 16, 18, 0.58);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.2);
+}
+
+.card-path {
+  margin: 0 0 1rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.76rem;
+  color: #7ad3b2;
+}
+
+.card h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.2rem;
+}
+
+.card p {
+  margin: 0;
+  color: rgba(248, 245, 239, 0.76);
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding-top: 3rem;
+  }
+
+  .hero {
+    margin-bottom: 2rem;
+  }
+}

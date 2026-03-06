@@ -14,3 +14,20 @@ Repositório operacional de apoio ao COO, com threads, tasks e instruções de e
 
 Este repo foi extraído de um acervo antes mantido dentro de `FocusTab/ALFREDO`.
 O conteúdo original foi preservado no `FocusTab` para migração controlada.
+
+## App local
+
+Este repositório agora também expõe uma interface React + Vite para servir como camada operacional local.
+
+### Como rodar
+
+```bash
+npm install
+npm run dev
+```
+
+Build de produção:
+
+```bash
+npm run build
+```
