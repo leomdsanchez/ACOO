@@ -29,3 +29,21 @@
 - Conversa com Rodrigo Advogado revisada diretamente no WhatsApp.
 - Sem novas mensagens após 2026-03-05 07:12.
 - Status mantido: aguardando terceiro, com follow-up previsto para 2026-03-09.
+
+### 2026-03-06 11:07 | Validação de canal (WhatsApp)
+- Conversa com `Rodrigo Advogado` revisada diretamente no WhatsApp.
+- Rodrigo respondeu hoje às `09:36` e `09:37`.
+- Conteúdo validado:
+- ele já adiantou o contrato;
+- pretende terminar entre hoje e segunda-feira;
+- se Leonardo quiser avançar com o e-mail ao cliente, a primeira versão deve sair na segunda ou, no mais tardar, terça de manhã.
+- Classificação atual mantida como `Aguardando terceiro`.
+- Próxima trava real atual: receber a primeira versão do contrato do Rodrigo no prazo informado.
+
+### 2026-03-06 11:23 | Rascunho de e-mail preparado
+- Rascunho aberto na thread `Proyecto Thomas J. Schandy (Ref. NT-36) – Fase 1 Análisis y Planificación` no Gmail.
+- Estrutura usada: `Responder a todos` para os owners já presentes na thread.
+- `Rodrigo Scremini <screminirodrigo@gmail.com>` adicionado em cópia.
+- Saudação iniciada com `Hola Estimados,`.
+- Rascunho salvo sem envio.
+- Assinatura atual de Leonardo foi preservada.

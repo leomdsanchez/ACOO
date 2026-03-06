@@ -48,3 +48,20 @@
 - Última mensagem recebida de Leticia permanece às 10:48 solicitando "clave del archivo".
 - Última mensagem enviada por Leonardo às 13:48 pedindo especificação exata da credencial e origem da senha.
 - Sem novo retorno após a mensagem de 13:48.
+
+### 2026-03-06 11:10 | Validação de histórico (WhatsApp)
+- Conversa com `Ronel Obando` revisada diretamente no WhatsApp.
+- O histórico já continha uma credencial candidata enviada por Ronel para o arquivo `.pfx`.
+- Não foi necessário manter follow-up adicional com Ronel nesta etapa.
+
+### 2026-03-06 11:10 | Próxima ação consolidada
+- Próximo passo ajustado para `Responder a todos` na thread da Facturando com a credencial candidata localizada no histórico.
+- Escalonamento ao Correo permanece como contingência apenas se a credencial falhar novamente.
+
+### 2026-03-06 11:15 | Nova tentativa enviada para Facturando
+- Resposta enviada na thread `Envío de firma digital - Neural Think`.
+- Credencial candidata localizada no histórico interno foi encaminhada para novo teste do arquivo `.pfx`.
+- Assinatura de Leonardo foi preservada no envio.
+
+### 2026-03-06 11:15 | Status atual
+- Aguardando retorno da Facturando sobre o teste da nova credencial candidata.

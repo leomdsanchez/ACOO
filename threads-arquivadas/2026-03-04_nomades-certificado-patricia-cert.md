@@ -59,3 +59,11 @@
 - Após checagem na conversa da Erika, confirmação validada: desativação do 2FA às 14:39 com imagem de comprovação.
 - Mensagem enviada para Karen informando que pode seguir com a validação técnica e avisar quando concluir para reativar a verificação.
 - Status do envio: `Entregue`.
+
+### 2026-03-06 11:02 | Validação de canal (WhatsApp) - conclusão técnica
+- Conversas com `Karen` e `Erika` revisadas diretamente no WhatsApp.
+- Última mensagem visível da Karen: `Ok completamos aqui pode reativar se quiser, obrigado pela atenção`.
+- Última mensagem visível da Erika permanece com o envio da comprovação de desativação do 2FA no dia anterior.
+- Leitura operacional: a execução técnica do certificado foi concluída do lado da contabilidade/equipe técnica.
+- Próxima ação restante, se desejado, é apenas reativar o 2FA da Erika.
+- Classificação atual ajustada para `Concluído` no fluxo principal do certificado.

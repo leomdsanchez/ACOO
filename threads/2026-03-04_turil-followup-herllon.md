@@ -36,3 +36,11 @@
 - Conversa com Herllon revisada diretamente no WhatsApp.
 - Sem novas mensagens após 2026-03-04 19:00 (Herllon) e 19:15 (Leonardo).
 - Status mantido: aguardando terceiro, com follow-up previsto para 2026-03-09.
+
+### 2026-03-06 10:58 | Validação de canal (Gmail)
+- Thread `Solicitud de Acceso - Ambiente de Homologación Carat Gateway [Neural-Turil]` revisada diretamente no Gmail.
+- Em `2026-03-05 19:55`, Herllon cobrou novidades sobre o acesso ao ambiente de produção.
+- Em `2026-03-06 09:33`, Rodrigo Sebastián Márquez (Fiserv) respondeu pedindo confirmação do tipo de integração realizada.
+- Em `2026-03-06 10:26`, Herllon respondeu confirmando que a integração realizada é `Página de Pagos`.
+- Classificação atual mantida como `Aguardando terceiro`.
+- Próxima trava real atual: aguardar a Fiserv / BauCaratGateway compartilhar credenciais de produção ou os próximos passos formais após a confirmação enviada.
