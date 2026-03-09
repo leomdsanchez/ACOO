@@ -30,8 +30,13 @@ Destravar a pendência com a Facturando usando a credencial candidata já locali
 ## Checklist de execução
 - [x] Revisar histórico com o Ronel no WhatsApp.
 - [x] Responder a todos na thread da Facturando com a credencial candidata localizada no histórico interno.
+- [x] Reconfirmar com o Ronel que a senha candidata falhou e solicitar a credencial correta ou a origem de recuperação.
 - [ ] Acionar o Correo apenas se a credencial candidata falhar.
 - [ ] Registrar respostas recebidas e consolidar a próxima ação.
+
+## Atualização operacional
+- `2026-03-09 10:41`: follow-up enviado ao `Ronel Obando` no WhatsApp informando que a senha repassada não funcionou para o `.pfx`.
+- Próxima ação: aguardar a resposta do Ronel com a senha correta ou com a origem objetiva da credencial antes de escalar ao Correo.
 
 ## Critério de conclusão
 - Existe retorno da Facturando confirmando sucesso com a credencial candidata ou, se ela falhar, existe resposta oficial do Correo com o procedimento de recuperação/reemissão.

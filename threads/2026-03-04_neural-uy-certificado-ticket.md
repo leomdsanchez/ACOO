@@ -65,3 +65,14 @@
 
 ### 2026-03-06 11:15 | Status atual
 - Aguardando retorno da Facturando sobre o teste da nova credencial candidata.
+
+### 2026-03-09 10:41 | Reconfirmação enviada ao Ronel
+- Conversa com `Ronel Obando` revisada novamente no WhatsApp.
+- Evidência anterior confirmada no histórico: Ronel informou em `2026-03-03 18:26` a credencial candidata `Neural2025` para o arquivo `.pfx`.
+- A origem já havia validado que a senha não funcionou no teste com a Facturando.
+- Nova mensagem enviada ao Ronel às `10:41` informando que a clave repassada não funcionou e pedindo confirmação da senha correta ou da origem onde ela ficou registrada no momento da geração.
+- Envio confirmado no WhatsApp com estado `Entregue`.
+
+### 2026-03-09 10:41 | Status atual
+- Estado ajustado para `Aguardando terceiro`.
+- Próxima trava real: retorno do Ronel com a senha correta do `.pfx` ou com a indicação objetiva de onde recuperar a credencial válida.

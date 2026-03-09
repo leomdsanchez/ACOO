@@ -37,5 +37,10 @@ Confirmar se a renovação atual do contrato com a UTEC já foi assinada e comun
 - [ ] Se não houver evidência suficiente, escalar para decisão do Leonardo sobre quem precisa confirmar a assinatura.
 - [ ] Atualizar a thread da UTEC com o status consolidado da renovação.
 
+## Atualização operacional
+- `2026-03-09 10:48`: renovação atual identificada na thread `Contrato Neural Think.-` como o arquivo `279. Adenda UTEC-Neural SAS.docx`, enviado por `Leticia Mateos` em `2025-11-17 18:08`.
+- `2026-03-09 10:56`: adenda assinada digitalmente enviada na própria thread para a `UTEC`, com o anexo `279-Adenda-UTEC-Neural-SAS_firmado.pdf`.
+- Estado atual da frente: `Aguardando terceiro`, pendente de confirmação da `UTEC`.
+
 ## Critério de conclusão
 - Status da renovação atual do contrato identificado com clareza e registrado na thread, sem ambiguidade com contratos antigos.

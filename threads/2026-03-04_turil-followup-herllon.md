@@ -44,3 +44,10 @@
 - Em `2026-03-06 10:26`, Herllon respondeu confirmando que a integração realizada é `Página de Pagos`.
 - Classificação atual mantida como `Aguardando terceiro`.
 - Próxima trava real atual: aguardar a Fiserv / BauCaratGateway compartilhar credenciais de produção ou os próximos passos formais após a confirmação enviada.
+
+### 2026-03-09 --:-- | Correção de status operacional
+- Releitura operacional consolidada: `Herllon` não é terceiro neste fluxo; ele é owner interno da execução técnica.
+- A origem já registrava avanço posterior ao último follow-up de WhatsApp: em `2026-03-06 10:26`, Herllon confirmou por e-mail que a integração é `Página de Pagos`.
+- A sequência da thread também já continha retorno do parceiro externo com dados para continuidade técnica, retirando a frente de `Aguardando terceiro`.
+- Estado correto ajustado para `Aguardando execução`.
+- Próxima trava real: follow-up interno com o Herllon para confirmar a execução/configuração pendente a partir dos dados já recebidos e definir o próximo marco técnico reportável.
