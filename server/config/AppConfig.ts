@@ -21,6 +21,7 @@ export interface TelegramConfig {
 export interface TranscriptionConfig {
   binary: string;
   enabled: boolean;
+  ffmpegBinary: string;
   language: string | null;
   modelDownloaderBinary: string;
   modelPath: string;
@@ -70,6 +71,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     transcription: {
       binary: readString("ACOO_STT_BINARY", "whisper-cli"),
       enabled: readBoolean("ACOO_STT_ENABLED", true),
+      ffmpegBinary: readString("ACOO_STT_FFMPEG_BIN", "ffmpeg"),
       language: readOptionalString("ACOO_STT_LANGUAGE"),
       modelDownloaderBinary: readString("ACOO_STT_MODEL_DOWNLOADER_BIN", "curl"),
       modelPath:

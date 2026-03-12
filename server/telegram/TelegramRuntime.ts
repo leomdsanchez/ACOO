@@ -36,6 +36,8 @@ export class TelegramRuntime {
   private readonly logger: Pick<Console, "error" | "info" | "warn">;
   private offset = 0;
   private readonly pollTimeoutSeconds: number;
+  private readonly sessionBootstrapPrompt =
+    "Inicie a sessão do canal Telegram do ACOO. Responda apenas: Sessão iniciada.";
 
   public constructor(private readonly options: TelegramRuntimeOptions) {
     if (!options.config.botToken) {
@@ -102,12 +104,6 @@ export class TelegramRuntime {
     const senderId = String(message.from?.id ?? "");
     const chatId = message.chat.id;
     const inputMode = detectInputMode(message);
-    const prompt = await this.resolvePrompt(message, chatId);
-
-    this.log(
-      "info",
-      `in update=${update.update_id} chat=${chatId} sender=${senderId || "unknown"} mode=${inputMode} text=${formatSnippet(prompt ?? describeUnsupportedMessage(message))}`,
-    );
 
     if (!this.isAllowedSender(senderId)) {
       await this.api.sendMessage(chatId, "Esse bot está restrito aos usuários autorizados.");
@@ -115,19 +111,17 @@ export class TelegramRuntime {
       return;
     }
 
-    if (!prompt) {
-      await this.api.sendMessage(
-        chatId,
-        "Envie texto por enquanto. Voz e documentos ainda não estão implementados neste runtime.",
-      );
-      this.log("warn", `mensagem sem suporte respondida em chat=${chatId} mode=${inputMode}`);
-      return;
-    }
-
-    const command = parseCommand(prompt);
-    if (command) {
-      await this.handleCommand(command, chatId);
-      return;
+    const rawText = message.text?.trim() ?? null;
+    if (rawText) {
+      const command = parseCommand(rawText, this.options.config.botUsername);
+      if (command) {
+        this.log(
+          "info",
+          `in update=${update.update_id} chat=${chatId} sender=${senderId || "unknown"} mode=text text=${formatSnippet(rawText)}`,
+        );
+        await this.handleCommand(command, chatId, senderId);
+        return;
+      }
     }
 
     const session = await this.options.sessionStore.load();
@@ -137,6 +131,21 @@ export class TelegramRuntime {
         "Sessão encerrada. Use /start para retomar ou /new para abrir uma nova.",
       );
       this.log("warn", `mensagem ignorada sem sessao ativa em chat=${chatId}`);
+      return;
+    }
+
+    const prompt = await this.resolvePrompt(message, chatId);
+    this.log(
+      "info",
+      `in update=${update.update_id} chat=${chatId} sender=${senderId || "unknown"} mode=${inputMode} text=${formatSnippet(prompt ?? describeUnsupportedMessage(message))}`,
+    );
+
+    if (!prompt) {
+      const reply = inputMode === "voice"
+        ? "Nao consegui transcrever esse audio. Tente novamente ou envie em texto."
+        : "Envie texto por enquanto. Documentos ainda nao estao implementados neste runtime.";
+      await this.api.sendMessage(chatId, reply);
+      this.log("warn", `mensagem sem suporte respondida em chat=${chatId} mode=${inputMode}`);
       return;
     }
 
@@ -211,21 +220,41 @@ export class TelegramRuntime {
     }
   }
 
-  private async handleCommand(command: TelegramCommand, chatId: number): Promise<void> {
+  private async handleCommand(
+    command: TelegramCommand,
+    chatId: number,
+    senderId: string,
+  ): Promise<void> {
     if (command === "help") {
       await this.api.sendMessage(
         chatId,
-        "Comandos: /start inicia ou reativa a sessão, /end encerra a sessão atual, /new abre uma nova sessão e /reset é alias de /new.",
+        "Comandos: /start inicia ou reativa a sessão, /end encerra a sessão atual, /new abre uma nova sessão, /status mostra o estado atual e /reset é alias de /new.",
       );
       this.log("info", `help enviado em chat=${chatId}`);
       return;
     }
 
+    if (command === "status") {
+      const session = await this.options.sessionStore.load();
+      const statusText = session.active
+        ? `Sessao ativa. Thread Codex: ${session.sessionId ?? "ainda nao anexada"}.`
+        : "Sessao inativa. Use /start para retomar ou /new para abrir uma nova.";
+      await this.api.sendMessage(chatId, statusText);
+      this.log("info", `status enviado em chat=${chatId} session=${session.sessionId ?? "none"}`);
+      return;
+    }
+
     if (command === "start") {
       const session = await this.options.sessionStore.start();
-      const answer = session.sessionId
-        ? "Sessão da Codex reativada. Pode continuar deste ponto."
-        : "Sessão iniciada. A próxima mensagem abre a thread da Codex.";
+      let answer = "Sessão da Codex reativada. Pode continuar deste ponto.";
+      if (!session.sessionId) {
+        try {
+          answer = await this.bootstrapCodexSession(senderId);
+        } catch (error) {
+          await this.options.sessionStore.end();
+          throw error;
+        }
+      }
       await this.api.sendMessage(chatId, answer);
       this.log("info", `sessao iniciada em chat=${chatId} existing=${session.sessionId ?? "none"}`);
       return;
@@ -242,10 +271,14 @@ export class TelegramRuntime {
     }
 
     await this.options.sessionStore.startNew();
-    await this.api.sendMessage(
-      chatId,
-      "Nova sessão preparada. A próxima mensagem abre uma thread nova da Codex.",
-    );
+    let answer: string;
+    try {
+      answer = await this.bootstrapCodexSession(senderId);
+    } catch (error) {
+      await this.options.sessionStore.end();
+      throw error;
+    }
+    await this.api.sendMessage(chatId, answer);
     this.log("warn", `nova sessao preparada em chat=${chatId}`);
   }
 
@@ -308,9 +341,20 @@ export class TelegramRuntime {
       await rm(tempDir, { force: true, recursive: true });
     }
   }
+
+  private async bootstrapCodexSession(senderId: string): Promise<string> {
+    const response = await this.handleWithSingleSession({
+      inputMode: "text",
+      prompt: this.sessionBootstrapPrompt,
+      senderId,
+    });
+    return response.threadId
+      ? "Sessao iniciada e thread Codex anexada. Pode continuar."
+      : response.answer || "Sessao iniciada.";
+  }
 }
 
-type TelegramCommand = "end" | "help" | "new" | "start";
+type TelegramCommand = "end" | "help" | "new" | "start" | "status";
 
 function detectInputMode(message: TelegramMessage): "text" | "voice" | "document" {
   if (message.voice) {
@@ -324,8 +368,11 @@ function detectInputMode(message: TelegramMessage): "text" | "voice" | "document
   return "text";
 }
 
-function parseCommand(prompt: string): TelegramCommand | null {
-  switch (prompt) {
+function parseCommand(prompt: string, botUsername?: string | null): TelegramCommand | null {
+  const token = prompt.trim().split(/\s+/, 1)[0] ?? "";
+  const normalized = normalizeCommandToken(token, botUsername);
+
+  switch (normalized) {
     case "/start":
       return "start";
     case "/end":
@@ -335,9 +382,28 @@ function parseCommand(prompt: string): TelegramCommand | null {
       return "new";
     case "/help":
       return "help";
+    case "/status":
+      return "status";
     default:
       return null;
   }
+}
+
+function normalizeCommandToken(token: string, botUsername?: string | null): string {
+  if (!token.startsWith("/")) {
+    return token;
+  }
+
+  const [command, mention] = token.split("@", 2);
+  if (!mention) {
+    return command;
+  }
+
+  if (!botUsername) {
+    return token;
+  }
+
+  return mention.toLowerCase() === botUsername.toLowerCase() ? command : token;
 }
 
 function isAudioMessage(message: TelegramMessage): boolean {

@@ -63,7 +63,14 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   );
   const bot = new OperationalBot(controller);
   const mcpRegistry = new McpRegistryService();
-  const status = new RuntimeStatusService(config, codex, mcpRegistry, skillLoader, workspace);
+  const status = new RuntimeStatusService(
+    config,
+    codex,
+    mcpRegistry,
+    skillLoader,
+    workspace,
+    transcription,
+  );
 
   return {
     bot,

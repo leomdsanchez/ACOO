@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { access, mkdir, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -11,6 +11,14 @@ export interface LocalTranscriptionResult {
   language: string | null;
   segments: number;
   text: string;
+}
+
+export interface LocalTranscriptionHealth {
+  enabled: boolean;
+  ffmpegAvailable: boolean;
+  modelAvailable: boolean;
+  modelPath: string;
+  whisperBinaryAvailable: boolean;
 }
 
 export class LocalTranscriptionService {
@@ -27,6 +35,20 @@ export class LocalTranscriptionService {
     return this.config.enabled;
   }
 
+  public async getHealth(): Promise<LocalTranscriptionHealth> {
+    const whisperBinaryAvailable = await isBinaryAccessible(this.config.binary);
+    const ffmpegAvailable = await isBinaryAccessible(this.config.ffmpegBinary);
+    const modelAvailable = await fileExists(this.modelPath);
+
+    return {
+      enabled: this.config.enabled,
+      ffmpegAvailable,
+      modelAvailable,
+      modelPath: this.modelPath,
+      whisperBinaryAvailable,
+    };
+  }
+
   public async transcribe(audioPath: string): Promise<LocalTranscriptionResult> {
     if (!this.config.enabled) {
       throw new Error("Transcrição local desabilitada no runtime.");
@@ -34,19 +56,40 @@ export class LocalTranscriptionService {
 
     await this.assertRunnable();
 
-    const workingDir = path.join(os.tmpdir(), "acoo-whispercpp");
-    await mkdir(workingDir, { recursive: true });
+    const workingDir = await mkdtemp(path.join(os.tmpdir(), "acoo-whispercpp-"));
     const outputBase = path.join(
       workingDir,
       `${Date.now()}-${path.basename(audioPath, path.extname(audioPath))}`,
     );
+    const wavPath = `${outputBase}.wav`;
 
     try {
+      await execFileAsync(
+        this.config.ffmpegBinary,
+        [
+          "-y",
+          "-i",
+          audioPath,
+          "-ar",
+          "16000",
+          "-ac",
+          "1",
+          "-c:a",
+          "pcm_s16le",
+          wavPath,
+        ],
+        {
+          cwd: this.repoRoot,
+          env: process.env,
+          maxBuffer: 20 * 1024 * 1024,
+        },
+      );
+
       const args = [
         "-m",
         this.modelPath,
         "-f",
-        audioPath,
+        wavPath,
         "-nt",
         "-of",
         outputBase,
@@ -57,51 +100,47 @@ export class LocalTranscriptionService {
         String(this.config.threads),
       ];
 
-      await execFileAsync(this.config.binary, args, {
+      const { stdout, stderr } = await execFileAsync(this.config.binary, args, {
         cwd: this.repoRoot,
         env: process.env,
         maxBuffer: 20 * 1024 * 1024,
       });
 
       const jsonPath = `${outputBase}.json`;
-      const raw = await readFile(jsonPath, "utf8");
-      const payload = JSON.parse(raw) as {
-        result?: {
-          language?: string;
-        };
-        transcription?: Array<{ text?: string }>;
-      };
-      const text = (payload.transcription ?? [])
-        .map((segment) => segment.text?.trim() ?? "")
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      await Promise.allSettled([
-        rm(jsonPath, { force: true }),
-      ]);
+      const payload = await readJsonResult(jsonPath);
+      const textFromJson = payload
+        ? (payload.transcription ?? [])
+            .map((segment) => segment.text?.trim() ?? "")
+            .filter(Boolean)
+            .join(" ")
+            .trim()
+        : "";
+      const text = textFromJson || extractTranscriptFromStdout(stdout);
 
       return {
-        language: payload.result?.language ?? null,
-        segments: payload.transcription?.length ?? 0,
+        language: payload?.result?.language ?? detectLanguageFromLogs(stdout, stderr),
+        segments: payload?.transcription?.length ?? countSegments(text),
         text,
       };
     } catch (error) {
       throw new Error(
         `Falha na transcrição local via whisper.cpp: ${error instanceof Error ? error.message : String(error)}`,
       );
+    } finally {
+      await rm(workingDir, { force: true, recursive: true });
     }
   }
 
   private async assertRunnable(): Promise<void> {
     await Promise.all([
       ensureBinaryAccessible(this.config.binary, "whisper.cpp binary"),
-      ensureBinaryAccessible(this.config.modelDownloaderBinary, "curl binary"),
+      ensureBinaryAccessible(this.config.ffmpegBinary, "ffmpeg binary"),
     ]);
 
     try {
       await access(this.modelPath);
     } catch {
+      await ensureBinaryAccessible(this.config.modelDownloaderBinary, "curl binary");
       await this.downloadModel();
     }
   }
@@ -127,14 +166,67 @@ export class LocalTranscriptionService {
   }
 }
 
+interface WhisperJsonPayload {
+  result?: {
+    language?: string;
+  };
+  transcription?: Array<{ text?: string }>;
+}
+
+async function readJsonResult(jsonPath: string): Promise<WhisperJsonPayload | null> {
+  try {
+    const raw = await readFile(jsonPath, "utf8");
+    return JSON.parse(raw) as WhisperJsonPayload;
+  } catch {
+    return null;
+  }
+}
+
+function extractTranscriptFromStdout(stdout: string): string {
+  const marker = "output_json:";
+  const head = stdout.includes(marker) ? stdout.slice(0, stdout.indexOf(marker)) : stdout;
+  return head
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("["))
+    .join(" ")
+    .trim();
+}
+
+function detectLanguageFromLogs(...chunks: string[]): string | null {
+  const joined = chunks.join("\n");
+  const match = joined.match(/auto-detected language:\s+([a-z]{2,})/i);
+  return match?.[1] ?? null;
+}
+
+function countSegments(text: string): number {
+  return text ? 1 : 0;
+}
+
 async function ensureBinaryAccessible(binary: string, label: string): Promise<void> {
+  if (!(await isBinaryAccessible(binary))) {
+    throw new Error(`${label} "${binary}" não encontrado no PATH.`);
+  }
+}
+
+async function isBinaryAccessible(binary: string): Promise<boolean> {
   try {
     await execFileAsync("which", [binary], {
       env: process.env,
       maxBuffer: 1024 * 1024,
     });
+    return true;
   } catch {
-    throw new Error(`${label} "${binary}" não encontrado no PATH.`);
+    return false;
+  }
+}
+
+async function fileExists(targetPath: string): Promise<boolean> {
+  try {
+    await access(targetPath);
+    return true;
+  } catch {
+    return false;
   }
 }
 

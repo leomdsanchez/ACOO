@@ -4,6 +4,7 @@ import type { OperationalWorkspace } from "../application/services/OperationalWo
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
+import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 
 export interface RuntimeStatus {
   channels: {
@@ -46,10 +47,14 @@ export interface RuntimeStatus {
   transcription: {
     binary: string;
     enabled: boolean;
+    ffmpegAvailable: boolean;
+    ffmpegBinary: string;
     language: string | null;
+    modelAvailable: boolean;
     modelPath: string;
     modelVariant: string;
     threads: number;
+    whisperBinaryAvailable: boolean;
   };
   skills: {
     count: number;
@@ -64,11 +69,12 @@ export class RuntimeStatusService {
     private readonly mcpRegistry: McpRegistryService,
     private readonly skills: SkillLoader,
     private readonly workspace: OperationalWorkspace,
+    private readonly transcription: LocalTranscriptionService,
   ) {}
 
   public async getStatus(): Promise<RuntimeStatus> {
     const telegramSessionStore = new TelegramSessionStore(this.config.repoRoot);
-    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession] = await Promise.all([
+    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription] = await Promise.all([
       this.codex.getStatus(),
       this.skills.loadAll(),
       this.workspace.projects.listProjects(),
@@ -76,6 +82,7 @@ export class RuntimeStatusService {
       this.workspace.threads.listThreads({ includeArchived: false }),
       this.workspace.tasks.listTasks({ includeCompleted: false }),
       telegramSessionStore.load(),
+      this.transcription.getHealth(),
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
 
@@ -84,6 +91,12 @@ export class RuntimeStatusService {
       cli.authenticated ? null : "Codex CLI não autenticada.",
       cli.configExists ? null : `config.toml esperado não encontrado em ${cli.configPath}.`,
       loadedSkills.length > 0 ? null : "Nenhuma skill foi carregada nas roots configuradas.",
+      this.config.transcription.enabled && !transcription.whisperBinaryAvailable
+        ? `Transcrição local habilitada, mas o binário "${this.config.transcription.binary}" não está disponível.`
+        : null,
+      this.config.transcription.enabled && !transcription.ffmpegAvailable
+        ? `Transcrição local habilitada, mas o binário "${this.config.transcription.ffmpegBinary}" não está disponível.`
+        : null,
     ].filter((issue): issue is string => issue !== null);
     const advisories = [
       cli.mcpServers.length > 0
@@ -94,6 +107,12 @@ export class RuntimeStatusService {
         : null,
       this.config.telegram.enabled && !hasTelegramSecrets(this.config)
         ? "Telegram habilitado no env, mas faltam bot token ou usuários autorizados."
+        : null,
+      this.config.telegram.enabled && telegramSession.active && !telegramSession.sessionId
+        ? "Canal Telegram ativo, mas ainda sem thread Codex anexada; a próxima interação abre ou recria a sessão."
+        : null,
+      this.config.transcription.enabled && !transcription.modelAvailable
+        ? `Modelo local de transcrição ainda não encontrado em ${transcription.modelPath}; será baixado na primeira transcrição.`
         : null,
     ].filter((advisory): advisory is string => advisory !== null);
 
@@ -138,10 +157,14 @@ export class RuntimeStatusService {
       transcription: {
         binary: this.config.transcription.binary,
         enabled: this.config.transcription.enabled,
+        ffmpegAvailable: transcription.ffmpegAvailable,
+        ffmpegBinary: this.config.transcription.ffmpegBinary,
         language: this.config.transcription.language,
+        modelAvailable: transcription.modelAvailable,
         modelPath: this.config.transcription.modelPath,
         modelVariant: this.config.transcription.modelVariant,
         threads: this.config.transcription.threads,
+        whisperBinaryAvailable: transcription.whisperBinaryAvailable,
       },
       skills: {
         count: loadedSkills.length,
