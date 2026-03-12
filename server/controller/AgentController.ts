@@ -1,56 +1,57 @@
-import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
-import type { AgentLoop } from "../engine/AgentLoop.js";
-import type { MemoryManager } from "../memory/MemoryManager.js";
+import type { OperationalContextService } from "../context/OperationalContextService.js";
+import type { AgentEngine } from "../engine/AgentEngine.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { SkillRouter } from "../skills/SkillRouter.js";
 import type { SkillExecutor } from "../skills/SkillExecutor.js";
 
 export interface AgentRequest {
-  conversationId: string;
+  cwd?: string;
   prompt: string;
   preferredThreadSlugs?: string[];
+  resumeLast?: boolean;
+  sessionId?: string;
 }
 
 export interface AgentResponse {
   answer: string;
   activeSkill: string | null;
+  command: string;
   operationalContext: string;
-  iterations: number;
+  stderr: string;
+  stdout: string;
 }
 
 export class AgentController {
   public constructor(
-    private readonly engine: AgentLoop,
-    private readonly memoryManager: MemoryManager,
+    private readonly engine: AgentEngine,
+    private readonly contextService: OperationalContextService,
     private readonly skillLoader: SkillLoader,
     private readonly skillRouter: SkillRouter,
     private readonly skillExecutor: SkillExecutor,
-    private readonly workspace: OperationalWorkspace,
   ) {}
 
   public async handle(request: AgentRequest): Promise<AgentResponse> {
     const [skills, operationalContext] = await Promise.all([
       this.skillLoader.loadAll(),
-      this.memoryManager.buildOperationalContext(request.prompt, request.preferredThreadSlugs),
+      this.contextService.build(request.prompt, request.preferredThreadSlugs),
     ]);
 
     const activeSkill = await this.skillRouter.chooseSkill(request.prompt, skills);
     const skillContext = this.skillExecutor.buildSkillContext(activeSkill);
     const result = await this.engine.run({
-      conversationId: request.conversationId,
-      prompt: [operationalContext, request.prompt].join("\n\n"),
-      skillContext,
+      cwd: request.cwd ?? process.cwd(),
+      prompt: [skillContext, operationalContext, request.prompt].filter(Boolean).join("\n\n"),
+      resumeLast: request.resumeLast,
+      sessionId: request.sessionId,
     });
 
     return {
-      answer: result.answer,
+      answer: result.lastMessage || result.stdout || "Codex CLI executada sem mensagem final capturada.",
       activeSkill: activeSkill?.name ?? null,
+      command: result.command,
       operationalContext,
-      iterations: result.iterations,
+      stderr: result.stderr,
+      stdout: result.stdout,
     };
-  }
-
-  public getWorkspace(): OperationalWorkspace {
-    return this.workspace;
   }
 }

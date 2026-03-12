@@ -1,10 +1,20 @@
-import type { SkillRoutingProvider } from "../llm/SkillRoutingProvider.js";
 import type { LoadedSkill } from "./Skill.js";
 
 export class SkillRouter {
-  public constructor(private readonly provider: SkillRoutingProvider) {}
+  public async chooseSkill(prompt: string, skills: LoadedSkill[]): Promise<LoadedSkill | null> {
+    const normalizedPrompt = prompt.toLowerCase();
 
-  public chooseSkill(prompt: string, skills: LoadedSkill[]): Promise<LoadedSkill | null> {
-    return this.provider.chooseSkill(prompt, skills);
+    const exactMatch = skills.find((skill) =>
+      normalizedPrompt.includes(skill.name.toLowerCase()),
+    );
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    return (
+      skills.find((skill) =>
+        skill.keywords.some((keyword) => normalizedPrompt.includes(keyword.toLowerCase())),
+      ) ?? null
+    );
   }
 }

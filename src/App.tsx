@@ -1,97 +1,49 @@
-const commandCenter = [
-  {
-    label: "Core Runtime",
-    status: "Estrutura pronta",
-    tone: "good",
-    summary: "bot, controller, engine, interfaces, llm, memory e skills agora existem no projeto.",
-  },
-  {
-    label: "Codex CLI Auth",
-    status: "Host autenticado",
-    tone: "good",
-    summary: "A CLI local já responde com login via ChatGPT; falta só acoplar o executor real ao provider.",
-  },
-  {
-    label: "Operational MCP",
-    status: "Fachada criada",
-    tone: "warn",
-    summary: "O catálogo de tools existe, mas ainda falta transporte MCP real e registro do servidor `acoo`.",
-  },
+const topStats = [
+  { label: "runtime", value: "lean core", tone: "good" },
+  { label: "codex", value: "chatgpt auth", tone: "good" },
+  { label: "mcp", value: "acoo pending", tone: "warn" },
+  { label: "skills", value: "agents + ~/.codex", tone: "good" },
 ];
 
-const surfaces = [
+const panels = [
   {
     title: "Servidor",
-    eyebrow: "Runtime",
     path: "server/",
     tone: "good",
-    items: [
-      ["bootstrap", "Monta runtime, registry, workspace, skills, memory e interfaces."],
-      ["controller", "Centraliza skill routing, contexto operacional e loop do agente."],
-      ["engine", "Concentra ToolRegistry e AgentLoop com limite de iterações."],
+    rows: [
+      ["bootstrap", "runtime + status + mcp"],
+      ["controller", "prompt, context, skill"],
+      ["engine", "codex exec only"],
     ],
   },
   {
     title: "Codex CLI",
-    eyebrow: "Auth + Exec",
     path: "~/.codex/config.toml",
     tone: "good",
-    items: [
-      ["auth", "A CLI já está autenticada no host via conta ChatGPT."],
-      ["config", "O app lê `ACOO_CODEX_CONFIG_PATH` e compartilha o config.toml da CLI."],
-      ["gap", "O provider ainda monta plano; falta disparar `codex exec` de verdade."],
+    rows: [
+      ["auth", "login status real"],
+      ["exec", "server:run"],
+      ["health", "server:status"],
     ],
   },
   {
     title: "MCP",
-    eyebrow: "Tool Surface",
     path: "server/interfaces/mcp/",
     tone: "warn",
-    items: [
-      ["tools", "Já existem list_fronts, get_thread, append_thread_log, create_task e outros."],
-      ["server", "A fachada `OperationalMcpServer` já expõe listagem e chamada de tool."],
-      ["gap", "Ainda falta transporte MCP consumível pela Codex CLI."],
+    rows: [
+      ["tools", "threads, tasks, contacts"],
+      ["surface", "registry + facade"],
+      ["next", "transport real do acoo"],
     ],
   },
 ];
 
-const readiness = [
-  {
-    title: "Implementado",
-    tone: "good",
-    bullets: [
-      "Arquitetura explícita do agente local no diretório `server/`.",
-      "Env preparado para CLI, memória conversacional e roots de skills.",
-      "Typecheck validado com Node 22 via `mise`.",
-    ],
-  },
-  {
-    title: "Pendente",
-    tone: "warn",
-    bullets: [
-      "Executor real da Codex CLI no provider.",
-      "Servidor MCP real e registro do `acoo` na CLI.",
-      "Modelo estruturado para ligar projeto, frente, thread, task e contato sem heurística.",
-    ],
-  },
-];
-
-const repoZones = [
-  {
-    title: "Memória Operacional",
-    description: "Threads e tasks seguem como fonte de verdade auditável enquanto o domínio estruturado amadurece.",
-    accent: "threads/, tasks/",
-  },
-  {
-    title: "Memória Conversacional",
-    description: "O histórico do agente fica isolado em `data/conversations.json`, sem misturar conversa com evidência operacional.",
-    accent: "data/conversations.json",
-  },
-  {
-    title: "Playbooks",
-    description: "O loader lê `agents/` e `~/.codex/skills`, permitindo injeção de skill no runtime sem reescrever o core.",
-    accent: "agents/, ~/.codex/skills",
-  },
+const rail = [
+  "threads/, tasks/",
+  "server/context/",
+  "agents/, ~/.codex/skills",
+  "npm run server:status",
+  "npm run server:run",
 ];
 
 function App() {
@@ -99,47 +51,41 @@ function App() {
 
   return (
     <main className="shell">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <p className="eyebrow">Operational Control Surface</p>
+      <section className="hero">
+        <div className="hero-main">
+          <p className="eyebrow">Operational Core</p>
           <h1>{appName}</h1>
-          <p className="lede">
-            O app inicial deixa de ser placeholder e passa a funcionar como torre
-            de controle do core local: servidor, auth da Codex CLI, MCP e gaps
-            de execução em blocos separados.
-          </p>
+          <p className="lede">Servidor, Codex CLI e MCP em uma leitura rápida.</p>
         </div>
 
-        <div className="hero-band">
-          {commandCenter.map((entry) => (
-            <article className="status-band" key={entry.label}>
-              <span className={`status-dot status-dot--${entry.tone}`} />
+        <div className="stats-grid" aria-label="Status overview">
+          {topStats.map((item) => (
+            <article className="stat-card" key={item.label}>
+              <span className={`status-dot status-dot--${item.tone}`} />
               <div>
-                <p className="status-label">{entry.label}</p>
-                <strong>{entry.status}</strong>
-                <p>{entry.summary}</p>
+                <p>{item.label}</p>
+                <strong>{item.value}</strong>
               </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="surface-grid" aria-label="Runtime surfaces">
-        {surfaces.map((surface) => (
-          <article className="surface-card" key={surface.title}>
-            <div className="surface-head">
-              <p className="surface-eyebrow">{surface.eyebrow}</p>
-              <span className={`surface-pill surface-pill--${surface.tone}`}>
-                {surface.tone === "good" ? "ok" : "pending"}
+      <section className="panel-grid" aria-label="Core surfaces">
+        {panels.map((panel) => (
+          <article className="panel-card" key={panel.title}>
+            <div className="panel-head">
+              <h2>{panel.title}</h2>
+              <span className={`surface-pill surface-pill--${panel.tone}`}>
+                {panel.tone === "good" ? "ok" : "next"}
               </span>
             </div>
-            <h2>{surface.title}</h2>
-            <p className="surface-path">{surface.path}</p>
-            <div className="surface-list">
-              {surface.items.map(([label, text]) => (
-                <div className="surface-item" key={label}>
-                  <p>{label}</p>
-                  <span>{text}</span>
+            <p className="panel-path">{panel.path}</p>
+            <div className="panel-rows">
+              {panel.rows.map(([label, value]) => (
+                <div className="panel-row" key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
                 </div>
               ))}
             </div>
@@ -147,42 +93,11 @@ function App() {
         ))}
       </section>
 
-      <section className="readiness-panel">
-        <div className="readiness-copy">
-          <p className="eyebrow">Server Readiness</p>
-          <h2>Sem virar um form do INSS</h2>
-          <p>
-            A leitura da home fica dividida em dois eixos: o que já existe no
-            core e o que ainda falta para a operação real via Codex CLI + MCP.
-          </p>
-        </div>
-
-        <div className="readiness-grid">
-          {readiness.map((group) => (
-            <article className="readiness-card" key={group.title}>
-              <div className="surface-head">
-                <h3>{group.title}</h3>
-                <span className={`surface-pill surface-pill--${group.tone}`}>
-                  {group.tone === "good" ? "ready" : "next"}
-                </span>
-              </div>
-              <ul>
-                {group.bullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="zone-strip" aria-label="Repository zones">
-        {repoZones.map((zone) => (
-          <article className="zone-card" key={zone.title}>
-            <p className="zone-accent">{zone.accent}</p>
-            <h3>{zone.title}</h3>
-            <p>{zone.description}</p>
-          </article>
+      <section className="chip-rail" aria-label="Operational zones">
+        {rail.map((item) => (
+          <span className="rail-chip" key={item}>
+            {item}
+          </span>
         ))}
       </section>
     </main>

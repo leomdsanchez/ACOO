@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "server:run": "tsx server/commands/run.ts",
+    "server:status": "tsx server/commands/status.ts",
     "typecheck": "tsc -b",
     "typecheck:server": "tsc -p tsconfig.server.json",
     "clockify:summary-debug": "node scripts/clockify-summary-debug.mjs",
@@ -24,6 +26,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "playwright": "^1.54.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.2",
     "vite": "^7.1.3"
   }

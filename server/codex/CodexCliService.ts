@@ -1,0 +1,256 @@
+import { execFile } from "node:child_process";
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+
+export interface CodexCliOptions {
+  approvalPolicy: string;
+  binary: string;
+  configPath: string;
+  cwd: string;
+  model?: string | null;
+  sandboxMode: string;
+}
+
+export interface CodexCliExecRequest {
+  cwd?: string;
+  prompt: string;
+  resumeLast?: boolean;
+  sessionId?: string;
+}
+
+export interface CodexCliExecResult {
+  command: string;
+  lastMessage: string;
+  stderr: string;
+  stdout: string;
+}
+
+export interface CodexCliMcpServer {
+  auth: string;
+  name: string;
+  scope: "command" | "url";
+  status: string;
+  target: string;
+}
+
+export interface CodexCliStatus {
+  authMode: string | null;
+  authenticated: boolean;
+  binaryPath: string | null;
+  configExists: boolean;
+  configPath: string;
+  installed: boolean;
+  loginStatus: string;
+  mcpServers: CodexCliMcpServer[];
+}
+
+export class CodexCliService {
+  public constructor(private readonly options: CodexCliOptions) {}
+
+  public async getStatus(): Promise<CodexCliStatus> {
+    const [binaryPath, loginStatus, mcpList, configExists] = await Promise.all([
+      this.resolveBinaryPath(),
+      this.safeRun(["login", "status"]),
+      this.safeRun(["mcp", "list"]),
+      this.checkConfigExists(),
+    ]);
+
+    const normalizedLogin = loginStatus.stdout.trim() || loginStatus.stderr.trim();
+    const authMode =
+      normalizedLogin.match(/Logged in using (.+)$/m)?.[1]?.trim() ?? null;
+
+    return {
+      authMode,
+      authenticated: /Logged in/i.test(normalizedLogin),
+      binaryPath,
+      configExists,
+      configPath: this.options.configPath,
+      installed: binaryPath !== null,
+      loginStatus: normalizedLogin || "Unavailable",
+      mcpServers: parseMcpList(mcpList.stdout),
+    };
+  }
+
+  public async run(request: CodexCliExecRequest): Promise<CodexCliExecResult> {
+    await this.assertRunnable();
+
+    const outputDir = await mkdtemp(path.join(os.tmpdir(), "acoo-codex-"));
+    const outputFile = path.join(outputDir, "last-message.txt");
+    const cwd = request.cwd ?? this.options.cwd;
+
+    try {
+      const args = this.buildExecArgs(request, outputFile, cwd);
+      const { stdout, stderr } = await execFileAsync(this.options.binary, args, {
+        cwd,
+        env: process.env,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+
+      let lastMessage = "";
+      try {
+        lastMessage = await readFile(outputFile, "utf8");
+      } catch {
+        lastMessage = "";
+      }
+
+      return {
+        command: [this.options.binary, ...args].join(" "),
+        lastMessage: lastMessage.trim(),
+        stderr,
+        stdout,
+      };
+    } finally {
+      await rm(outputDir, { force: true, recursive: true });
+    }
+  }
+
+  public buildMcpAddCommand(name: string, url: string): string {
+    return `${this.options.binary} mcp add ${name} --url ${url}`;
+  }
+
+  private buildExecArgs(request: CodexCliExecRequest, outputFile: string, cwd: string): string[] {
+    const prompt = request.prompt.trim();
+    const baseArgs = this.buildBaseExecOptions(outputFile, cwd);
+
+    if (request.resumeLast) {
+      return ["exec", "resume", ...baseArgs, "--last", prompt];
+    }
+
+    if (request.sessionId) {
+      return ["exec", "resume", ...baseArgs, request.sessionId, prompt];
+    }
+
+    return ["exec", ...baseArgs, prompt];
+  }
+
+  private buildBaseExecOptions(outputFile: string, cwd: string): string[] {
+    const args = [
+      "-C",
+      cwd,
+      "--output-last-message",
+      outputFile,
+      "--sandbox",
+      this.options.sandboxMode,
+      "--ask-for-approval",
+      this.options.approvalPolicy,
+    ];
+
+    if (this.options.model) {
+      args.push("--model", this.options.model);
+    }
+
+    return args;
+  }
+
+  private async assertRunnable(): Promise<void> {
+    const binaryPath = await this.resolveBinaryPath();
+    if (!binaryPath) {
+      throw new Error(`Codex CLI binary "${this.options.binary}" was not found in PATH.`);
+    }
+
+    const configExists = await this.checkConfigExists();
+    if (!configExists) {
+      throw new Error(
+        `Expected Codex config file was not found at "${this.options.configPath}".`,
+      );
+    }
+  }
+
+  private async resolveBinaryPath(): Promise<string | null> {
+    try {
+      const { stdout } = await execFileAsync("which", [this.options.binary], {
+        cwd: this.options.cwd,
+        env: process.env,
+      });
+      return stdout.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async safeRun(args: string[]): Promise<{ stdout: string; stderr: string }> {
+    try {
+      const { stdout, stderr } = await execFileAsync(this.options.binary, args, {
+        cwd: this.options.cwd,
+        env: process.env,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      return { stdout, stderr };
+    } catch (error) {
+      if (error instanceof Error && "stdout" in error && "stderr" in error) {
+        return {
+          stdout: String(error.stdout ?? ""),
+          stderr: String(error.stderr ?? error.message),
+        };
+      }
+
+      return {
+        stdout: "",
+        stderr: error instanceof Error ? error.message : "Unknown Codex CLI error",
+      };
+    }
+  }
+
+  private async checkConfigExists(): Promise<boolean> {
+    try {
+      await access(this.options.configPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function parseMcpList(stdout: string): CodexCliMcpServer[] {
+  const lines = stdout
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter(Boolean);
+
+  const servers: CodexCliMcpServer[] = [];
+  let mode: "command" | "url" | null = null;
+
+  for (const line of lines) {
+    if (line.startsWith("Name") && line.includes("Command")) {
+      mode = "command";
+      continue;
+    }
+
+    if (line.startsWith("Name") && line.includes("Url")) {
+      mode = "url";
+      continue;
+    }
+
+    if (!mode || line.startsWith("-")) {
+      continue;
+    }
+
+    const columns = line.split(/\s{2,}/).map((part) => part.trim());
+    if (mode === "command" && columns.length >= 6) {
+      servers.push({
+        auth: columns.at(-1) ?? "Unknown",
+        name: columns[0],
+        scope: "command",
+        status: columns.at(-2) ?? "Unknown",
+        target: columns[1],
+      });
+      continue;
+    }
+
+    if (mode === "url" && columns.length >= 5) {
+      servers.push({
+        auth: columns.at(-1) ?? "Unknown",
+        name: columns[0],
+        scope: "url",
+        status: columns.at(-2) ?? "Unknown",
+        target: columns[1],
+      });
+    }
+  }
+
+  return servers;
+}
