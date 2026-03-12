@@ -4,6 +4,8 @@ export interface ParsedFlagArgs {
   positionals: string[];
 }
 
+const VALUE_FLAGS = new Set(["--cwd", "--session"]);
+
 export function parseFlagArgs(argv: string[]): ParsedFlagArgs {
   const flags = new Set<string>();
   const values = new Map<string, string>();
@@ -14,6 +16,11 @@ export function parseFlagArgs(argv: string[]): ParsedFlagArgs {
 
     if (!token.startsWith("--")) {
       positionals.push(token);
+      continue;
+    }
+
+    if (!VALUE_FLAGS.has(token)) {
+      flags.add(token);
       continue;
     }
 

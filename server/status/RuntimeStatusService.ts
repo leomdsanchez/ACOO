@@ -1,13 +1,23 @@
-import type { AppConfig } from "../config/AppConfig.js";
 import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
+import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 
 export interface RuntimeStatus {
+  channels: {
+    cli: "active";
+    telegram: "planned";
+  };
   cli: Awaited<ReturnType<CodexCliService["getStatus"]>>;
-  configuredMcpServerName: string;
+  advisories: string[];
   issues: string[];
-  mcpServerConfigured: boolean;
+  integrations: {
+    configured: number;
+    customConfigured: number;
+    recommendedMissing: string[];
+    supportedConfigured: number;
+  };
+  mcp: Awaited<ReturnType<McpRegistryService["getSnapshot"]>>;
   repository: {
     contacts: number;
     projects: number;
@@ -22,8 +32,8 @@ export interface RuntimeStatus {
 
 export class RuntimeStatusService {
   public constructor(
-    private readonly config: AppConfig,
     private readonly codex: CodexCliService,
+    private readonly mcpRegistry: McpRegistryService,
     private readonly skills: SkillLoader,
     private readonly workspace: OperationalWorkspace,
   ) {}
@@ -37,26 +47,38 @@ export class RuntimeStatusService {
       this.workspace.threads.listThreads({ includeArchived: false }),
       this.workspace.tasks.listTasks({ includeCompleted: false }),
     ]);
-
-    const mcpServerConfigured = cli.mcpServers.some(
-      (server) => server.name === this.config.codexMcpServerName,
-    );
+    const mcp = this.mcpRegistry.getSnapshot(cli);
 
     const issues = [
       cli.installed ? null : "Codex CLI binary não encontrada no PATH.",
       cli.authenticated ? null : "Codex CLI não autenticada.",
       cli.configExists ? null : `config.toml esperado não encontrado em ${cli.configPath}.`,
-      mcpServerConfigured
-        ? null
-        : `Servidor MCP "${this.config.codexMcpServerName}" ainda não está configurado na Codex CLI.`,
       loadedSkills.length > 0 ? null : "Nenhuma skill foi carregada nas roots configuradas.",
     ].filter((issue): issue is string => issue !== null);
+    const advisories = [
+      cli.mcpServers.length > 0
+        ? null
+        : "Nenhuma integração MCP está configurada na Codex CLI para o ACOO usar.",
+      mcp.recommendedMissing.length > 0
+        ? `Integrações MCP recomendadas ausentes: ${mcp.recommendedMissing.join(", ")}.`
+        : null,
+    ].filter((advisory): advisory is string => advisory !== null);
 
     return {
+      channels: {
+        cli: "active",
+        telegram: "planned",
+      },
       cli,
-      configuredMcpServerName: this.config.codexMcpServerName,
+      advisories,
       issues,
-      mcpServerConfigured,
+      integrations: {
+        configured: mcp.configured.length,
+        customConfigured: mcp.configuredUnknown.length,
+        recommendedMissing: mcp.recommendedMissing,
+        supportedConfigured: mcp.catalog.filter((integration) => integration.configured).length,
+      },
+      mcp,
       repository: {
         contacts: contacts.length,
         projects: projects.length,

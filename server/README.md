@@ -8,21 +8,20 @@ Estrutura inicial do backend operacional para o ACOO.
 - introduzir um domínio explícito para `projects`, `contacts`, `threads` e `tasks`;
 - usar a Codex CLI autenticada como runtime real do agente, sem duplicar sessão nem memória conversacional;
 - estruturar um núcleo local enxuto com `bot`, `controller`, `engine`, `context`, `skills` e `status`;
-- preparar um servidor MCP operacional para ser consumido pela Codex CLI.
+- usar MCPs como integrações externas disponíveis para o ACOO via Codex CLI.
 
 ## Módulos
 
 - `bot/`: fachada de entrada para mensagens/comandos.
 - `controller/`: orquestração de requisições do agente.
-- `engine/`: execução do agente sobre a Codex CLI e registro de tools.
-- `context/`: montagem do contexto operacional a partir de threads e frentes.
-- `interfaces/mcp`: fachada do servidor MCP operacional.
+- `engine/`: execução do agente sobre a Codex CLI.
+- `context/`: montagem do contexto operacional a partir de threads, frentes e metadata da interação.
 - `status/`: health/status consolidado de CLI, MCP, skills e repositório.
 - `skills/`: loader, router e executor de skills/playbooks.
 - `domain/`: tipos e contratos do domínio operacional.
 - `application/`: portas e serviços que orquestram o workspace.
 - `infrastructure/`: leitura/escrita em filesystem e templates Markdown.
-- `mcp/`: catálogo de tools do domínio operacional.
+- `mcp/`: catálogo e discovery de integrações MCP já configuradas na Codex CLI.
 - `codex/`: integração real com `codex login status`, `codex mcp list` e `codex exec`.
 
 ## Fonte de verdade nesta fase
@@ -41,8 +40,6 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
-- `ACOO_CODEX_APPROVAL_POLICY`: política de aprovação usada nos comandos `codex exec`.
-- `ACOO_MCP_SERVER_NAME`: nome esperado para o servidor MCP operacional.
 - `ACOO_SKILL_ROOTS`: raízes de skills separadas por vírgula.
 
 ## Uso local
@@ -51,6 +48,12 @@ Status consolidado do runtime:
 
 ```bash
 npm run server:status -- --pretty
+```
+
+Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
+
+```bash
+npm run server:mcp -- --pretty
 ```
 
 Execução do agente via Codex CLI usando o contexto operacional do repo:
@@ -65,6 +68,21 @@ Opções úteis:
 - `--cwd DIR`: executa a Codex CLI em outro diretório.
 - `--session ID`: retoma uma sessão específica da Codex CLI.
 - `--resume-last`: reaproveita a última sessão persistida da Codex CLI.
+- `--ephemeral`: executa sem persistir arquivos de sessão na Codex CLI.
+
+## Estratégia MCP
+
+- O ACOO não é um MCP; ele é o sistema operacional/orquestrador.
+- MCPs entram como integrações externas já registradas na Codex CLI.
+- O catálogo suportado fica em `server/mcp/manifest.ts`.
+- Integrações configuradas na CLI e fora do catálogo continuam visíveis como `configuredUnknown`.
+- Se no futuro o ACOO precisar expor um MCP próprio, isso deve ser tratado como interface opcional, não como núcleo do sistema.
+
+## Estratégia de Canais
+
+- ACOO deve tratar CLI e Telegram como canais de entrada/saída, não como núcleos de raciocínio separados.
+- O runtime atual já aceita metadata de interação (`channel`, `inputMode`, `requestedOutputMode`) para evitar refactor quando o Telegram entrar.
+- A próxima integração de Telegram deve se limitar a adaptar eventos do bot para `AgentRequest` e aplicar estratégias de output na volta.
 
 ## Runtime montado no bootstrap
 
@@ -74,16 +92,15 @@ O `createOperationalRuntime()` agora instancia:
 - `AgentController`
 - `AgentEngine`
 - `OperationalContextService`
-- `ToolRegistry`
-- `OperationalMcpServer`
 - `CodexCliService`
+- `McpRegistryService`
 - `RuntimeStatusService`
 - `SkillLoader` + `SkillRouter` + `SkillExecutor`
 - `OperationalWorkspace`
 
 ## Próximos passos naturais
 
-1. Implementar transporte MCP real sobre a fachada em `interfaces/mcp`.
-2. Expor um endpoint/command local de status para a home consumir dados reais.
-3. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
-4. Substituir os JSONs iniciais por banco local quando o domínio estabilizar.
+1. Conectar a home ao status real do runtime.
+2. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
+3. Estruturar `project -> front -> thread -> task -> contact` sem heurística por título.
+4. Expor um MCP próprio do ACOO só se houver necessidade real de servir outras superfícies.

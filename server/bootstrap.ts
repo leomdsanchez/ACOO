@@ -7,10 +7,8 @@ import { loadAppConfig } from "./config/AppConfig.js";
 import { CodexCliService } from "./codex/CodexCliService.js";
 import { OperationalContextService } from "./context/OperationalContextService.js";
 import { AgentEngine } from "./engine/AgentEngine.js";
-import { ToolRegistry } from "./engine/ToolRegistry.js";
-import { OperationalMcpServer } from "./interfaces/mcp/OperationalMcpServer.js";
 import { FileSystemOperationalRepository } from "./infrastructure/repositories/FileSystemOperationalRepository.js";
-import { buildOperationalToolCatalog } from "./mcp/tools.js";
+import { McpRegistryService } from "./mcp/McpRegistryService.js";
 import { RuntimeStatusService } from "./status/RuntimeStatusService.js";
 import { SkillExecutor } from "./skills/SkillExecutor.js";
 import { SkillLoader } from "./skills/SkillLoader.js";
@@ -23,17 +21,13 @@ export interface OperationalRuntime {
   controller: AgentController;
   codex: CodexCliService;
   engine: AgentEngine;
-  interfaces: {
-    mcp: OperationalMcpServer;
-  };
-  registry: ToolRegistry;
+  mcpRegistry: McpRegistryService;
   skills: {
     executor: SkillExecutor;
     loader: SkillLoader;
     router: SkillRouter;
   };
   status: RuntimeStatusService;
-  tools: ReturnType<typeof buildOperationalToolCatalog>;
   workspace: OperationalWorkspace;
 }
 
@@ -41,10 +35,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const config = loadAppConfig(repoRoot);
   const repository = new FileSystemOperationalRepository({ repoRoot });
   const workspace = new OperationalWorkspace(repository);
-  const tools = buildOperationalToolCatalog(workspace);
-  const registry = new ToolRegistry(tools);
   const codex = new CodexCliService({
-    approvalPolicy: config.codexApprovalPolicy,
     binary: config.codexCliBinary,
     configPath: config.codexConfigPath,
     cwd: repoRoot,
@@ -66,8 +57,8 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     skillExecutor,
   );
   const bot = new OperationalBot(controller);
-  const mcp = new OperationalMcpServer(registry);
-  const status = new RuntimeStatusService(config, codex, skillLoader, workspace);
+  const mcpRegistry = new McpRegistryService();
+  const status = new RuntimeStatusService(codex, mcpRegistry, skillLoader, workspace);
 
   return {
     bot,
@@ -76,17 +67,13 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     controller,
     codex,
     engine,
-    interfaces: {
-      mcp,
-    },
-    registry,
+    mcpRegistry,
     skills: {
       executor: skillExecutor,
       loader: skillLoader,
       router: skillRouter,
     },
     status,
-    tools,
     workspace,
   };
 }

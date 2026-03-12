@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "server:mcp": "tsx server/commands/mcp.ts",
     "server:run": "tsx server/commands/run.ts",
     "server:status": "tsx server/commands/status.ts",
     "typecheck": "tsc -b",

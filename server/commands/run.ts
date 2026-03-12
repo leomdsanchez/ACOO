@@ -7,7 +7,7 @@ async function main() {
 
   if (!prompt) {
     process.stderr.write(
-      "Usage: npm run server:run -- [--cwd DIR] [--session ID | --resume-last] [--json] \"seu prompt\"\n",
+      "Usage: npm run server:run -- [--cwd DIR] [--session ID | --resume-last] [--ephemeral] [--json] \"seu prompt\"\n",
     );
     process.exitCode = 1;
     return;
@@ -16,6 +16,12 @@ async function main() {
   const runtime = createOperationalRuntime();
   const response = await runtime.bot.handleTextMessage({
     cwd: args.values.get("--cwd") ?? process.cwd(),
+    ephemeral: args.flags.has("--ephemeral"),
+    interaction: {
+      channel: "cli",
+      inputMode: "text",
+      requestedOutputMode: "text",
+    },
     prompt,
     resumeLast: !args.values.has("--session") && args.flags.has("--resume-last"),
     sessionId: args.values.get("--session"),

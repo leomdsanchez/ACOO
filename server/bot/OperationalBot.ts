@@ -3,7 +3,11 @@ import type { AgentController, AgentRequest, AgentResponse } from "../controller
 export class OperationalBot {
   public constructor(private readonly controller: AgentController) {}
 
-  public handleTextMessage(request: AgentRequest): Promise<AgentResponse> {
+  public handleMessage(request: AgentRequest): Promise<AgentResponse> {
     return this.controller.handle(request);
+  }
+
+  public handleTextMessage(request: AgentRequest): Promise<AgentResponse> {
+    return this.handleMessage(request);
   }
 }

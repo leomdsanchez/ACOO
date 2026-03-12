@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { LoadedSkill } from "./Skill.js";
 
@@ -71,7 +71,7 @@ async function safeReadDir(directoryPath: string) {
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
-    await readFile(filePath, "utf8");
+    await access(filePath);
     return true;
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {

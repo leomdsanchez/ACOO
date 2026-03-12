@@ -7,7 +7,6 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export interface CodexCliOptions {
-  approvalPolicy: string;
   binary: string;
   configPath: string;
   cwd: string;
@@ -17,6 +16,7 @@ export interface CodexCliOptions {
 
 export interface CodexCliExecRequest {
   cwd?: string;
+  ephemeral?: boolean;
   prompt: string;
   resumeLast?: boolean;
   sessionId?: string;
@@ -108,26 +108,47 @@ export class CodexCliService {
     }
   }
 
-  public buildMcpAddCommand(name: string, url: string): string {
-    return `${this.options.binary} mcp add ${name} --url ${url}`;
+  public buildMcpAddUrlCommand(name: string, url: string): string {
+    return [this.options.binary, "mcp", "add", name, "--url", url]
+      .map(quoteShellArg)
+      .join(" ");
+  }
+
+  public buildMcpAddStdioCommand(
+    name: string,
+    command: string[],
+    env: Record<string, string> = {},
+  ): string {
+    const envArgs = Object.entries(env).flatMap(([key, value]) => ["--env", `${key}=${value}`]);
+    return [this.options.binary, "mcp", "add", name, ...envArgs, "--", ...command]
+      .map(quoteShellArg)
+      .join(" ");
   }
 
   private buildExecArgs(request: CodexCliExecRequest, outputFile: string, cwd: string): string[] {
     const prompt = request.prompt.trim();
-    const baseArgs = this.buildBaseExecOptions(outputFile, cwd);
-
     if (request.resumeLast) {
-      return ["exec", "resume", ...baseArgs, "--last", prompt];
+      return ["exec", "resume", ...this.buildResumeOptions(outputFile, request), "--last", prompt];
     }
 
     if (request.sessionId) {
-      return ["exec", "resume", ...baseArgs, request.sessionId, prompt];
+      return [
+        "exec",
+        "resume",
+        ...this.buildResumeOptions(outputFile, request),
+        request.sessionId,
+        prompt,
+      ];
     }
 
-    return ["exec", ...baseArgs, prompt];
+    return ["exec", ...this.buildExecOptions(outputFile, cwd, request), prompt];
   }
 
-  private buildBaseExecOptions(outputFile: string, cwd: string): string[] {
+  private buildExecOptions(
+    outputFile: string,
+    cwd: string,
+    request: CodexCliExecRequest,
+  ): string[] {
     const args = [
       "-C",
       cwd,
@@ -135,12 +156,28 @@ export class CodexCliService {
       outputFile,
       "--sandbox",
       this.options.sandboxMode,
-      "--ask-for-approval",
-      this.options.approvalPolicy,
     ];
 
     if (this.options.model) {
       args.push("--model", this.options.model);
+    }
+
+    if (request.ephemeral) {
+      args.push("--ephemeral");
+    }
+
+    return args;
+  }
+
+  private buildResumeOptions(outputFile: string, request: CodexCliExecRequest): string[] {
+    const args = ["--output-last-message", outputFile];
+
+    if (this.options.model) {
+      args.push("--model", this.options.model);
+    }
+
+    if (request.ephemeral) {
+      args.push("--ephemeral");
     }
 
     return args;
@@ -203,6 +240,14 @@ export class CodexCliService {
       return false;
     }
   }
+}
+
+function quoteShellArg(value: string): string {
+  if (/^[a-zA-Z0-9_./:=+-]+$/.test(value)) {
+    return value;
+  }
+
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`;
 }
 
 function parseMcpList(stdout: string): CodexCliMcpServer[] {
