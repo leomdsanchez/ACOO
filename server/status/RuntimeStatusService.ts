@@ -7,7 +7,7 @@ import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 export interface RuntimeStatus {
   channels: {
     cli: "active";
-    telegram: "planned";
+    telegram: "available";
   };
   cli: Awaited<ReturnType<CodexCliService["getStatus"]>>;
   defaults: {
@@ -36,7 +36,7 @@ export interface RuntimeStatus {
     botUsername: string | null;
     configured: boolean;
     enabled: boolean;
-    implemented: false;
+    implemented: true;
     replyAudioByDefault: boolean;
   };
   skills: {
@@ -81,15 +81,12 @@ export class RuntimeStatusService {
       this.config.telegram.enabled && !hasTelegramSecrets(this.config)
         ? "Telegram habilitado no env, mas faltam bot token ou usuários autorizados."
         : null,
-      this.config.telegram.enabled
-        ? "Telegram ainda não está implementado no runtime; apenas a modelagem e os defaults estão preparados."
-        : null,
     ].filter((advisory): advisory is string => advisory !== null);
 
     return {
       channels: {
         cli: "active",
-        telegram: "planned",
+        telegram: "available",
       },
       cli,
       defaults: {
@@ -118,7 +115,7 @@ export class RuntimeStatusService {
         botUsername: this.config.telegram.botUsername,
         configured: hasTelegramSecrets(this.config),
         enabled: this.config.telegram.enabled,
-        implemented: false,
+        implemented: true,
         replyAudioByDefault: this.config.telegram.replyAudioByDefault,
       },
       skills: {

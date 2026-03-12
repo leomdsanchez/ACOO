@@ -13,3 +13,5 @@ export * from "./status/RuntimeStatusService.js";
 export * from "./skills/SkillLoader.js";
 export * from "./skills/SkillRouter.js";
 export * from "./skills/SkillExecutor.js";
+export * from "./telegram/TelegramBotApi.js";
+export * from "./telegram/TelegramRuntime.js";

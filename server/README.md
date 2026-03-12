@@ -57,6 +57,14 @@ Status consolidado do runtime:
 npm run server:status -- --pretty
 ```
 
+Desenvolvimento local completo:
+
+```bash
+npm run dev
+```
+
+Esse comando sobe a UI e, se `ACOO_TELEGRAM_ENABLED=true`, também sobe o polling do Telegram.
+
 Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 
 ```bash
@@ -69,6 +77,18 @@ Execução do agente via Codex CLI usando o contexto operacional do repo:
 npm run server:run -- "revisar as frentes ativas e apontar a próxima trava"
 ```
 
+Polling do canal Telegram:
+
+```bash
+npm run server:telegram -- --drop-pending
+```
+
+Inspeção rápida da identidade do bot configurado:
+
+```bash
+npm run server:telegram -- --status
+```
+
 Opções úteis:
 
 - `--json`: devolve a resposta completa com `command`, `stdout` e `stderr`.
@@ -76,6 +96,8 @@ Opções úteis:
 - `--session ID`: retoma uma sessão específica da Codex CLI.
 - `--resume-last`: reaproveita a última sessão persistida da Codex CLI.
 - `--ephemeral`: executa sem persistir arquivos de sessão na Codex CLI.
+- `server:telegram -- --drop-pending`: ignora backlog acumulado e passa a responder só mensagens novas.
+- `server:telegram -- --once`: processa um ciclo curto de updates e encerra.
 
 ## Estratégia MCP
 
