@@ -29,6 +29,7 @@ export interface CodexCliExecResult {
   lastMessage: string;
   stderr: string;
   stdout: string;
+  threadId: string | null;
 }
 
 export interface CodexCliMcpServer {
@@ -91,12 +92,13 @@ export class CodexCliService {
         env: process.env,
         maxBuffer: 10 * 1024 * 1024,
       });
+      const parsed = parseExecJson(stdout);
 
       let lastMessage = "";
       try {
         lastMessage = await readFile(outputFile, "utf8");
       } catch {
-        lastMessage = "";
+        lastMessage = parsed.lastMessage;
       }
 
       return {
@@ -104,6 +106,7 @@ export class CodexCliService {
         lastMessage: lastMessage.trim(),
         stderr,
         stdout,
+        threadId: parsed.threadId,
       };
     } finally {
       await rm(outputDir, { force: true, recursive: true });
@@ -173,6 +176,7 @@ export class CodexCliService {
     const args = [
       "-C",
       cwd,
+      "--json",
       "--output-last-message",
       outputFile,
       "--sandbox",
@@ -191,7 +195,7 @@ export class CodexCliService {
   }
 
   private buildResumeOptions(outputFile: string, request: CodexCliExecRequest): string[] {
-    const args = ["--output-last-message", outputFile];
+    const args = ["--json", "--output-last-message", outputFile];
 
     if (this.options.model) {
       args.push("--model", this.options.model);
@@ -319,4 +323,57 @@ function parseMcpList(stdout: string): CodexCliMcpServer[] {
   }
 
   return servers;
+}
+
+function parseExecJson(stdout: string): { lastMessage: string; threadId: string | null } {
+  const events = stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("{"))
+    .map((line) => {
+      try {
+        return JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    })
+    .filter((event): event is Record<string, unknown> => event !== null);
+
+  const threadStarted = events.find(
+    (event) => event.type === "thread.started" && typeof event.thread_id === "string",
+  );
+  const threadId =
+    threadStarted && typeof threadStarted.thread_id === "string" ? threadStarted.thread_id : null;
+
+  const lastAgentMessage = [...events]
+    .reverse()
+    .find((event) => {
+      if (event.type !== "item.completed") {
+        return false;
+      }
+
+      const item = event.item;
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        "type" in item &&
+        item.type === "agent_message" &&
+        "text" in item &&
+        typeof item.text === "string"
+      );
+    });
+
+  const lastMessage =
+    lastAgentMessage &&
+    typeof lastAgentMessage.item === "object" &&
+    lastAgentMessage.item !== null &&
+    "text" in lastAgentMessage.item &&
+    typeof lastAgentMessage.item.text === "string"
+      ? lastAgentMessage.item.text
+      : "";
+
+  return {
+    lastMessage,
+    threadId,
+  };
 }

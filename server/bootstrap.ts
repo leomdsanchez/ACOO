@@ -10,6 +10,7 @@ import { AgentEngine } from "./engine/AgentEngine.js";
 import { FileSystemOperationalRepository } from "./infrastructure/repositories/FileSystemOperationalRepository.js";
 import { McpRegistryService } from "./mcp/McpRegistryService.js";
 import { RuntimeStatusService } from "./status/RuntimeStatusService.js";
+import { LocalTranscriptionService } from "./transcription/LocalTranscriptionService.js";
 import { SkillExecutor } from "./skills/SkillExecutor.js";
 import { SkillLoader } from "./skills/SkillLoader.js";
 import { SkillRouter } from "./skills/SkillRouter.js";
@@ -28,6 +29,7 @@ export interface OperationalRuntime {
     router: SkillRouter;
   };
   status: RuntimeStatusService;
+  transcription: LocalTranscriptionService;
   workspace: OperationalWorkspace;
 }
 
@@ -50,6 +52,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   });
   const skillRouter = new SkillRouter();
   const skillExecutor = new SkillExecutor();
+  const transcription = new LocalTranscriptionService(repoRoot, config.transcription);
   const engine = new AgentEngine(codex);
   const controller = new AgentController(
     engine,
@@ -76,6 +79,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
       router: skillRouter,
     },
     status,
+    transcription,
     workspace,
   };
 }

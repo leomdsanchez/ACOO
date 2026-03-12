@@ -47,6 +47,14 @@ Variáveis relevantes em `.env`:
 - `ACOO_TELEGRAM_BOT_USERNAME`: username público do bot.
 - `ACOO_TELEGRAM_ALLOWED_USER_IDS`: IDs autorizados para falar com o bot.
 - `ACOO_TELEGRAM_REPLY_AUDIO_BY_DEFAULT`: resposta em áudio como default do canal Telegram.
+- `ACOO_STT_ENABLED`: habilita transcrição local de áudio.
+- `ACOO_STT_BINARY`: binário do `whisper.cpp`, normalmente `whisper-cli`.
+- `ACOO_STT_MODEL`: variante do modelo local (`tiny`, `base`, `small`, etc.). O default recomendado aqui é `base`.
+- `ACOO_STT_MODEL_PATH`: caminho local do arquivo `ggml-*.bin`. Se vazio, deriva de `ACOO_STT_MODEL`.
+- `ACOO_STT_MODEL_URL`: URL usada para baixar o modelo automaticamente quando faltar. Se vazia, deriva de `ACOO_STT_MODEL`.
+- `ACOO_STT_LANGUAGE`: idioma opcional para forçar na transcrição.
+- `ACOO_STT_THREADS`: threads do `whisper.cpp`.
+- `ACOO_STT_MODEL_DOWNLOADER_BIN`: downloader usado para buscar o modelo, normalmente `curl`.
 - `ACOO_SKILL_ROOTS`: raízes de skills separadas por vírgula.
 
 ## Uso local
@@ -82,6 +90,17 @@ Polling do canal Telegram:
 ```bash
 npm run server:telegram -- --drop-pending
 ```
+
+O canal Telegram usa uma única sessão persistida da Codex por padrão.
+Mensagens de voz passam por transcrição local com `whisper.cpp` antes de entrar no fluxo do agente.
+
+Comandos de sessão no chat:
+
+- `/start`: inicia a sessão ou reativa a sessão atual.
+- `/end`: encerra a sessão atual sem apagar o `sessionId`.
+- `/new`: prepara uma nova sessão da Codex para a próxima mensagem.
+- `/reset`: alias de `/new`.
+- `/help`: resume os comandos de sessão disponíveis.
 
 Inspeção rápida da identidade do bot configurado:
 

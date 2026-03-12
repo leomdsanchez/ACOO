@@ -36,6 +36,13 @@ export interface TelegramUpdate {
   update_id: number;
 }
 
+export interface TelegramFile {
+  file_id: string;
+  file_path?: string;
+  file_size?: number;
+  file_unique_id: string;
+}
+
 interface TelegramApiEnvelope<T> {
   description?: string;
   ok: boolean;
@@ -48,9 +55,11 @@ export interface TelegramBotApiOptions {
 
 export class TelegramBotApi {
   private readonly baseUrl: string;
+  private readonly fileBaseUrl: string;
 
   public constructor(options: TelegramBotApiOptions) {
     this.baseUrl = `https://api.telegram.org/bot${options.token}`;
+    this.fileBaseUrl = `https://api.telegram.org/file/bot${options.token}`;
   }
 
   public async getMe(): Promise<TelegramUser> {
@@ -61,6 +70,12 @@ export class TelegramBotApi {
     return this.request<TelegramUpdate[]>("getUpdates", {
       offset,
       timeout: timeoutSeconds,
+    });
+  }
+
+  public async getFile(fileId: string): Promise<TelegramFile> {
+    return this.request<TelegramFile>("getFile", {
+      file_id: fileId,
     });
   }
 
@@ -81,6 +96,16 @@ export class TelegramBotApi {
     });
   }
 
+  public async downloadFile(filePath: string): Promise<Uint8Array> {
+    const response = await fetch(`${this.fileBaseUrl}/${filePath}`);
+    if (!response.ok) {
+      throw new Error(`Telegram file download failed with HTTP ${response.status}.`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+
   private async request<T>(
     method: string,
     body?: Record<string, number | string | undefined>,
@@ -92,6 +117,11 @@ export class TelegramBotApi {
     });
 
     if (!response.ok) {
+      if (response.status === 409) {
+        throw new Error(
+          "Telegram polling conflict (HTTP 409). Já existe outro consumer ativo chamando getUpdates para este bot.",
+        );
+      }
       throw new Error(`Telegram API ${method} failed with HTTP ${response.status}.`);
     }
 

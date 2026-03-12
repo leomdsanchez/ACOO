@@ -38,6 +38,7 @@ export interface AgentResponse {
   operationalContext: string;
   stderr: string;
   stdout: string;
+  threadId: string | null;
 }
 
 export class AgentController {
@@ -77,6 +78,7 @@ export class AgentController {
       operationalContext,
       stderr: result.stderr,
       stdout: result.stdout,
+      threadId: result.threadId,
     };
   }
 }

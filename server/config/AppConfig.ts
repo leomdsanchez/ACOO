@@ -18,6 +18,17 @@ export interface TelegramConfig {
   replyAudioByDefault: boolean;
 }
 
+export interface TranscriptionConfig {
+  binary: string;
+  enabled: boolean;
+  language: string | null;
+  modelDownloaderBinary: string;
+  modelPath: string;
+  modelUrl: string | null;
+  modelVariant: string;
+  threads: number;
+}
+
 export interface AppConfig {
   appName: string;
   codexApprovalPolicy: CodexApprovalPolicy;
@@ -29,10 +40,12 @@ export interface AppConfig {
   repoRoot: string;
   skillRoots: string[];
   telegram: TelegramConfig;
+  transcription: TranscriptionConfig;
 }
 
 export function loadAppConfig(repoRoot: string): AppConfig {
   ensureEnvironmentLoaded(repoRoot);
+  const transcriptionModel = readString("ACOO_STT_MODEL", "base");
 
   return {
     appName: readString("VITE_APP_NAME", "ACOO"),
@@ -53,6 +66,20 @@ export function loadAppConfig(repoRoot: string): AppConfig {
       botUsername: readOptionalString("ACOO_TELEGRAM_BOT_USERNAME"),
       enabled: readBoolean("ACOO_TELEGRAM_ENABLED", false),
       replyAudioByDefault: readBoolean("ACOO_TELEGRAM_REPLY_AUDIO_BY_DEFAULT", false),
+    },
+    transcription: {
+      binary: readString("ACOO_STT_BINARY", "whisper-cli"),
+      enabled: readBoolean("ACOO_STT_ENABLED", true),
+      language: readOptionalString("ACOO_STT_LANGUAGE"),
+      modelDownloaderBinary: readString("ACOO_STT_MODEL_DOWNLOADER_BIN", "curl"),
+      modelPath:
+        readOptionalString("ACOO_STT_MODEL_PATH") ??
+        `.acoo/models/ggml-${transcriptionModel}.bin`,
+      modelUrl:
+        readOptionalString("ACOO_STT_MODEL_URL") ??
+        `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-${transcriptionModel}.bin`,
+      modelVariant: transcriptionModel,
+      threads: readNumber("ACOO_STT_THREADS", Math.max(1, Math.min(os.cpus().length, 4))),
     },
   };
 }
@@ -86,6 +113,11 @@ function readList(name: string, fallback: string[]): string[] {
     .map((item) => item.trim())
     .filter(Boolean)
     .map(expandHome);
+}
+
+function readNumber(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function readApprovalPolicy(

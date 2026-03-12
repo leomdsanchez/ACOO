@@ -1,5 +1,6 @@
 import { createOperationalRuntime } from "../bootstrap.js";
 import { TelegramRuntime } from "../telegram/TelegramRuntime.js";
+import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import { parseFlagArgs } from "./shared.js";
 
 async function main() {
@@ -14,6 +15,8 @@ async function main() {
   const telegram = new TelegramRuntime({
     bot: runtime.bot,
     config: telegramConfig,
+    transcription: runtime.transcription,
+    sessionStore: new TelegramSessionStore(runtime.config.repoRoot),
   });
 
   if (args.flags.has("--status")) {

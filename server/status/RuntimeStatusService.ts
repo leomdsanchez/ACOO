@@ -3,6 +3,7 @@ import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
+import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 
 export interface RuntimeStatus {
   channels: {
@@ -32,12 +33,23 @@ export interface RuntimeStatus {
     threads: number;
   };
   telegram: {
+    active: boolean;
     allowedUsersCount: number;
     botUsername: string | null;
     configured: boolean;
     enabled: boolean;
     implemented: true;
     replyAudioByDefault: boolean;
+    sessionId: string | null;
+    updatedAt: string | null;
+  };
+  transcription: {
+    binary: string;
+    enabled: boolean;
+    language: string | null;
+    modelPath: string;
+    modelVariant: string;
+    threads: number;
   };
   skills: {
     count: number;
@@ -55,13 +67,15 @@ export class RuntimeStatusService {
   ) {}
 
   public async getStatus(): Promise<RuntimeStatus> {
-    const [cli, loadedSkills, projects, contacts, threads, tasks] = await Promise.all([
+    const telegramSessionStore = new TelegramSessionStore(this.config.repoRoot);
+    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession] = await Promise.all([
       this.codex.getStatus(),
       this.skills.loadAll(),
       this.workspace.projects.listProjects(),
       this.workspace.contacts.listContacts(),
       this.workspace.threads.listThreads({ includeArchived: false }),
       this.workspace.tasks.listTasks({ includeCompleted: false }),
+      telegramSessionStore.load(),
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
 
@@ -111,12 +125,23 @@ export class RuntimeStatusService {
         threads: threads.length,
       },
       telegram: {
+        active: telegramSession.active,
         allowedUsersCount: this.config.telegram.allowedUserIds.length,
         botUsername: this.config.telegram.botUsername,
         configured: hasTelegramSecrets(this.config),
         enabled: this.config.telegram.enabled,
         implemented: true,
         replyAudioByDefault: this.config.telegram.replyAudioByDefault,
+        sessionId: telegramSession.sessionId,
+        updatedAt: telegramSession.updatedAt,
+      },
+      transcription: {
+        binary: this.config.transcription.binary,
+        enabled: this.config.transcription.enabled,
+        language: this.config.transcription.language,
+        modelPath: this.config.transcription.modelPath,
+        modelVariant: this.config.transcription.modelVariant,
+        threads: this.config.transcription.threads,
       },
       skills: {
         count: loadedSkills.length,

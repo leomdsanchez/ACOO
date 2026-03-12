@@ -15,3 +15,5 @@ export * from "./skills/SkillRouter.js";
 export * from "./skills/SkillExecutor.js";
 export * from "./telegram/TelegramBotApi.js";
 export * from "./telegram/TelegramRuntime.js";
+export * from "./telegram/TelegramSessionStore.js";
+export * from "./transcription/LocalTranscriptionService.js";
