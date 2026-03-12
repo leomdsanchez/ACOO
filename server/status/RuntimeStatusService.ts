@@ -1,3 +1,4 @@
+import type { AppConfig } from "../config/AppConfig.js";
 import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
@@ -9,6 +10,12 @@ export interface RuntimeStatus {
     telegram: "planned";
   };
   cli: Awaited<ReturnType<CodexCliService["getStatus"]>>;
+  defaults: {
+    approvalPolicy: AppConfig["codexApprovalPolicy"];
+    model: string | null;
+    reasoningEffort: AppConfig["codexReasoningEffort"];
+    sandboxMode: AppConfig["codexSandboxMode"];
+  };
   advisories: string[];
   issues: string[];
   integrations: {
@@ -24,6 +31,14 @@ export interface RuntimeStatus {
     tasks: number;
     threads: number;
   };
+  telegram: {
+    allowedUsersCount: number;
+    botUsername: string | null;
+    configured: boolean;
+    enabled: boolean;
+    implemented: false;
+    replyAudioByDefault: boolean;
+  };
   skills: {
     count: number;
     sources: string[];
@@ -32,6 +47,7 @@ export interface RuntimeStatus {
 
 export class RuntimeStatusService {
   public constructor(
+    private readonly config: AppConfig,
     private readonly codex: CodexCliService,
     private readonly mcpRegistry: McpRegistryService,
     private readonly skills: SkillLoader,
@@ -62,6 +78,12 @@ export class RuntimeStatusService {
       mcp.recommendedMissing.length > 0
         ? `Integrações MCP recomendadas ausentes: ${mcp.recommendedMissing.join(", ")}.`
         : null,
+      this.config.telegram.enabled && !hasTelegramSecrets(this.config)
+        ? "Telegram habilitado no env, mas faltam bot token ou usuários autorizados."
+        : null,
+      this.config.telegram.enabled
+        ? "Telegram ainda não está implementado no runtime; apenas a modelagem e os defaults estão preparados."
+        : null,
     ].filter((advisory): advisory is string => advisory !== null);
 
     return {
@@ -70,6 +92,12 @@ export class RuntimeStatusService {
         telegram: "planned",
       },
       cli,
+      defaults: {
+        approvalPolicy: this.config.codexApprovalPolicy,
+        model: this.config.codexModel,
+        reasoningEffort: this.config.codexReasoningEffort,
+        sandboxMode: this.config.codexSandboxMode,
+      },
       advisories,
       issues,
       integrations: {
@@ -85,10 +113,22 @@ export class RuntimeStatusService {
         tasks: tasks.length,
         threads: threads.length,
       },
+      telegram: {
+        allowedUsersCount: this.config.telegram.allowedUserIds.length,
+        botUsername: this.config.telegram.botUsername,
+        configured: hasTelegramSecrets(this.config),
+        enabled: this.config.telegram.enabled,
+        implemented: false,
+        replyAudioByDefault: this.config.telegram.replyAudioByDefault,
+      },
       skills: {
         count: loadedSkills.length,
         sources: [...new Set(loadedSkills.map((skill) => skill.sourcePath))],
       },
     };
   }
+}
+
+function hasTelegramSecrets(config: AppConfig): boolean {
+  return Boolean(config.telegram.botToken) && config.telegram.allowedUserIds.length > 0;
 }

@@ -36,10 +36,12 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const repository = new FileSystemOperationalRepository({ repoRoot });
   const workspace = new OperationalWorkspace(repository);
   const codex = new CodexCliService({
+    approvalPolicy: config.codexApprovalPolicy,
     binary: config.codexCliBinary,
     configPath: config.codexConfigPath,
     cwd: repoRoot,
     model: config.codexModel,
+    reasoningEffort: config.codexReasoningEffort,
     sandboxMode: config.codexSandboxMode,
   });
   const context = new OperationalContextService(workspace);
@@ -58,7 +60,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   );
   const bot = new OperationalBot(controller);
   const mcpRegistry = new McpRegistryService();
-  const status = new RuntimeStatusService(codex, mcpRegistry, skillLoader, workspace);
+  const status = new RuntimeStatusService(config, codex, mcpRegistry, skillLoader, workspace);
 
   return {
     bot,

@@ -7,10 +7,12 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export interface CodexCliOptions {
+  approvalPolicy: string;
   binary: string;
   configPath: string;
   cwd: string;
   model?: string | null;
+  reasoningEffort?: string | null;
   sandboxMode: string;
 }
 
@@ -127,12 +129,21 @@ export class CodexCliService {
 
   private buildExecArgs(request: CodexCliExecRequest, outputFile: string, cwd: string): string[] {
     const prompt = request.prompt.trim();
+    const globalArgs = this.buildGlobalArgs();
     if (request.resumeLast) {
-      return ["exec", "resume", ...this.buildResumeOptions(outputFile, request), "--last", prompt];
+      return [
+        ...globalArgs,
+        "exec",
+        "resume",
+        ...this.buildResumeOptions(outputFile, request),
+        "--last",
+        prompt,
+      ];
     }
 
     if (request.sessionId) {
       return [
+        ...globalArgs,
         "exec",
         "resume",
         ...this.buildResumeOptions(outputFile, request),
@@ -141,7 +152,17 @@ export class CodexCliService {
       ];
     }
 
-    return ["exec", ...this.buildExecOptions(outputFile, cwd, request), prompt];
+    return [...globalArgs, "exec", ...this.buildExecOptions(outputFile, cwd, request), prompt];
+  }
+
+  private buildGlobalArgs(): string[] {
+    const args: string[] = ["-a", this.options.approvalPolicy];
+
+    if (this.options.reasoningEffort) {
+      args.push("-c", `model_reasoning_effort="${this.options.reasoningEffort}"`);
+    }
+
+    return args;
   }
 
   private buildExecOptions(

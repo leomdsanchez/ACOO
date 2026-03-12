@@ -39,7 +39,14 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_CLI_BIN`: binário da Codex CLI.
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
+- `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
+- `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
+- `ACOO_TELEGRAM_ENABLED`: habilita a prontidão de configuração do canal Telegram.
+- `ACOO_TELEGRAM_BOT_TOKEN`: token do bot Telegram.
+- `ACOO_TELEGRAM_BOT_USERNAME`: username público do bot.
+- `ACOO_TELEGRAM_ALLOWED_USER_IDS`: IDs autorizados para falar com o bot.
+- `ACOO_TELEGRAM_REPLY_AUDIO_BY_DEFAULT`: resposta em áudio como default do canal Telegram.
 - `ACOO_SKILL_ROOTS`: raízes de skills separadas por vírgula.
 
 ## Uso local
@@ -101,6 +108,7 @@ O `createOperationalRuntime()` agora instancia:
 ## Próximos passos naturais
 
 1. Conectar a home ao status real do runtime.
-2. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
-3. Estruturar `project -> front -> thread -> task -> contact` sem heurística por título.
-4. Expor um MCP próprio do ACOO só se houver necessidade real de servir outras superfícies.
+2. Criar uma camada de settings persistidos para a home alterar defaults reais do runtime em vez de manter só um perfil local no browser.
+3. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
+4. Estruturar `project -> front -> thread -> task -> contact` sem heurística por título.
+5. Expor um MCP próprio do ACOO só se houver necessidade real de servir outras superfícies.

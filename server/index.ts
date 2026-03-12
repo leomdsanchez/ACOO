@@ -1,6 +1,7 @@
 export * from "./bootstrap.js";
 export * from "./bot/OperationalBot.js";
 export * from "./config/AppConfig.js";
+export * from "./config/loadEnvironment.js";
 export * from "./codex/CodexCliService.js";
 export * from "./context/OperationalContextService.js";
 export * from "./controller/AgentController.js";
