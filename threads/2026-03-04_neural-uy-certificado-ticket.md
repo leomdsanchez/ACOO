@@ -76,3 +76,27 @@
 ### 2026-03-09 10:41 | Status atual
 - Estado ajustado para `Aguardando terceiro`.
 - Próxima trava real: retorno do Ronel com a senha correta do `.pfx` ou com a indicação objetiva de onde recuperar a credencial válida.
+
+### 2026-03-11 16:47 | Validação de origem (Gmail)
+- Thread `Envío de firma digital - Neural Think` revisada diretamente no Gmail.
+- Última mensagem recebida da Facturando permanece em `06/03/2026 13:59`, com Leticia informando: a clave segue dando erro e pedindo checagem da senha.
+- Não há novo retorno por e-mail após essa evidência.
+
+### 2026-03-11 16:49 | Validação de origem (WhatsApp)
+- Conversa com `Ronel Obando` revisada diretamente no WhatsApp.
+- Ronel respondeu em `09/03/2026 15:54` confirmando que a senha usada foi a mesma `Neural2025` e perguntando se o processo pode ser feito novamente.
+- Após essa resposta, há apenas um áudio enviado por Leonardo às `16:20`, sem nova evidência de senha alternativa.
+
+### 2026-03-11 16:49 | Reclassificação operacional
+- A pendência deixa de ser `Aguardando terceiro` e passa para `Aguardando execução`.
+- Evidência consolidada: a credencial já foi reconfirmada na origem e continua sem alternativa válida.
+- Próxima trava real ajustada para: acionar recuperação/reemissão do certificado com Facturando/Correo, em vez de insistir novamente na mesma senha.
+
+### 2026-03-11 17:08 | Escalonamento formal executado
+- E-mail já enviado a `sel@correo.com.uy` a partir da conta `contact@neuralthink.io`, pedindo procedimento formal para `reemisión`, `nueva solicitud` ou recuperação da credencial do certificado.
+- Resposta enviada na thread `Envío de firma digital - Neural Think` para `Leticia Coronel`, informando que a clave foi reconfirmada internamente, segue falhando no `.pfx` e que o caso já foi escalado ao Correo Uruguayo.
+- Mensagem enviada ao `Ronel Obando` no WhatsApp informando que o tema foi escalado com Facturando e Correo e que novos dados de origem serão solicitados apenas se o Correo pedir complemento.
+
+### 2026-03-11 17:08 | Status atual
+- Estado ajustado novamente para `Aguardando terceiro`.
+- Próxima trava real: retorno formal do `Correo Uruguayo` e/ou da `Facturando` com procedimento executável de reemissão, nova solicitação ou recuperação do certificado.

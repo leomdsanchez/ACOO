@@ -1,0 +1,947 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - region "Mensagem toast":
+      - heading "0 notificações no total" [level=2] [ref=e3]
+      - alert
+  - region [ref=e4]
+  - generic [ref=e5]:
+    - generic [ref=e7]:
+      - button "Pular para pesquisa" [ref=e8] [cursor=pointer]:
+        - generic [ref=e9]: Pular para pesquisa
+      - button "Pular para conteúdo principal" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: Pular para conteúdo principal
+      - button "Atalhos do teclado" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: Atalhos do teclado
+      - button "Fechar menu pular" [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+        - generic [ref=e17]: Fechar menu pular
+    - banner "Navegação geral" [ref=e18]:
+      - generic [ref=e19]:
+        - link "LinkedIn" [ref=e20] [cursor=pointer]:
+          - /url: https://www.linkedin.com/feed/?nis=true
+          - img "LinkedIn" [ref=e23]:
+            - img [ref=e24]
+        - generic [ref=e28]:
+          - combobox "Pesquisar" [ref=e29]
+          - generic:
+            - img
+        - navigation "Navegação principal" [ref=e30]:
+          - list [ref=e31]:
+            - listitem [ref=e32]:
+              - link "atualizações do feed novas notificações Início" [ref=e33] [cursor=pointer]:
+                - /url: https://www.linkedin.com/feed/?nis=true&
+                - generic [ref=e34]:
+                  - generic [ref=e37]: atualizações do feed novas notificações
+                  - img [ref=e41]
+                - generic "Início" [ref=e43]
+            - listitem [ref=e44]:
+              - link "Minha rede" [ref=e45] [cursor=pointer]:
+                - /url: https://www.linkedin.com/mynetwork/?
+                - img [ref=e49]
+                - generic "Minha rede" [ref=e51]
+            - listitem [ref=e52]:
+              - link "Vagas" [ref=e53] [cursor=pointer]:
+                - /url: https://www.linkedin.com/jobs/?
+                - img [ref=e57]
+                - generic "Vagas" [ref=e59]
+            - listitem [ref=e60]:
+              - link "Mensagens" [ref=e61] [cursor=pointer]:
+                - /url: https://www.linkedin.com/messaging/?
+                - img [ref=e65]
+                - generic "Mensagens" [ref=e67]
+            - listitem [ref=e68]:
+              - link "10 novas notificações Notificações" [ref=e69] [cursor=pointer]:
+                - /url: https://www.linkedin.com/notifications/?
+                - generic [ref=e70]:
+                  - generic [ref=e71]:
+                    - generic [ref=e72]: "10"
+                    - generic [ref=e73]: 10 novas notificações
+                  - img [ref=e77]
+                - generic "Notificações" [ref=e79]
+            - listitem [ref=e80]:
+              - button "Leonardo Sánchez Eu" [ref=e82] [cursor=pointer]:
+                - img "Leonardo Sánchez" [ref=e83]
+                - generic [ref=e84]:
+                  - text: Eu
+                  - img [ref=e85]
+            - listitem [ref=e87]:
+              - button "Para negócios" [ref=e89] [cursor=pointer]:
+                - img [ref=e93]
+                - generic "Para negócios" [ref=e95]:
+                  - text: Para negócios
+                  - img [ref=e96]
+            - listitem [ref=e98]:
+              - link "Veicular anúncio" [ref=e99] [cursor=pointer]:
+                - /url: https://www.linkedin.com/campaignmanager/accounts?
+                - img [ref=e103]
+                - generic "Veicular anúncio" [ref=e106]
+    - generic [ref=e112]:
+      - complementary [ref=e113]:
+        - generic [ref=e116]:
+          - img "Premium" [ref=e121]:
+            - img [ref=e122]
+          - link "Guzmán Barquín Valiente" [ref=e125] [cursor=pointer]:
+            - /url: /in/guzmanbarquin/
+            - img "Guzmán Barquín Valiente" [ref=e126]
+          - generic [ref=e127]:
+            - link "Guzmán Barquín Valiente Guzmán Barquín Valiente tem uma conta Premium" [ref=e128] [cursor=pointer]:
+              - /url: /in/guzmanbarquin/
+              - heading "Guzmán Barquín Valiente Guzmán Barquín Valiente tem uma conta Premium" [level=3] [ref=e129]:
+                - text: Guzmán Barquín Valiente
+                - img "Guzmán Barquín Valiente tem uma conta Premium" [ref=e131]:
+                  - img [ref=e132]
+            - heading "CEO & Founder @ Simple Studio®" [level=4] [ref=e134]
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: Seguidores
+              - generic [ref=e139]: "5.237"
+            - button "Enviar mensagem para Guzmán" [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]: Enviar mensagem
+      - main [ref=e144]:
+        - generic [ref=e146]:
+          - heading "Todas as atividades" [level=2] [ref=e147]
+          - group "Selecionar tipo de atividade recente" [ref=e150]:
+            - button "Publicações" [pressed] [ref=e151] [cursor=pointer]:
+              - generic [ref=e152]: Publicações
+            - button "Comentários" [ref=e153] [cursor=pointer]:
+              - generic [ref=e154]: Comentários
+            - button "Vídeos" [ref=e155] [cursor=pointer]:
+              - generic [ref=e156]: Vídeos
+            - button "Mais" [ref=e157] [cursor=pointer]:
+              - generic [ref=e158]: Mais
+              - img [ref=e159]
+          - generic [ref=e424]:
+            - generic [ref=e425]:
+              - generic [ref=e426]: 20 Publicações publicações carregadas
+              - list [ref=e427]:
+                - listitem [ref=e428]:
+                  - article [ref=e433]:
+                    - generic [ref=e435]:
+                      - heading "Número da publicação no feed 1" [level=2] [ref=e436]
+                      - generic [ref=e437]:
+                        - generic [ref=e438]:
+                          - generic [ref=e440]:
+                            - link "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e441] [cursor=pointer]:
+                              - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                              - img "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e445]
+                            - generic [ref=e446]:
+                              - 'link "Ver: Guzmán Barquín Valiente Premium • 1º CEO &amp; Founder @ Simple Studio®" [ref=e447] [cursor=pointer]':
+                                - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                                - generic [ref=e448]:
+                                  - generic [ref=e450]:
+                                    - generic [ref=e451]: Guzmán Barquín Valiente
+                                    - generic [ref=e452]: Guzmán Barquín Valiente
+                                  - generic [ref=e453]:
+                                    - generic [ref=e454]:
+                                      - img [ref=e455]:
+                                        - img [ref=e456]
+                                      - text: • 1º
+                                    - generic [ref=e458]: Premium • 1º
+                                - generic [ref=e459]:
+                                  - generic [ref=e460]: CEO & Founder @ Simple Studio®
+                                  - generic [ref=e461]: CEO & Founder @ Simple Studio®
+                              - link "Acesse meu site" [ref=e462] [cursor=pointer]:
+                                - /url: https://www.simplestudio.is
+                                - generic [ref=e463]: Acesse meu site
+                              - generic [ref=e464]:
+                                - generic [ref=e465]:
+                                  - text: 3 sem •
+                                  - img [ref=e468]
+                                - generic [ref=e470]: Há 3 semanas • Visível a todos, dentro ou fora do LinkedIn
+                          - button "Abrir menu de controle de publicação de Guzmán Barquín Valiente" [ref=e473] [cursor=pointer]:
+                            - img [ref=e474]
+                        - generic [ref=e476]:
+                          - generic [ref=e477]:
+                            - generic [ref=e480]:
+                              - text: 📣 Excluyente Uruguay / Argentina 🇺🇾 🇦🇷
+                              - text: En
+                              - link "Simple Studio®" [ref=e481] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e483]: Simple Studio®
+                              - text: estamos buscando sumar un/a Creative Designer al equipo 🚀
+                              - text: Un rol enfocado en la generación de assets visuales, animaciones, composiciones e ilustraciones para proyectos digitales, web y producto. Trabajamos con clientes de todo el mundo, principalmente en
+                              - link "hashtag Tech" [ref=e484] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23tech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e485]: hashtag
+                                - generic [ref=e486]: "#Tech"
+                              - text: ","
+                              - link "hashtag AI" [ref=e487] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23ai&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e488]: hashtag
+                                - generic [ref=e489]: "#AI"
+                              - text: "y"
+                              - link "hashtag Fintech" [ref=e490] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23fintech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e491]: hashtag
+                                - generic [ref=e492]: "#Fintech"
+                              - text: "Buscamos:"
+                              - text: • Excelente criterio visual
+                              - text: • Conocimiento en UI
+                              - text: • Experiencia en motion
+                              - text: • Manejo de Lottie
+                              - text: "Además:"
+                              - text: 💸 Remuneración en USD
+                              - text: 📍 Oficina en Sinergia Golf / Modalidad Híbrida
+                              - text: 🤝 Trabajo colaborativo junto al equipo de diseño y desarrollo
+                              - text: ⏱️ Horario Full-Time
+                              - text: Si te interesa, mandame tu portfolio por privado o a
+                              - link "guz@simplestudio.is" [ref=e493] [cursor=pointer]:
+                                - /url: mailto:guz@simplestudio.is
+                              - text: 🖤
+                            - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e494] [cursor=pointer]:
+                              - generic [ref=e495]: …mais
+                          - button "Exibir tradução" [ref=e498] [cursor=pointer]:
+                            - generic [ref=e499]: Exibir tradução
+                        - generic [ref=e501]:
+                          - button "Ative para ver a imagem maior. Não foi fornecido texto alternativo para esta imagem" [ref=e503] [cursor=pointer]:
+                            - generic [ref=e504]: Ative para ver a imagem maior.
+                            - img "Não foi fornecido texto alternativo para esta imagem" [ref=e507]
+                          - generic [ref=e508]: Ative para ver a imagem maior.
+                        - generic [ref=e509]:
+                          - list [ref=e513]:
+                            - listitem [ref=e514]:
+                              - button "143 reações" [ref=e515] [cursor=pointer]:
+                                - img "like" [ref=e516]
+                                - img "support" [ref=e517]
+                                - img "celebrate" [ref=e518]
+                                - generic [ref=e519]: "143"
+                            - listitem [ref=e520]:
+                              - list [ref=e521]:
+                                - listitem [ref=e522]:
+                                  - button "20 comentários sobre a publicação de Guzmán Barquín Valiente" [ref=e523] [cursor=pointer]:
+                                    - generic [ref=e524]: 20 comentários
+                                  - text: ·
+                                - listitem [ref=e525]:
+                                  - button "18 compartilhamentos da publicação de Guzmán Barquín Valiente" [ref=e526] [cursor=pointer]:
+                                    - generic [ref=e527]: 18 compartilhamentos
+                          - generic [ref=e528]:
+                            - generic [ref=e529]:
+                              - button "Reagir com gostei" [ref=e530] [cursor=pointer]:
+                                - generic [ref=e532]:
+                                  - img [ref=e533]
+                                  - generic [ref=e535]: Gostei
+                              - button "Abrir menu de reações":
+                                - img [ref=e537] [cursor=pointer]
+                            - button "Comentar" [ref=e541] [cursor=pointer]:
+                              - img [ref=e542]
+                              - generic [ref=e544]: Comentar
+                            - button "Compartilhar" [ref=e547] [cursor=pointer]:
+                              - img [ref=e548]
+                              - generic [ref=e550]: Compartilhar
+                            - button "Enviar em mensagem privada" [ref=e553] [cursor=pointer]:
+                              - img [ref=e554]
+                              - generic [ref=e557]: Enviar
+                - listitem [ref=e558]:
+                  - article [ref=e563]:
+                    - generic [ref=e565]:
+                      - heading "Número da publicação no feed 2" [level=2] [ref=e566]
+                      - generic [ref=e567]:
+                        - generic [ref=e568]:
+                          - generic [ref=e570]:
+                            - link "Foto do perfil de Guzmán" [ref=e571] [cursor=pointer]:
+                              - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                              - img "Foto do perfil de Guzmán" [ref=e574]
+                            - generic [ref=e575]:
+                              - link "Guzmán Barquín Valiente" [ref=e577] [cursor=pointer]:
+                                - /url: /in/guzmanbarquin/
+                              - text: compartilhou isso
+                          - button "Abrir menu de controle de publicação de Belén Barquín Valiente" [ref=e580] [cursor=pointer]:
+                            - img [ref=e581]
+                          - generic [ref=e583]:
+                            - generic [ref=e584]:
+                              - link "Ver link do gráfico de Belén Barquín Valiente" [ref=e585] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/in/mariabelenbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAB-ls7EBgk9yye87hmtEe-JY-JmJpKkdb7A
+                                - img "Ver link do gráfico de Belén Barquín Valiente" [ref=e589]
+                              - generic [ref=e590]:
+                                - 'link "Ver: Belén Barquín Valiente 2º UX/UI | Product Designer | 🧉" [ref=e591] [cursor=pointer]':
+                                  - /url: https://www.linkedin.com/in/mariabelenbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAAB-ls7EBgk9yye87hmtEe-JY-JmJpKkdb7A
+                                  - generic [ref=e592]:
+                                    - generic [ref=e594]:
+                                      - generic [ref=e595]: Belén Barquín Valiente
+                                      - generic [ref=e596]: Belén Barquín Valiente
+                                    - generic [ref=e597]:
+                                      - generic [ref=e598]: • 2º
+                                      - generic [ref=e599]: 2º
+                                  - generic [ref=e600]:
+                                    - generic [ref=e601]: UX/UI | Product Designer | 🧉
+                                    - generic [ref=e602]: UX/UI | Product Designer | 🧉
+                                - generic [ref=e603]:
+                                  - generic [ref=e604]:
+                                    - text: 1 m • Editado •
+                                    - img [ref=e607]
+                                  - generic [ref=e609]: Há 1 mês • Editado • Visível a todos, dentro ou fora do LinkedIn
+                            - button "Seguir Belén Barquín Valiente" [ref=e610] [cursor=pointer]:
+                              - img [ref=e611]
+                              - generic [ref=e613]: Seguir
+                        - generic [ref=e614]:
+                          - generic [ref=e615]:
+                            - generic [ref=e618]:
+                              - text: Después de casi 3 años trabajando para
+                              - link "ISDIN" [ref=e619] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/isdin/
+                                - generic [ref=e621]: ISDIN
+                              - text: a través de
+                              - link "Hi Experience" [ref=e622] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/hiexperience/
+                                - generic [ref=e624]: Hi Experience
+                              - text: ", hoy se cierra una etapa llena de aprendizajes y crecimiento, acompañada de personas increíbles 🫂"
+                              - text: Estoy abierta a nuevas oportunidades como UX/UI Designer / Product Designer con muchas ganas de seguir aprendiendo y creando experiencias significativas, junto a equipos con los que sea un placer compartir conocimientos.
+                              - text: Si creés que podemos construir algo juntos, ¡me encantaría conectar contigo!
+                              - text: 🌍✨ 💻
+                            - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e625] [cursor=pointer]:
+                              - generic [ref=e626]: …mais
+                          - button "Exibir tradução" [ref=e629] [cursor=pointer]:
+                            - generic [ref=e630]: Exibir tradução
+                        - generic [ref=e631]:
+                          - list [ref=e635]:
+                            - listitem [ref=e636]:
+                              - button "72 reações" [ref=e637] [cursor=pointer]:
+                                - img "like" [ref=e638]
+                                - img "support" [ref=e639]
+                                - img "love" [ref=e640]
+                                - generic [ref=e641]: "72"
+                            - listitem [ref=e642]:
+                              - list [ref=e643]:
+                                - listitem [ref=e644]:
+                                  - button "7 comentários sobre a publicação de Belén Barquín Valiente" [ref=e645] [cursor=pointer]:
+                                    - generic [ref=e646]: 7 comentários
+                                  - text: ·
+                                - listitem [ref=e647]:
+                                  - button "2 compartilhamentos da publicação de Belén Barquín Valiente" [ref=e648] [cursor=pointer]:
+                                    - generic [ref=e649]: 2 compartilhamentos
+                          - generic [ref=e650]:
+                            - generic [ref=e651]:
+                              - button "Reagir com gostei" [ref=e652] [cursor=pointer]:
+                                - generic [ref=e654]:
+                                  - img [ref=e655]
+                                  - generic [ref=e657]: Gostei
+                              - button "Abrir menu de reações":
+                                - img [ref=e659] [cursor=pointer]
+                            - button "Comentar" [ref=e663] [cursor=pointer]:
+                              - img [ref=e664]
+                              - generic [ref=e666]: Comentar
+                            - button "Compartilhar" [ref=e669] [cursor=pointer]:
+                              - img [ref=e670]
+                              - generic [ref=e672]: Compartilhar
+                            - button "Enviar em mensagem privada" [ref=e675] [cursor=pointer]:
+                              - img [ref=e676]
+                              - generic [ref=e679]: Enviar
+                - listitem [ref=e680]:
+                  - article [ref=e685]:
+                    - generic [ref=e687]:
+                      - heading "Número da publicação no feed 3" [level=2] [ref=e688]
+                      - generic [ref=e689]:
+                        - generic [ref=e690]:
+                          - generic [ref=e692]:
+                            - link "Foto do perfil de Guzmán" [ref=e693] [cursor=pointer]:
+                              - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                              - img "Foto do perfil de Guzmán" [ref=e696]
+                            - generic [ref=e697]:
+                              - link "Guzmán Barquín Valiente" [ref=e699] [cursor=pointer]:
+                                - /url: /in/guzmanbarquin/
+                              - text: compartilhou isso
+                          - button "Abrir menu de controle de publicação de Haussa" [ref=e702] [cursor=pointer]:
+                            - img [ref=e703]
+                          - generic [ref=e705]:
+                            - generic [ref=e706]:
+                              - link "Haussa, gráfico." [ref=e707] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/haussa/posts
+                              - generic [ref=e711]:
+                                - 'link "Ver: Haussa 419 seguidores" [ref=e712] [cursor=pointer]':
+                                  - /url: https://www.linkedin.com/company/haussa/posts
+                                  - generic [ref=e715]:
+                                    - generic [ref=e717]: Haussa
+                                    - generic [ref=e719]: Haussa
+                                  - generic [ref=e720]:
+                                    - generic [ref=e721]: 419 seguidores
+                                    - generic [ref=e722]: 419 seguidores
+                                - generic [ref=e723]:
+                                  - generic [ref=e724]:
+                                    - text: 1 m •
+                                    - img [ref=e727]
+                                  - generic [ref=e729]: Há 1 mês • Visível a todos, dentro ou fora do LinkedIn
+                            - button "Seguir Haussa" [ref=e730] [cursor=pointer]:
+                              - img [ref=e731]
+                              - generic [ref=e733]: Seguir
+                        - generic [ref=e734]:
+                          - generic [ref=e735]:
+                            - generic [ref=e738]:
+                              - text: Proud moment for us this week 💫
+                              - text: Haussa had the honor of attending & sponsoring
+                              - link "hashtag PuntaTech" [ref=e739] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23puntatech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e740]: hashtag
+                                - generic [ref=e741]: "#PuntaTech"
+                              - text: ", presenting ourselves to the tech ecosystem in Uruguay and across the region."
+                              - text: Being there alongside so many inspiring people, ideas, and companies was truly meaningful. The energy, conversations, and openness of the community reminded us why we believe so strongly in collaboration and building together.
+                              - text: Huge thanks to our incredible team. Without them none of this would be possible!
+                              - text: This was our first step out into the ecosystem as Haussa… and it’s just the beginning. 🚀 Excited for what’s ahead and grateful to everyone who made this experience so special.
+                              - link "Hikko" [ref=e742] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/hikko-consulting/
+                                - generic [ref=e744]: Hikko
+                              - link "Delto" [ref=e745] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/deltocom/
+                                - generic [ref=e747]: Delto
+                              - link "Zenital" [ref=e748] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/zenital/
+                                - generic [ref=e750]: Zenital
+                              - link "Simple Studio®" [ref=e751] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e753]: Simple Studio®
+                              - link "hashtag PuntaTech" [ref=e754] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23puntatech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e755]: hashtag
+                                - generic [ref=e756]: "#PuntaTech"
+                              - link "hashtag Haussa" [ref=e757] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23haussa&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e758]: hashtag
+                                - generic [ref=e759]: "#Haussa"
+                              - link "hashtag TechEcosystem" [ref=e760] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23techecosystem&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e761]: hashtag
+                                - generic [ref=e762]: "#TechEcosystem"
+                              - link "hashtag UruguayTech" [ref=e763] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23uruguaytech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e764]: hashtag
+                                - generic [ref=e765]: "#UruguayTech"
+                            - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e766] [cursor=pointer]:
+                              - generic [ref=e767]: …mais
+                          - button "Exibir tradução" [ref=e770] [cursor=pointer]:
+                            - generic [ref=e771]: Exibir tradução
+                        - generic [ref=e773]:
+                          - generic [ref=e774]:
+                            - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e775] [cursor=pointer]:
+                              - img [ref=e778]
+                            - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e779] [cursor=pointer]:
+                              - img [ref=e782]
+                            - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e783] [cursor=pointer]:
+                              - img [ref=e786]
+                            - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e787] [cursor=pointer]:
+                              - img [ref=e790]
+                              - generic [ref=e792]: + 4
+                          - generic [ref=e793]: Ative para ver a imagem maior.
+                        - generic [ref=e794]:
+                          - list [ref=e798]:
+                            - listitem [ref=e799]:
+                              - button "81 reações" [ref=e800] [cursor=pointer]:
+                                - img "like" [ref=e801]
+                                - img "celebrate" [ref=e802]
+                                - img "love" [ref=e803]
+                                - generic [ref=e804]: "81"
+                            - listitem [ref=e805]:
+                              - list [ref=e806]:
+                                - listitem [ref=e807]:
+                                  - button "5 comentários sobre a publicação de Haussa" [ref=e808] [cursor=pointer]:
+                                    - generic [ref=e809]: 5 comentários
+                                  - text: ·
+                                - listitem [ref=e810]:
+                                  - button "19 compartilhamentos da publicação de Haussa" [ref=e811] [cursor=pointer]:
+                                    - generic [ref=e812]: 19 compartilhamentos
+                          - generic [ref=e813]:
+                            - generic [ref=e814]:
+                              - button "Reagir com gostei" [ref=e815] [cursor=pointer]:
+                                - generic [ref=e817]:
+                                  - img [ref=e818]
+                                  - generic [ref=e820]: Gostei
+                              - button "Abrir menu de reações":
+                                - img [ref=e822] [cursor=pointer]
+                            - button "Comentar" [ref=e826] [cursor=pointer]:
+                              - img [ref=e827]
+                              - generic [ref=e829]: Comentar
+                            - button "Compartilhar" [ref=e832] [cursor=pointer]:
+                              - img [ref=e833]
+                              - generic [ref=e835]: Compartilhar
+                            - button "Enviar em mensagem privada" [ref=e838] [cursor=pointer]:
+                              - img [ref=e839]
+                              - generic [ref=e842]: Enviar
+                - listitem [ref=e843]:
+                  - article [ref=e848]:
+                    - generic [ref=e850]:
+                      - heading "Número da publicação no feed 4" [level=2] [ref=e851]
+                      - generic [ref=e852]:
+                        - generic [ref=e853]:
+                          - generic [ref=e855]:
+                            - link "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e856] [cursor=pointer]:
+                              - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                              - img "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e860]
+                            - generic [ref=e861]:
+                              - 'link "Ver: Guzmán Barquín Valiente Premium • 1º CEO &amp; Founder @ Simple Studio®" [ref=e862] [cursor=pointer]':
+                                - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                                - generic [ref=e863]:
+                                  - generic [ref=e865]:
+                                    - generic [ref=e866]: Guzmán Barquín Valiente
+                                    - generic [ref=e867]: Guzmán Barquín Valiente
+                                  - generic [ref=e868]:
+                                    - generic [ref=e869]:
+                                      - img [ref=e870]:
+                                        - img [ref=e871]
+                                      - text: • 1º
+                                    - generic [ref=e873]: Premium • 1º
+                                - generic [ref=e874]:
+                                  - generic [ref=e875]: CEO & Founder @ Simple Studio®
+                                  - generic [ref=e876]: CEO & Founder @ Simple Studio®
+                              - link "Acesse meu site" [ref=e877] [cursor=pointer]:
+                                - /url: https://www.simplestudio.is
+                                - generic [ref=e878]: Acesse meu site
+                              - generic [ref=e879]:
+                                - generic [ref=e880]:
+                                  - text: 1 m •
+                                  - img [ref=e883]
+                                - generic [ref=e885]: Há 1 mês • Visível a todos, dentro ou fora do LinkedIn
+                          - button "Abrir menu de controle de publicação de Guzmán Barquín Valiente" [ref=e888] [cursor=pointer]:
+                            - img [ref=e889]
+                        - generic [ref=e891]:
+                          - generic [ref=e892]:
+                            - generic [ref=e895]:
+                              - text: 4️⃣ Years
+                              - link "Simple Studio®" [ref=e896] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e898]: Simple Studio®
+                              - text: Hace 4 años, viviendo en Ámsterdam y atravesando el último lockdown de la pandemia, arrancaba el recorrido de
+                              - link "Simple Studio®" [ref=e899] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e901]: Simple Studio®
+                              - text: ", sin saber todo lo que iba a traer después."
+                              - text: Con todo lo bueno y lo malo, fueron años de mucho aprendizaje y grandes desafíos, de fallar y volver a intentar, de equivocarme y acertar. De mudarme de país en el medio más de una vez, instalarme en Madrid y volver a vivir a Uruguay.
+                              - text: Nada es posible en soledad. Las personas son una pieza fundamental en cualquier compañía, y en la vida. Por eso quiero agradecer a todos los que hoy forman parte en el día a día, en la oficina, en
+                              - link "Haussa" [ref=e902] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/haussa/
+                                - generic [ref=e904]: Haussa
+                              - text: . Pero también los que lo fueron en el pasado, desde el inicio, en los momentos más lindos pero también, en los momentos más críticos. A cada uno, por haber dejado su granito de arena en
+                              - link "Simple Studio®" [ref=e905] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e907]: Simple Studio®
+                              - text: y haber hecho un lugar mejor.
+                              - text: A cada uno de los clientes, gracias por confiar en nuestro trabajo, en lo que hacemos, y por dejarnos ser parte de sus procesos y de su transformación digital.
+                              - text: Al final, la mayor satisfacción es haber evolucionado y crecido, sabiendo que el objetivo de lo que hacemos en
+                              - link "Simple Studio®" [ref=e908] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e910]: Simple Studio®
+                              - text: nunca cambió, creer que siempre hay una mejor forma de hacer las cosas.
+                              - text: Por muchos años más.
+                              - text: 🖤
+                            - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e911] [cursor=pointer]:
+                              - generic [ref=e912]: …mais
+                          - button "Exibir tradução" [ref=e915] [cursor=pointer]:
+                            - generic [ref=e916]: Exibir tradução
+                        - region "Player de vídeo" [ref=e921]:
+                          - button "Reproduzir" [ref=e926] [cursor=pointer]:
+                            - generic [ref=e927]: Reproduzir
+                        - generic [ref=e928]:
+                          - list [ref=e932]:
+                            - listitem [ref=e933]:
+                              - button "58 reações" [ref=e934] [cursor=pointer]:
+                                - img "like" [ref=e935]
+                                - img "celebrate" [ref=e936]
+                                - img "love" [ref=e937]
+                                - generic [ref=e938]: "58"
+                            - listitem [ref=e939]:
+                              - list [ref=e940]:
+                                - listitem [ref=e941]:
+                                  - button "7 comentários sobre a publicação de Guzmán Barquín Valiente" [ref=e942] [cursor=pointer]:
+                                    - generic [ref=e943]: 7 comentários
+                                  - text: ·
+                                - listitem [ref=e944]:
+                                  - button "1 compartilhamento da publicação de Guzmán Barquín Valiente" [ref=e945] [cursor=pointer]:
+                                    - generic [ref=e946]: 1 compartilhamento
+                          - generic [ref=e947]:
+                            - generic [ref=e948]:
+                              - button "Reagir com gostei" [ref=e949] [cursor=pointer]:
+                                - generic [ref=e951]:
+                                  - img [ref=e952]
+                                  - generic [ref=e954]: Gostei
+                              - button "Abrir menu de reações":
+                                - img [ref=e956] [cursor=pointer]
+                            - button "Comentar" [ref=e960] [cursor=pointer]:
+                              - img [ref=e961]
+                              - generic [ref=e963]: Comentar
+                            - button "Compartilhar" [ref=e966] [cursor=pointer]:
+                              - img [ref=e967]
+                              - generic [ref=e969]: Compartilhar
+                            - button "Enviar em mensagem privada" [ref=e972] [cursor=pointer]:
+                              - img [ref=e973]
+                              - generic [ref=e976]: Enviar
+                - listitem [ref=e977]:
+                  - article [ref=e982]:
+                    - generic [ref=e984]:
+                      - heading "Número da publicação no feed 5" [level=2] [ref=e985]
+                      - generic [ref=e986]:
+                        - generic [ref=e987]:
+                          - generic [ref=e989]:
+                            - link "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e990] [cursor=pointer]:
+                              - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                              - img "Ver link do gráfico de Guzmán Barquín Valiente" [ref=e994]
+                            - generic [ref=e995]:
+                              - 'link "Ver: Guzmán Barquín Valiente Premium • 1º CEO &amp; Founder @ Simple Studio®" [ref=e996] [cursor=pointer]':
+                                - /url: https://www.linkedin.com/in/guzmanbarquin?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAABPRAWYBjojmZCitXqDFUln7W0eidJYaXKM
+                                - generic [ref=e997]:
+                                  - generic [ref=e999]:
+                                    - generic [ref=e1000]: Guzmán Barquín Valiente
+                                    - generic [ref=e1001]: Guzmán Barquín Valiente
+                                  - generic [ref=e1002]:
+                                    - generic [ref=e1003]:
+                                      - img [ref=e1004]:
+                                        - img [ref=e1005]
+                                      - text: • 1º
+                                    - generic [ref=e1007]: Premium • 1º
+                                - generic [ref=e1008]:
+                                  - generic [ref=e1009]: CEO & Founder @ Simple Studio®
+                                  - generic [ref=e1010]: CEO & Founder @ Simple Studio®
+                              - link "Acesse meu site" [ref=e1011] [cursor=pointer]:
+                                - /url: https://www.simplestudio.is
+                                - generic [ref=e1012]: Acesse meu site
+                              - generic [ref=e1013]:
+                                - generic [ref=e1014]:
+                                  - text: 1 m •
+                                  - img [ref=e1017]
+                                - generic [ref=e1019]: Há 1 mês • Visível a todos, dentro ou fora do LinkedIn
+                          - button "Abrir menu de controle de publicação de Guzmán Barquín Valiente" [ref=e1022] [cursor=pointer]:
+                            - img [ref=e1023]
+                        - generic [ref=e1025]:
+                          - generic [ref=e1026]:
+                            - generic [ref=e1029]:
+                              - text: En
+                              - link "hashtag PuntaTech" [ref=e1030] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/search/results/all/?keywords=%23puntatech&origin=HASH_TAG_FROM_FEED
+                                - generic [ref=e1031]: hashtag
+                                - generic [ref=e1032]: "#PuntaTech"
+                              - text: tuvimos la oportunidad de lanzar oficialmente
+                              - link "Haussa" [ref=e1033] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/haussa/
+                                - generic [ref=e1035]: Haussa
+                              - text: ", junto a"
+                              - link "Delto" [ref=e1036] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/deltocom/
+                                - generic [ref=e1038]: Delto
+                              - text: ","
+                              - link "Hikko" [ref=e1039] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/hikko-consulting/
+                                - generic [ref=e1041]: Hikko
+                              - text: ","
+                              - link "Simple Studio®" [ref=e1042] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/madebysimple/
+                                - generic [ref=e1044]: Simple Studio®
+                              - text: "y"
+                              - link "Zenital" [ref=e1045] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/zenital/
+                                - generic [ref=e1047]: Zenital
+                              - text: .
+                              - text: Fue una gran instancia para confirmar que la sinergia entre compañías es el camino a seguir, y que trabajar de forma integrada nos permite colaborar con grandes empresas y ayudarlas a escalar sus negocios.
+                              - text: Gracias a todos los que fueron parte de estos días en Punta del Este, a quienes se arrimaron a charlar y a quienes se alegran genuinamente al ver cómo el ecosistema tecnológico en Uruguay sigue creciendo.
+                              - text: Muy felices de ver el crecimiento, repercusiones y recibir tanta buena onda durante estos días.
+                              - text: Y como dice uno de nuestros slogans, “Juntos multiplicamos”
+                              - text: 🚀
+                            - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e1048] [cursor=pointer]:
+                              - generic [ref=e1049]: …mais
+                          - button "Exibir tradução" [ref=e1052] [cursor=pointer]:
+                            - generic [ref=e1053]: Exibir tradução
+                        - generic [ref=e1054]:
+                          - generic [ref=e1055]:
+                            - generic [ref=e1056]:
+                              - link "Haussa, gráfico." [ref=e1057] [cursor=pointer]:
+                                - /url: https://www.linkedin.com/company/haussa/posts
+                              - generic [ref=e1061]:
+                                - 'link "Ver: Haussa 419 seguidores" [ref=e1062] [cursor=pointer]':
+                                  - /url: https://www.linkedin.com/company/haussa/posts
+                                  - generic [ref=e1065]:
+                                    - generic [ref=e1067]: Haussa
+                                    - generic [ref=e1069]: Haussa
+                                  - generic [ref=e1070]:
+                                    - generic [ref=e1071]: 419 seguidores
+                                    - generic [ref=e1072]: 419 seguidores
+                                - generic [ref=e1073]:
+                                  - generic [ref=e1074]:
+                                    - text: 1 m •
+                                    - img [ref=e1077]
+                                  - generic [ref=e1079]: Há 1 mês • Visível a todos, dentro ou fora do LinkedIn
+                            - button "Seguir Haussa" [ref=e1080] [cursor=pointer]:
+                              - img [ref=e1081]
+                              - generic [ref=e1083]: Seguir
+                          - generic [ref=e1084]:
+                            - link "Proud moment for us this week 💫 Haussa had the honor of attending & sponsoring hashtag PuntaTech, presenting ourselves to the tech ecosystem in Uruguay and across the region. Being there alongside so many inspiring people, ideas, and companies was truly meaningful. The energy, conversations, and openness of the community reminded us why we believe so strongly in collaboration and building together. Huge thanks to our incredible team. Without them none of this would be possible! This was our first step out into the ecosystem as Haussa… and it’s just the beginning. 🚀 Excited for what’s ahead and grateful to everyone who made this experience so special. Hikko Delto Zenital Simple Studio® hashtag PuntaTech hashtag Haussa hashtag TechEcosystem hashtag UruguayTech ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e1085] [cursor=pointer]:
+                              - /url: /feed/update/urn:li:activity:7417245828668649473/
+                              - generic [ref=e1086]:
+                                - generic [ref=e1089]:
+                                  - text: Proud moment for us this week 💫
+                                  - text: Haussa had the honor of attending & sponsoring
+                                  - link "hashtag PuntaTech" [ref=e1090]:
+                                    - /url: https://www.linkedin.com/search/results/all/?keywords=%23puntatech&origin=HASH_TAG_FROM_FEED
+                                    - generic [ref=e1091]: hashtag
+                                    - generic [ref=e1092]: "#PuntaTech"
+                                  - text: ", presenting ourselves to the tech ecosystem in Uruguay and across the region."
+                                  - text: Being there alongside so many inspiring people, ideas, and companies was truly meaningful. The energy, conversations, and openness of the community reminded us why we believe so strongly in collaboration and building together.
+                                  - text: Huge thanks to our incredible team. Without them none of this would be possible!
+                                  - text: This was our first step out into the ecosystem as Haussa… and it’s just the beginning. 🚀 Excited for what’s ahead and grateful to everyone who made this experience so special.
+                                  - link "Hikko" [ref=e1093]:
+                                    - /url: https://www.linkedin.com/company/hikko-consulting/
+                                    - generic [ref=e1095]: Hikko
+                                  - link "Delto" [ref=e1096]:
+                                    - /url: https://www.linkedin.com/company/deltocom/
+                                    - generic [ref=e1098]: Delto
+                                  - link "Zenital" [ref=e1099]:
+                                    - /url: https://www.linkedin.com/company/zenital/
+                                    - generic [ref=e1101]: Zenital
+                                  - link "Simple Studio®" [ref=e1102]:
+                                    - /url: https://www.linkedin.com/company/madebysimple/
+                                    - generic [ref=e1104]: Simple Studio®
+                                  - link "hashtag PuntaTech" [ref=e1105]:
+                                    - /url: https://www.linkedin.com/search/results/all/?keywords=%23puntatech&origin=HASH_TAG_FROM_FEED
+                                    - generic [ref=e1106]: hashtag
+                                    - generic [ref=e1107]: "#PuntaTech"
+                                  - link "hashtag Haussa" [ref=e1108]:
+                                    - /url: https://www.linkedin.com/search/results/all/?keywords=%23haussa&origin=HASH_TAG_FROM_FEED
+                                    - generic [ref=e1109]: hashtag
+                                    - generic [ref=e1110]: "#Haussa"
+                                  - link "hashtag TechEcosystem" [ref=e1111]:
+                                    - /url: https://www.linkedin.com/search/results/all/?keywords=%23techecosystem&origin=HASH_TAG_FROM_FEED
+                                    - generic [ref=e1112]: hashtag
+                                    - generic [ref=e1113]: "#TechEcosystem"
+                                  - link "hashtag UruguayTech" [ref=e1114]:
+                                    - /url: https://www.linkedin.com/search/results/all/?keywords=%23uruguaytech&origin=HASH_TAG_FROM_FEED
+                                    - generic [ref=e1115]: hashtag
+                                    - generic [ref=e1116]: "#UruguayTech"
+                                - button "ver mais, revela visualmente conteúdos que já foram detectados por leitores de tela" [ref=e1117]:
+                                  - generic [ref=e1118]: …mais
+                            - button "Exibir tradução" [ref=e1121] [cursor=pointer]:
+                              - generic [ref=e1122]: Exibir tradução
+                          - generic [ref=e1124]:
+                            - generic [ref=e1125]:
+                              - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e1126] [cursor=pointer]:
+                                - img [ref=e1129]
+                              - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e1130] [cursor=pointer]:
+                                - img [ref=e1133]
+                              - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e1134] [cursor=pointer]:
+                                - img [ref=e1137]
+                              - button "Ativar para ver imagem maior, Não foi fornecido texto alternativo para esta imagem + 4 imagens" [ref=e1138] [cursor=pointer]:
+                                - img [ref=e1141]
+                                - generic [ref=e1143]: + 4
+                            - generic [ref=e1144]: Ative para ver a imagem maior.
+                        - generic [ref=e1145]:
+                          - list [ref=e1149]:
+                            - listitem [ref=e1150]:
+                              - button "18 reações" [ref=e1151] [cursor=pointer]:
+                                - img "like" [ref=e1152]
+                                - img "celebrate" [ref=e1153]
+                                - generic [ref=e1154]: "18"
+                          - generic [ref=e1155]:
+                            - generic [ref=e1156]:
+                              - button "Reagir com gostei" [ref=e1157] [cursor=pointer]:
+                                - generic [ref=e1159]:
+                                  - img [ref=e1160]
+                                  - generic [ref=e1162]: Gostei
+                              - button "Abrir menu de reações":
+                                - img [ref=e1164] [cursor=pointer]
+                            - button "Comentar" [ref=e1168] [cursor=pointer]:
+                              - img [ref=e1169]
+                              - generic [ref=e1171]: Comentar
+                            - button "Compartilhar" [ref=e1174] [cursor=pointer]:
+                              - img [ref=e1175]
+                              - generic [ref=e1177]: Compartilhar
+                            - button "Enviar em mensagem privada" [ref=e1180] [cursor=pointer]:
+                              - img [ref=e1181]
+                              - generic [ref=e1184]: Enviar
+                - listitem [ref=e1185]
+                - listitem [ref=e1189]
+                - listitem [ref=e1193]
+                - listitem [ref=e1197]
+                - listitem [ref=e1201]
+                - listitem [ref=e1205]
+                - listitem [ref=e1209]
+                - listitem [ref=e1213]
+                - listitem [ref=e1217]
+                - listitem [ref=e1221]
+                - listitem [ref=e1225]
+                - listitem [ref=e1229]
+                - listitem [ref=e1233]
+                - listitem [ref=e1237]
+                - listitem [ref=e1241]
+            - button "Exibir mais resultados" [ref=e1247] [cursor=pointer]:
+              - generic [ref=e1248]: Exibir mais resultados
+      - complementary "Interesses" [ref=e181]:
+        - iframe [ref=e183]:
+          - link "Advertise on LinkedIn" [ref=f311e3] [cursor=pointer]:
+            - /url: https://www.linkedin.com/jobs/?trk=li_FA_global_careers_jobsgtm_jsFA_v1&mcid=6899045044465016833
+            - img "Advertise on LinkedIn" [ref=f311e4]
+        - generic [ref=e184]:
+          - heading "Pessoas que talvez você conheça" [level=2] [ref=e189]:
+            - generic [ref=e190]: Pessoas que talvez você conheça
+            - generic [ref=e191]: Pessoas que talvez você conheça
+          - generic [ref=e192]:
+            - list [ref=e193]:
+              - listitem [ref=e194]:
+                - generic [ref=e195]:
+                  - link "Bernardo Santos da Silva" [ref=e197] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/in/bernardo-santos-da-silva-7a3674149
+                    - img "Bernardo Santos da Silva" [ref=e200]
+                  - generic [ref=e201]:
+                    - link "Bernardo Santos da Silva Produção/ Gestão de projetos" [ref=e203] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/in/bernardo-santos-da-silva-7a3674149?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAACPfLmsB6uxbumc7Xp22ljWK_cvGItAMhzQ
+                      - generic [ref=e204]:
+                        - generic [ref=e207]:
+                          - generic [ref=e208]: Bernardo Santos da Silva
+                          - generic [ref=e209]: Bernardo Santos da Silva
+                        - img [ref=e212]
+                      - generic [ref=e216]:
+                        - generic [ref=e217]: Produção/ Gestão de projetos
+                        - generic [ref=e218]: Produção/ Gestão de projetos
+                    - list [ref=e220]:
+                      - listitem [ref=e221]:
+                        - button "Convidar Bernardo Santos da Silva para se conectar" [ref=e223] [cursor=pointer]:
+                          - img [ref=e224]
+                          - generic [ref=e225]: Conectar
+              - listitem [ref=e226]:
+                - generic [ref=e227]:
+                  - link "Danilo Cardoso" [ref=e229] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/in/eudanilocardoso
+                    - img "Danilo Cardoso" [ref=e232]
+                  - generic [ref=e233]:
+                    - link "Danilo Cardoso Marketing Imobiliário | Growth | Comunicação e Lançamentos" [ref=e235] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/in/eudanilocardoso?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAACgJiJABoPCWmqWKqD872bHZh2HvsvughnU
+                      - generic [ref=e239]:
+                        - generic [ref=e240]: Danilo Cardoso
+                        - generic [ref=e241]: Danilo Cardoso
+                      - generic [ref=e245]:
+                        - generic [ref=e246]: Marketing Imobiliário | Growth | Comunicação e Lançamentos
+                        - generic [ref=e247]: Marketing Imobiliário | Growth | Comunicação e Lançamentos
+                    - list [ref=e249]:
+                      - listitem [ref=e250]:
+                        - button "Convidar Danilo Cardoso para se conectar" [ref=e252] [cursor=pointer]:
+                          - img [ref=e253]
+                          - generic [ref=e254]: Conectar
+              - listitem [ref=e255]:
+                - generic [ref=e256]:
+                  - link "Samuel Grolli" [ref=e258] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/in/samuelgrolli
+                    - img "Samuel Grolli" [ref=e261]
+                  - generic [ref=e262]:
+                    - link "Samuel Grolli Co-Fundador na Fosbury" [ref=e264] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/in/samuelgrolli?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAAMCy0IB22YwP8IscCLhzMxyQO2b9wGVNfc
+                      - generic [ref=e265]:
+                        - generic [ref=e268]:
+                          - generic [ref=e269]: Samuel Grolli
+                          - generic [ref=e270]: Samuel Grolli
+                        - img [ref=e273]
+                      - generic [ref=e277]:
+                        - generic [ref=e278]: Co-Fundador na Fosbury
+                        - generic [ref=e279]: Co-Fundador na Fosbury
+                    - list [ref=e281]:
+                      - listitem [ref=e282]:
+                        - button "Convidar Samuel Grolli para se conectar" [ref=e284] [cursor=pointer]:
+                          - img [ref=e285]
+                          - generic [ref=e286]: Conectar
+              - listitem [ref=e287]:
+                - generic [ref=e288]:
+                  - link "Sthefânia Handler" [ref=e290] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/in/sthef%C3%A2nia-handler-b74b15113
+                    - img "Sthefânia Handler" [ref=e293]
+                  - generic [ref=e294]:
+                    - link "Sthefânia Handler CEO & Fundadora da SH Comunicação e Marketing Ltda. | Estratégia, Branding e Performance Digital" [ref=e296] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/in/sthef%C3%A2nia-handler-b74b15113?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAABx2rUgBusqB6JzrKRX-ubFygayat0yChck
+                      - generic [ref=e300]:
+                        - generic [ref=e301]: Sthefânia Handler
+                        - generic [ref=e302]: Sthefânia Handler
+                      - generic [ref=e306]:
+                        - generic [ref=e307]: CEO & Fundadora da SH Comunicação e Marketing Ltda. | Estratégia, Branding e Performance Digital
+                        - generic [ref=e308]: CEO & Fundadora da SH Comunicação e Marketing Ltda. | Estratégia, Branding e Performance Digital
+                    - list [ref=e310]:
+                      - listitem [ref=e311]:
+                        - button "Convidar Sthefânia Handler para se conectar" [ref=e313] [cursor=pointer]:
+                          - img [ref=e314]
+                          - generic [ref=e315]: Conectar
+              - listitem [ref=e316]:
+                - generic [ref=e317]:
+                  - link "Alexandre Geiger" [ref=e319] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/in/alexandre-geiger-64600769
+                    - img "Alexandre Geiger" [ref=e322]
+                  - generic [ref=e323]:
+                    - link "Alexandre Geiger VP de Negócios e Operações na 9mm Comunicação com expertise em Data Driven Marketing, Estratégia de Marketing, Bureau de CRM, Comunicação Integrada" [ref=e325] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/in/alexandre-geiger-64600769?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAA5qwtYBDvM-1Fn_acCLv2dQ9OigoNKzy5s
+                      - generic [ref=e326]:
+                        - generic [ref=e329]:
+                          - generic [ref=e330]: Alexandre Geiger
+                          - generic [ref=e331]: Alexandre Geiger
+                        - img [ref=e334]
+                      - generic [ref=e338]:
+                        - generic [ref=e339]: VP de Negócios e Operações na 9mm Comunicação com expertise em Data Driven Marketing, Estratégia de Marketing, Bureau de CRM, Comunicação Integrada
+                        - generic [ref=e340]: VP de Negócios e Operações na 9mm Comunicação com expertise em Data Driven Marketing, Estratégia de Marketing, Bureau de CRM, Comunicação Integrada
+                    - list [ref=e342]:
+                      - listitem [ref=e343]:
+                        - button "Convidar Alexandre Geiger para se conectar" [ref=e345] [cursor=pointer]:
+                          - img [ref=e346]
+                          - generic [ref=e347]: Conectar
+            - button "Exibir mais" [ref=e350] [cursor=pointer]:
+              - img [ref=e351]
+              - generic [ref=e352]: Exibir mais
+        - generic [ref=e355]:
+          - iframe [ref=e357]:
+            
+          - generic "Conteúdo do rodapé do LinkedIn" [ref=e358]:
+            - generic [ref=e359]:
+              - list [ref=e360]:
+                - listitem [ref=e361]:
+                  - link "Sobre" [ref=e362] [cursor=pointer]:
+                    - /url: https://about.linkedin.com/pt-br
+                    - generic [ref=e363]: Sobre
+                - listitem [ref=e364]:
+                  - link "Acessibilidade" [ref=e365] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/accessibility
+                    - generic [ref=e366]: Acessibilidade
+                - listitem [ref=e367]:
+                  - link "Central de Ajuda" [ref=e368] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/help/linkedin?trk=footer_d_flagship3_profile_view_base_recent_activity_content_view
+                    - generic [ref=e369]: Central de Ajuda
+                - listitem [ref=e370]:
+                  - button "Termos e Privacidade" [ref=e372] [cursor=pointer]:
+                    - generic [ref=e374]:
+                      - text: Termos e Privacidade
+                      - img [ref=e375]
+                - listitem [ref=e377]:
+                  - link "Preferências de anúncios" [ref=e378] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/help/linkedin/answer/62931?lang=pt
+                    - generic [ref=e379]: Preferências de anúncios
+                - listitem [ref=e380]:
+                  - link "Publicidade" [ref=e381] [cursor=pointer]:
+                    - /url: https://www.linkedin.com/ad/start?trk=n_nav_ads_rr
+                    - generic [ref=e382]: Publicidade
+                - listitem [ref=e383]:
+                  - button "Serviços empresariais" [ref=e385] [cursor=pointer]:
+                    - generic [ref=e387]:
+                      - text: Serviços empresariais
+                      - img [ref=e388]
+                - listitem [ref=e390]:
+                  - button "Baixe o aplicativo do LinkedIn" [ref=e393] [cursor=pointer]
+                - listitem [ref=e394]:
+                  - button "Mais opções" [ref=e395] [cursor=pointer]: Mais
+              - generic [ref=e396]:
+                - img "LinkedIn" [ref=e397]:
+                  - img [ref=e398]
+                - text: LinkedIn Corporation © 2026
+    - generic:
+      - generic:
+        - complementary:
+          - generic [ref=e400]:
+            - generic [ref=e401]:
+              - generic [ref=e403] [cursor=pointer]:
+                - generic [ref=e404]:
+                  - img "Leonardo Sánchez" [ref=e405]
+                  - generic [ref=e1259]: O status está on-line
+                - button "Você está no módulo de mensagens. Pressione Enter para abrir a lista de conversas." [ref=e406]:
+                  - generic [ref=e407]:
+                    - generic [ref=e408]: Mensagens
+                    - generic [ref=e409]: Você está no módulo de mensagens. Pressione Enter para abrir a lista de conversas.
+              - generic [ref=e410]:
+                - button "Abrir o menu suspenso de mensagens" [ref=e412] [cursor=pointer]:
+                  - img "Abrir o menu suspenso de mensagens" [ref=e413]
+                - button "Escrever mensagem" [ref=e416] [cursor=pointer]:
+                  - img [ref=e417]
+                  - generic [ref=e419]: Escrever mensagem
+                - button "Você está no módulo de mensagens. Pressione Enter para abrir a lista de conversas." [ref=e420] [cursor=pointer]:
+                  - img [ref=e421]
+                  - generic [ref=e423]: Você está no módulo de mensagens. Pressione Enter para abrir a lista de conversas.
+            - generic [ref=e1260]:
+              - heading "Caixas de entrada da página" [level=3] [ref=e1262]
+              - generic [ref=e1263] [cursor=pointer]:
+                - generic [ref=e1264]: Clique para ver as caixas de entrada afiliadas
+                - button "Caixas de entrada da página" [ref=e1265]:
+                  - img [ref=e1266]
+        - complementary "Assistente de IA para obter ajuda com sua carreira, vagas, etc."

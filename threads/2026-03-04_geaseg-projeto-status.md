@@ -69,3 +69,20 @@
 - Conteúdo enviado: integração do WhatsApp concluída internamente; etapa de hoje definida como deploy, entrada em produção e teste real valendo; inclusão do número condicionada ao resultado do teste; compromisso de novo update após validação.
 - Envio confirmado no WhatsApp com marca de `Hoje 10:38` e estado `Enviada`.
 - Próxima trava real: executar deploy, colocar online, rodar teste real e voltar ao cliente com resultado validado antes de prometer inclusão do número.
+
+### 2026-03-11 13:51 | Validação direta com Lucía Rodriguez no WhatsApp
+- Conversa `Lucía Rodriguez` aberta e revisada diretamente no WhatsApp.
+- Caso auditado em origem: `Fabricio Mendez`.
+- Linha do tempo validada:
+- `2026-03-04 15:14`: Lucía informou que o cliente teria dado baixa na assinatura, mas houve cobrança.
+- `2026-03-04 16:02`: retorno enviado com evidência técnica de que a subscription estava `ACTIVE`, criada em `2025-09-25 15:54`, sem evidência clara de cancelamento efetivado, e com uso real da conta em `2025-12-03` e `2026-01-09`.
+- `2026-03-04 16:13` e `16:14`: Lucía informou que o cliente alegou baixa por volta de `2026-01-10` e cobrança nos estados de fevereiro e março.
+- `2026-03-04 16:20` e `16:27`: foi alinhado que, sem comprovante de baixa, fevereiro não entrava como estorno e que a resposta ao cliente deveria manter esse critério.
+- `2026-03-04 16:30`: Lucía respondeu `Listo! Aguardo respuesta de cliente`.
+- `2026-03-04 16:30`: também ficou registrado no WhatsApp que a baixa foi executada na plataforma, com serviço ativo só até `2026-03-09`, sem estorno naquele momento.
+- `2026-03-04 18:00`: Lucía perguntou `ves que podemos hacer`.
+- `2026-03-04 18:02`: resposta enviada confirmando `se estorna fevereiro` e `assim que puder eu estorno`.
+- Última evidência em origem desta conversa: `WhatsApp + Lucía Rodriguez + 2026-03-10 13:58 + Você: já se cancelou aquele dia, o esterno faço hoje`.
+- Leitura operacional corrigida: o caso não está mais em análise técnica; a decisão prática já foi tomada no canal com Lucía para estornar fevereiro.
+- Estado atual do assunto: `Aguardando execução`.
+- Próxima trava real: executar o estorno prometido de fevereiro para o caso `Fabricio Mendez` e devolver confirmação objetiva para Lucía.
