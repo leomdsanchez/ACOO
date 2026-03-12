@@ -19,6 +19,12 @@ O conteúdo original foi preservado no `FocusTab` para migração controlada.
 
 Este repositório agora também expõe uma interface React + Vite para servir como camada operacional local.
 
+## Estrutura inicial do core operacional
+
+- `server/`: backend inicial para domínio operacional, serviços e catálogo de tools MCP
+- `data/projects.json`: seed inicial de projetos estruturados
+- `data/contacts.json`: seed inicial de contatos estruturados
+
 ### Como rodar
 
 ```bash
