@@ -6,7 +6,7 @@ import type { TelegramConfig } from "../config/AppConfig.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
 import type { AgentRequest } from "../controller/AgentController.js";
-import { CodexCliAbortedError } from "../codex/CodexCliService.js";
+import { CodexCliAbortedError, CodexCliResumeError } from "../codex/CodexCliService.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 import {
   TelegramBotApi,
@@ -309,7 +309,13 @@ export class TelegramRuntime {
         throw error;
       }
 
-      this.log("warn", `falha ao retomar sessao ${session.sessionId}; recriando thread`);
+      if (!isRetryableResumeError(error)) {
+        await this.persistFailedRun(agentId, input.prompt, error);
+        throw error;
+      }
+
+      const resumeDetails = error.causeMessage ? ` motivo=${formatSnippet(error.causeMessage)}` : "";
+      this.log("warn", `falha ao retomar sessao ${session.sessionId}; recriando thread${resumeDetails}`);
       await this.options.sessionStore.startNew(input.chatId);
       const fallbackResponse = await this.options.bot.handleMessage({
         ...request,
@@ -955,6 +961,10 @@ function deriveSessionTitle(prompt: string, bootstrapPrompt: string): string | n
 
 function isInterruptedError(error: unknown): boolean {
   return error instanceof CodexCliAbortedError;
+}
+
+function isRetryableResumeError(error: unknown): error is CodexCliResumeError {
+  return error instanceof CodexCliResumeError;
 }
 
 function isReadOnlyCommand(command: TelegramCommand): boolean {

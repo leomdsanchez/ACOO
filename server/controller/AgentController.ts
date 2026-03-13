@@ -87,7 +87,7 @@ export class AgentController {
     const availableSkills = filterSkillsForAgent(skills, activeAgent);
     const activeSkill = await this.skillRouter.chooseSkill(request.prompt, availableSkills);
     const skillContext = this.skillExecutor.buildSkillContext(activeSkill);
-    await this.agentSessionStarter.prepare(activeSkill, mcpPolicy);
+    await this.agentSessionStarter.prepare(activeSkill, mcpPolicy, request.prompt);
     const executionProfile = applyMcpPolicyToExecutionProfile(
       buildAgentExecutionProfile(activeAgent),
       mcpPolicy,

@@ -17,8 +17,12 @@ export class AgentSessionStarter {
   public async prepare(
     activeSkill: LoadedSkill | null,
     mcpPolicy: McpPolicyEvaluation,
+    prompt?: string,
   ): Promise<AgentSessionPreparation> {
-    const skillRequirements = this.skillDependencyResolver.resolveRequiredMcpServers(activeSkill);
+    const skillRequirements = this.skillDependencyResolver.resolveRequiredMcpServers(
+      activeSkill,
+      prompt,
+    );
     const missingRequirements = skillRequirements.filter((name) => !mcpPolicy.configuredNames.includes(name));
     if (missingRequirements.length > 0) {
       throw new Error(

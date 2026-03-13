@@ -31,15 +31,23 @@ export class SkillLoader {
   private async loadSkillFile(filePath: string): Promise<LoadedSkill | null> {
     const content = await readFile(filePath, "utf8");
     const lines = content.split("\n");
+    const frontmatter = parseFrontmatter(content);
     const firstHeading = lines.find((line) => line.startsWith("# "));
     const summary = lines.find((line) => line.trim().startsWith("- ")) ?? "";
     const baseName = path.basename(path.dirname(filePath));
+    const name =
+      frontmatter.name?.trim() ||
+      (firstHeading ? firstHeading.replace(/^#\s+/, "").trim() : baseName);
+    const description =
+      frontmatter.description?.trim() ||
+      summary.replace(/^- /, "").trim() ||
+      `Skill carregada de ${filePath}`;
 
     return {
       id: baseName,
-      name: firstHeading ? firstHeading.replace(/^#\s+/, "").trim() : baseName,
-      description: summary.replace(/^- /, "").trim() || `Skill carregada de ${filePath}`,
-      keywords: deriveKeywords(baseName, content),
+      name,
+      description,
+      keywords: deriveKeywords(baseName, name, description),
       sourcePath: filePath,
       content,
     };
@@ -90,10 +98,33 @@ async function findInstructionFiles(root: string): Promise<string[]> {
   return results;
 }
 
-function deriveKeywords(baseName: string, content: string): string[] {
-  const normalized = `${baseName} ${content}`
+function deriveKeywords(baseName: string, name: string, description: string): string[] {
+  const normalized = `${baseName} ${name} ${description}`
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, " ");
 
   return [...new Set(normalized.split(/\s+/).filter((token) => token.length > 4))].slice(0, 12);
+}
+
+function parseFrontmatter(content: string): { description?: string; name?: string } {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!match) {
+    return {};
+  }
+
+  const values: { description?: string; name?: string } = {};
+  for (const line of match[1].split("\n")) {
+    const field = line.match(/^(name|description)\s*:\s*(.+)$/);
+    if (!field) {
+      continue;
+    }
+
+    const [, key, rawValue] = field;
+    const normalizedValue = rawValue.trim().replace(/^['"]|['"]$/g, "");
+    if (normalizedValue) {
+      values[key as "description" | "name"] = normalizedValue;
+    }
+  }
+
+  return values;
 }

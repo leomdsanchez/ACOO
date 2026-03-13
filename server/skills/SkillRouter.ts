@@ -18,13 +18,56 @@ export class SkillRouter {
       return exactMatch;
     }
 
-    return (
-      skills.find((skill) =>
-        skill.keywords.some((keyword) => normalizedPrompt.includes(normalize(keyword))),
-      ) ?? null
-    );
+    let bestMatch: { score: number; skill: LoadedSkill } | null = null;
+
+    for (const skill of skills) {
+      const matchedKeywords = skill.keywords.filter((keyword) =>
+        normalizedPrompt.includes(normalize(keyword)),
+      );
+      if (matchedKeywords.length === 0) {
+        continue;
+      }
+
+      const strongMatches = matchedKeywords.filter((keyword) => !LOW_SIGNAL_KEYWORDS.has(normalize(keyword)));
+      if (strongMatches.length === 0) {
+        continue;
+      }
+
+      const score = (strongMatches.length * 10) + matchedKeywords.length;
+      if (!bestMatch || score > bestMatch.score) {
+        bestMatch = { score, skill };
+      }
+    }
+
+    return bestMatch?.skill ?? null;
   }
 }
+
+const LOW_SIGNAL_KEYWORDS = new Set([
+  "assunto",
+  "canais",
+  "canal",
+  "contato",
+  "contatos",
+  "contexto",
+  "decisao",
+  "decisoes",
+  "documentacao",
+  "execucao",
+  "operacao",
+  "operacional",
+  "pessoa",
+  "pessoas",
+  "processo",
+  "processos",
+  "projeto",
+  "projetos",
+  "status",
+  "task",
+  "tasks",
+  "thread",
+  "threads",
+]);
 
 function normalize(value: string): string {
   return value

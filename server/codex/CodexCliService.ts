@@ -59,6 +59,16 @@ export class CodexCliAbortedError extends Error {
   }
 }
 
+export class CodexCliResumeError extends Error {
+  public readonly causeMessage: string;
+
+  public constructor(message: string, causeMessage: string) {
+    super(message);
+    this.name = "CodexCliResumeError";
+    this.causeMessage = causeMessage;
+  }
+}
+
 export interface CodexCliMcpServer {
   auth: string;
   name: string;
@@ -133,6 +143,13 @@ export class CodexCliService {
       } catch (error) {
         if (isAbortError(error)) {
           throw new CodexCliAbortedError();
+        }
+        if (request.sessionId || request.resumeLast) {
+          const details = formatExecFailure(error);
+          throw new CodexCliResumeError(
+            "Codex CLI failed to resume the requested session.",
+            details,
+          );
         }
         throw error;
       }
@@ -361,6 +378,16 @@ function quoteShellArg(value: string): string {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && ((error as { name?: string }).name === "AbortError" || (error as { code?: string }).code === "ABORT_ERR");
+}
+
+function formatExecFailure(error: unknown): string {
+  if (error instanceof Error && "stdout" in error && "stderr" in error) {
+    const stdout = String(error.stdout ?? "").trim();
+    const stderr = String(error.stderr ?? "").trim();
+    return stderr || stdout || error.message;
+  }
+
+  return error instanceof Error ? error.message : String(error);
 }
 
 function parseMcpList(stdout: string): CodexCliMcpServer[] {
