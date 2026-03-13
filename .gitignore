@@ -8,3 +8,4 @@ node_modules/
 dist/
 *.tsbuildinfo
 .acoo/
+data/acoo.db
