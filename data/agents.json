@@ -5,7 +5,7 @@
     "displayName": "AI COO",
     "role": "primary",
     "description": "Agente principal de operacoes do ACOO. Coordena contexto, escolhe o subagente correto e acompanha a proxima trava real.",
-    "promptTemplatePath": "agents/coo/AGENT.md",
+    "promptTemplatePath": "agents/coo/prompt.md",
     "promptInline": null,
     "skillIds": [
       "revisao-operacional-coo",

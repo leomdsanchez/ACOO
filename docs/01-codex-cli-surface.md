@@ -116,7 +116,7 @@ O comportamento exato do filesystem no ambiente local foi observado aqui:
 
 - skills do usuário ficam em `~/.codex/skills`;
 - há skills de sistema em `~/.codex/skills/.system`;
-- o ACOO também pode carregar `AGENT.md` local como instrução adicional.
+- o ACOO deve tratar `AGENTS.md` como instrução global de repo e prompt de agente como artefato separado.
 
 Importante:
 

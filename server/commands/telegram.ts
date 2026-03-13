@@ -1,5 +1,6 @@
 import { createOperationalRuntime } from "../bootstrap.js";
 import { TelegramRuntime } from "../telegram/TelegramRuntime.js";
+import { TelegramPollingLock } from "../telegram/TelegramPollingLock.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import { parseFlagArgs } from "./shared.js";
 
@@ -11,6 +12,8 @@ async function main() {
   if (!telegramConfig.enabled) {
     throw new Error("Telegram está desabilitado no env.");
   }
+
+  const pollingLock = new TelegramPollingLock(runtime.config.repoRoot);
 
   const telegram = new TelegramRuntime({
     agentRegistry: runtime.agentRegistry,
@@ -27,15 +30,48 @@ async function main() {
 
   const dropPending = args.flags.has("--drop-pending");
   const once = args.flags.has("--once");
+  const usesPolling = true;
+  if (usesPolling) {
+    await pollingLock.acquire();
+    registerPollingLockCleanup(pollingLock);
+  }
   const status = await telegram.getStatus();
   process.stdout.write(
     `Telegram runtime online como @${status.botUser.username ?? status.botUser.id}. Polling iniciado.\n`,
   );
 
-  await telegram.processPendingUpdates({ dropPending, once });
+  try {
+    await telegram.processPendingUpdates({ dropPending, once });
+  } finally {
+    if (usesPolling) {
+      await pollingLock.release();
+    }
+  }
 }
 
 void main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  process.stderr.write(`${message}\n`);
   process.exitCode = 1;
 });
+
+function registerPollingLockCleanup(lock: TelegramPollingLock): void {
+  let cleaned = false;
+  const cleanup = async () => {
+    if (cleaned) {
+      return;
+    }
+    cleaned = true;
+    await lock.release();
+  };
+
+  process.once("SIGINT", () => {
+    void cleanup().finally(() => process.exit(130));
+  });
+  process.once("SIGTERM", () => {
+    void cleanup().finally(() => process.exit(143));
+  });
+  process.once("exit", () => {
+    void cleanup();
+  });
+}

@@ -25,13 +25,13 @@ Este diretório define como o ACOO deve ser construído em cima da Codex CLI rea
 O repo atual já tem bons ativos:
 
 - contexto operacional em `threads/` e `tasks/`;
-- um `AGENT.md` local para o COO;
+- um `prompt.md` dedicado por agente;
 - integração real com Codex CLI, Telegram, STT e MCP.
 
 O que ainda não deve ser tratado como arquitetura final:
 
 - camadas históricas que simulam "agente interno";
-- a ideia de que `AGENT.md` + skills locais já formam um sistema de agentes;
+- a ideia de que prompt de agente + skills locais já formam, sozinhos, um sistema de agentes;
 - qualquer modelagem implícita de subagente que não tenha `registry`, `session`, `run history` e `MCP policy`.
 
 ## Resposta direta ao objetivo do projeto

@@ -66,7 +66,7 @@ Variáveis relevantes em `.env`:
 - `ACOO_STT_LANGUAGE`: idioma opcional para forçar na transcrição.
 - `ACOO_STT_THREADS`: threads do `whisper.cpp`.
 - `ACOO_STT_MODEL_DOWNLOADER_BIN`: downloader usado para buscar o modelo, normalmente `curl`.
-- `ACOO_SKILL_ROOTS`: raízes de skills separadas por vírgula.
+- `ACOO_SKILL_ROOTS`: raízes de skills separadas por vírgula. O alvo é `.agents/skills,~/.codex/skills`.
 
 ## Uso local
 
@@ -164,8 +164,9 @@ Polling do canal Telegram:
 npm run server:telegram -- --drop-pending
 ```
 
-O canal Telegram usa uma única sessão persistida da Codex por canal, com um agente ativo selecionável.
+O canal Telegram usa sessões persistidas da Codex por chat, com um agente ativo selecionável em cada chat.
 Mensagens de voz passam por transcrição local com `whisper.cpp` antes de entrar no fluxo do agente.
+O polling aceita apenas um consumer por bot; se `npm run dev` já estiver com Telegram ativo, não suba outro `server:telegram` em paralelo no mesmo workspace.
 
 Comandos de sessão no chat:
 
@@ -180,7 +181,7 @@ Comandos de sessão no chat:
 - `/status`: mostra o estado atual da sessão do canal.
 - `/help`: resume os comandos de sessão disponíveis.
 
-Mensagens enviadas durante uma execução longa continuam sendo aceitas no chat e ficam enfileiradas por canal para processamento em ordem.
+Mensagens normais enviadas durante uma execução longa interrompem o turno atual e continuam na mesma sessão. Comandos de leitura (`/help`, `/agents`, `/chats`, `/status`) respondem sem interromper a execução em andamento.
 
 Inspeção rápida da identidade do bot configurado:
 

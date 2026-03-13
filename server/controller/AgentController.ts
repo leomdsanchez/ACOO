@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
+import type { AgentPromptLoader } from "../agents/AgentPromptLoader.js";
 import type { AgentSessionStarter } from "../agents/AgentSessionStarter.js";
 import {
   applyMcpPolicyToExecutionProfile,
@@ -60,6 +59,7 @@ export interface AgentResponse {
 export class AgentController {
   public constructor(
     private readonly agentRegistry: AgentRegistryService,
+    private readonly agentPromptLoader: AgentPromptLoader,
     private readonly agentSessionStarter: AgentSessionStarter,
     private readonly mcpPolicyEvaluator: McpPolicyEvaluator,
     private readonly engine: AgentEngine,
@@ -137,24 +137,14 @@ export class AgentController {
       return null;
     }
 
+    const promptTemplate = await this.agentPromptLoader.load(agent, cwd);
     const sections = [
       `Agente ativo: ${agent.displayName} (${agent.slug})`,
       agent.description.trim(),
       ...renderAgentRuntimeSummary(agent, mcpPolicy),
       agent.promptInline?.trim() ?? "",
+      promptTemplate,
     ].filter(Boolean);
-
-    if (agent.promptTemplatePath) {
-      const templatePath = path.isAbsolute(agent.promptTemplatePath)
-        ? agent.promptTemplatePath
-        : path.join(cwd, agent.promptTemplatePath);
-      try {
-        const promptTemplate = await readFile(templatePath, "utf8");
-        sections.push(promptTemplate.trim());
-      } catch {
-        sections.push(`Prompt template esperado em ${agent.promptTemplatePath}, mas o arquivo nao foi lido.`);
-      }
-    }
 
     return sections.length > 0 ? sections.join("\n\n") : null;
   }

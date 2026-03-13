@@ -75,7 +75,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     },
     repoRoot,
     skillRoots: readList("ACOO_SKILL_ROOTS", [
-      path.join(repoRoot, "agents"),
+      path.join(repoRoot, ".agents", "skills"),
       path.join(os.homedir(), ".codex", "skills"),
     ]),
     telegram: {

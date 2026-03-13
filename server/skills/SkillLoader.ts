@@ -81,7 +81,7 @@ async function findInstructionFiles(root: string): Promise<string[]> {
         continue;
       }
 
-      if (entry.name === "SKILL.md" || entry.name === "AGENT.md") {
+      if (entry.name === "SKILL.md") {
         results.push(entryPath);
       }
     }

@@ -1,6 +1,7 @@
 export * from "./bootstrap.js";
 export * from "./agents/AgentRegistryRepository.js";
 export * from "./agents/AgentRegistryService.js";
+export * from "./agents/AgentPromptLoader.js";
 export * from "./agents/AgentRuntimeProfile.js";
 export * from "./agents/AgentSessionStarter.js";
 export * from "./bot/OperationalBot.js";

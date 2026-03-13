@@ -46,16 +46,17 @@ export interface RuntimeStatus {
     threads: number;
   };
   telegram: {
-    active: boolean;
-    activeAgentSlug: string;
+    activeChats: number;
     allowedUsersCount: number;
     botUsername: string | null;
     configured: boolean;
     enabled: boolean;
     implemented: true;
+    latestActiveAgentSlug: string | null;
+    latestSessionId: string | null;
+    latestUpdatedAt: string | null;
     replyAudioByDefault: boolean;
-    sessionId: string | null;
-    updatedAt: string | null;
+    totalChats: number;
   };
   transcription: {
     binary: string;
@@ -96,7 +97,7 @@ export class RuntimeStatusService {
       this.workspace.contacts.listContacts(),
       this.workspace.threads.listThreads({ includeArchived: false }),
       this.workspace.tasks.listTasks({ includeCompleted: false }),
-      telegramSessionStore.load(),
+      telegramSessionStore.getSummary(),
       this.transcription.getHealth(),
       this.agentRegistry.listAgents(),
       this.agentRegistry.listMcpProfiles(),
@@ -141,8 +142,8 @@ export class RuntimeStatusService {
       this.config.telegram.enabled && !hasTelegramSecrets(this.config)
         ? "Telegram habilitado no env, mas faltam bot token ou usuários autorizados."
         : null,
-      this.config.telegram.enabled && telegramSession.active && !telegramSession.sessionId
-        ? "Canal Telegram ativo, mas ainda sem thread Codex anexada; a próxima interação abre ou recria a sessão."
+      this.config.telegram.enabled && telegramSession.activeChats > 0 && !telegramSession.latestSessionId
+        ? "Canal Telegram ativo, mas a sessão mais recente ainda está sem thread Codex anexada; a próxima interação abre ou recria a sessão."
         : null,
       this.config.transcription.enabled && !transcription.modelAvailable
         ? `Modelo local de transcrição ainda não encontrado em ${transcription.modelPath}; será baixado na primeira transcrição.`
@@ -197,16 +198,17 @@ export class RuntimeStatusService {
         threads: threads.length,
       },
       telegram: {
-        active: telegramSession.active,
-        activeAgentSlug: telegramSession.activeAgentSlug,
+        activeChats: telegramSession.activeChats,
         allowedUsersCount: this.config.telegram.allowedUserIds.length,
         botUsername: this.config.telegram.botUsername,
         configured: hasTelegramSecrets(this.config),
         enabled: this.config.telegram.enabled,
         implemented: true,
+        latestActiveAgentSlug: telegramSession.latestActiveAgentSlug,
+        latestSessionId: telegramSession.latestSessionId,
+        latestUpdatedAt: telegramSession.latestUpdatedAt,
         replyAudioByDefault: this.config.telegram.replyAudioByDefault,
-        sessionId: telegramSession.sessionId,
-        updatedAt: telegramSession.updatedAt,
+        totalChats: telegramSession.totalChats,
       },
       transcription: {
         binary: this.config.transcription.binary,

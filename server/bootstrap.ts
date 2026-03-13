@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AgentRegistryRepository } from "./agents/AgentRegistryRepository.js";
 import { AgentRegistryService } from "./agents/AgentRegistryService.js";
+import { AgentPromptLoader } from "./agents/AgentPromptLoader.js";
 import { AgentSessionStarter } from "./agents/AgentSessionStarter.js";
 import { OperationalBot } from "./bot/OperationalBot.js";
 import { AgentController } from "./controller/AgentController.js";
@@ -58,6 +59,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     sandboxMode: config.codexSandboxMode,
   });
   const context = new OperationalContextService(workspace);
+  const agentPromptLoader = new AgentPromptLoader();
   const mcpPolicyEvaluator = new McpPolicyEvaluator(agentRegistry, codex);
   const mcpRuntimeCatalog = new McpRuntimeCatalog(config.playwrightMcp);
   const mcpSessionBootstrapper = new McpSessionBootstrapper(mcpRuntimeCatalog, repoRoot);
@@ -72,6 +74,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const agentSessionStarter = new AgentSessionStarter(mcpSessionBootstrapper, skillDependencyResolver);
   const controller = new AgentController(
     agentRegistry,
+    agentPromptLoader,
     agentSessionStarter,
     mcpPolicyEvaluator,
     engine,

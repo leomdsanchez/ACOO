@@ -27,14 +27,15 @@ export interface TelegramRuntimeOptions {
 }
 
 export interface TelegramRuntimeStatus {
-  active: boolean;
-  activeAgentSlug: string;
+  activeChats: number;
   botUser: TelegramUser;
   busyChats: number;
+  latestActiveAgentSlug: string | null;
+  latestSessionId: string | null;
+  latestUpdatedAt: string | null;
   offset: number;
   queuedUpdates: number;
-  sessionId: string | null;
-  updatedAt: string;
+  totalChats: number;
 }
 
 export class TelegramRuntime {
@@ -65,16 +66,17 @@ export class TelegramRuntime {
 
   public async getStatus(): Promise<TelegramRuntimeStatus> {
     const botUser = await this.api.getMe();
-    const session = await this.options.sessionStore.load();
+    const summary = await this.options.sessionStore.getSummary();
     return {
-      active: session.active,
-      activeAgentSlug: session.activeAgentSlug,
+      activeChats: summary.activeChats,
       botUser,
       busyChats: this.chatBusy.size,
+      latestActiveAgentSlug: summary.latestActiveAgentSlug,
+      latestSessionId: summary.latestSessionId,
+      latestUpdatedAt: summary.latestUpdatedAt,
       offset: this.offset,
       queuedUpdates: sumQueuedUpdates(this.chatQueueDepth),
-      sessionId: session.sessionId,
-      updatedAt: session.updatedAt,
+      totalChats: summary.totalChats,
     };
   }
 
@@ -107,7 +109,12 @@ export class TelegramRuntime {
 
   private enqueueUpdate(update: TelegramUpdate): Promise<void> {
     const chatId = update.message?.chat.id ?? -1;
-    if (chatId !== -1 && this.chatBusy.has(chatId)) {
+    const command = this.extractCommand(update.message);
+    if (chatId !== -1 && command && isReadOnlyCommand(command)) {
+      return this.processReadOnlyCommand(update, command);
+    }
+
+    if (chatId !== -1 && this.chatBusy.has(chatId) && !command) {
       const controller = this.chatAbortControllers.get(chatId);
       if (controller && !controller.signal.aborted) {
         controller.abort();
@@ -161,6 +168,28 @@ export class TelegramRuntime {
     return current;
   }
 
+  private async processReadOnlyCommand(update: TelegramUpdate, command: TelegramCommand): Promise<void> {
+    const message = update.message;
+    if (!message) {
+      return;
+    }
+
+    const senderId = String(message.from?.id ?? "");
+    const chatId = message.chat.id;
+    if (!this.isAllowedSender(senderId)) {
+      await this.api.sendMessage(chatId, "Esse bot está restrito aos usuários autorizados.");
+      this.log("warn", `sender bloqueado: ${senderId || "unknown"} chat=${chatId}`);
+      return;
+    }
+
+    const rawText = message.text?.trim() ?? "";
+    this.log(
+      "info",
+      `in update=${update.update_id} chat=${chatId} sender=${senderId || "unknown"} mode=text text=${formatSnippet(rawText)} [comando imediato]`,
+    );
+    await this.handleCommand(command, chatId, senderId);
+  }
+
   private async processUpdate(update: TelegramUpdate, abortSignal: AbortSignal): Promise<void> {
     const message = update.message;
     if (!message) {
@@ -190,7 +219,7 @@ export class TelegramRuntime {
       }
     }
 
-    const session = await this.options.sessionStore.load();
+    const session = await this.options.sessionStore.load(chatId);
     if (!session.active) {
       await this.api.sendMessage(
         chatId,
@@ -254,14 +283,14 @@ export class TelegramRuntime {
     prompt: string;
     senderId: string;
   }): Promise<TelegramBotResponse> {
-    const session = await this.options.sessionStore.load();
+    const session = await this.options.sessionStore.load(input.chatId);
     const agentId = await this.resolveAgentId(input.activeAgentSlug);
     const request = this.buildAgentRequest(input, session.sessionId);
 
     try {
       const response = await this.options.bot.handleMessage(request);
       const nextSession = response.threadId && response.threadId !== session.sessionId
-        ? await this.options.sessionStore.attachSession(response.threadId)
+        ? await this.options.sessionStore.attachSession(input.chatId, response.threadId)
         : session;
       const sessionMode = session.sessionId ? "exec-resume" : "exec";
       if (!session.sessionId && response.threadId) {
@@ -281,15 +310,15 @@ export class TelegramRuntime {
       }
 
       this.log("warn", `falha ao retomar sessao ${session.sessionId}; recriando thread`);
-      await this.options.sessionStore.startNew();
+      await this.options.sessionStore.startNew(input.chatId);
       const fallbackResponse = await this.options.bot.handleMessage({
         ...request,
         abortSignal: input.abortSignal,
         sessionId: undefined,
       });
       const recreatedSession = fallbackResponse.threadId
-        ? await this.options.sessionStore.attachSession(fallbackResponse.threadId)
-        : await this.options.sessionStore.load();
+        ? await this.options.sessionStore.attachSession(input.chatId, fallbackResponse.threadId)
+        : await this.options.sessionStore.load(input.chatId);
       if (fallbackResponse.threadId) {
         this.log("info", `sessao recriada: ${fallbackResponse.threadId}`);
       }
@@ -314,7 +343,7 @@ export class TelegramRuntime {
         this.listRecentChatSessions(chatId),
         this.options.agentRegistry.listAgents({ includeDisabled: true }),
       ]);
-      const current = await this.options.sessionStore.load();
+      const current = await this.options.sessionStore.load(chatId);
       const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
       await this.api.sendMessage(chatId, formatChatsMessage(sessions, agentsById, current.sessionId));
       this.log("info", `chats enviado em chat=${chatId} count=${sessions.length}`);
@@ -323,7 +352,7 @@ export class TelegramRuntime {
 
     if (command.kind === "agents") {
       const agents = await this.options.agentRegistry.listAgents();
-      const session = await this.options.sessionStore.load();
+      const session = await this.options.sessionStore.load(chatId);
       const lines = agents.map((agent) => {
         const current = agent.slug === session.activeAgentSlug ? " [ativo]" : "";
         return `/${agent.slug} - ${agent.displayName}${current}`;
@@ -336,11 +365,11 @@ export class TelegramRuntime {
     if (command.kind === "route-target") {
       const selected = await this.options.agentRegistry.getAgentBySlug(command.target);
       if (selected) {
-        const current = await this.options.sessionStore.load();
+        const current = await this.options.sessionStore.load(chatId);
         if (current.sessionId) {
           await this.endRegistrySession(current.activeAgentSlug, chatId);
         }
-        await this.options.sessionStore.switchAgent(selected.slug, { preserveActive: current.active });
+        await this.options.sessionStore.switchAgent(chatId, selected.slug, { preserveActive: current.active });
         let answer = `Agente ativo alterado para /${selected.slug} (${selected.displayName}).`;
         if (current.active) {
           answer = await this.runWithProgress(chatId, "typing", () => this.bootstrapCodexSession(chatId, senderId));
@@ -372,12 +401,12 @@ export class TelegramRuntime {
         return;
       }
 
-      const current = await this.options.sessionStore.load();
+      const current = await this.options.sessionStore.load(chatId);
       if (current.sessionId) {
         await this.endRegistrySession(current.activeAgentSlug, chatId);
       }
       const selectedAgent = await this.resolveAgentRecordById(session.agentId);
-      await this.options.sessionStore.resumeSession(selectedAgent.slug, session.codexThreadId);
+      await this.options.sessionStore.resumeSession(chatId, selectedAgent.slug, session.codexThreadId);
       await this.activateRegistrySession(selectedAgent.slug, chatId, session.codexThreadId, "exec-resume", session.title);
       await this.api.sendMessage(
         chatId,
@@ -392,7 +421,7 @@ export class TelegramRuntime {
     }
 
     if (command.kind === "status") {
-      const session = await this.options.sessionStore.load();
+      const session = await this.options.sessionStore.load(chatId);
       const activeAgent = await this.options.agentRegistry.getAgentBySlug(session.activeAgentSlug);
       const statusText = formatStatusMessage({
         active: session.active,
@@ -406,7 +435,7 @@ export class TelegramRuntime {
     }
 
     if (command.kind === "start") {
-      const session = await this.options.sessionStore.start();
+      const session = await this.options.sessionStore.start(chatId);
       let answer = "Sessão da Codex reativada. Pode continuar deste ponto.";
       if (!session.sessionId) {
         try {
@@ -414,7 +443,7 @@ export class TelegramRuntime {
             this.bootstrapCodexSession(chatId, senderId),
           );
         } catch (error) {
-          await this.options.sessionStore.end();
+          await this.options.sessionStore.end(chatId);
           throw error;
         }
       } else {
@@ -426,7 +455,7 @@ export class TelegramRuntime {
     }
 
     if (command.kind === "end") {
-      const session = await this.options.sessionStore.end();
+      const session = await this.options.sessionStore.end(chatId);
       if (session.sessionId) {
         await this.endRegistrySession(session.activeAgentSlug, chatId);
       }
@@ -438,18 +467,18 @@ export class TelegramRuntime {
       return;
     }
 
-    const current = await this.options.sessionStore.load();
+    const current = await this.options.sessionStore.load(chatId);
     if (current.sessionId) {
       await this.endRegistrySession(current.activeAgentSlug, chatId);
     }
-    await this.options.sessionStore.startNew();
+    await this.options.sessionStore.startNew(chatId);
     let answer: string;
     try {
       answer = await this.runWithProgress(chatId, "typing", () =>
         this.bootstrapCodexSession(chatId, senderId),
       );
     } catch (error) {
-      await this.options.sessionStore.end();
+      await this.options.sessionStore.end(chatId);
       throw error;
     }
     await this.api.sendMessage(chatId, answer);
@@ -518,7 +547,7 @@ export class TelegramRuntime {
   }
 
   private async bootstrapCodexSession(chatId: number, senderId: string): Promise<string> {
-    const session = await this.options.sessionStore.load();
+    const session = await this.options.sessionStore.load(chatId);
     const response = await this.handleWithSingleSession({
       activeAgentSlug: session.activeAgentSlug,
       chatId,
@@ -590,6 +619,14 @@ export class TelegramRuntime {
         return { kind: "route-target", target };
       }
     }
+  }
+
+  private extractCommand(message: TelegramMessage | undefined): TelegramCommand | null {
+    const rawText = message?.text?.trim() ?? null;
+    if (!rawText) {
+      return null;
+    }
+    return this.parseCommand(rawText);
   }
 
   private async resolveAgentId(agentSlug: string): Promise<string> {
@@ -918,4 +955,8 @@ function deriveSessionTitle(prompt: string, bootstrapPrompt: string): string | n
 
 function isInterruptedError(error: unknown): boolean {
   return error instanceof CodexCliAbortedError;
+}
+
+function isReadOnlyCommand(command: TelegramCommand): boolean {
+  return command.kind === "help" || command.kind === "chats" || command.kind === "agents" || command.kind === "status";
 }

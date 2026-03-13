@@ -60,9 +60,7 @@ No ambiente local observado:
 
 - skills do usuário vivem em `~/.codex/skills`;
 - skills de sistema vivem em `~/.codex/skills/.system`;
-- o ACOO hoje também carrega `AGENT.md` local por compatibilidade histórica.
-
-Isso é uma compatibilidade transitória, não o alvo final da arquitetura.
+- o ACOO pode ter prompts de agente separados em `agents/<slug>/prompt.md`.
 
 ## Estratégia correta para Skills no ACOO
 
