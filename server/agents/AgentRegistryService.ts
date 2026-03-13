@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import type {
+  CreateAgentInput,
   AgentMcpProfileRecord,
   AgentRecord,
   AgentRunRecord,
@@ -7,6 +8,7 @@ import type {
   AgentSessionMode,
   AgentSessionRecord,
   AgentSessionStatus,
+  UpdateAgentInput,
 } from "../domain/models.js";
 import { AgentRegistryRepository } from "./AgentRegistryRepository.js";
 
@@ -38,6 +40,12 @@ export interface AgentRegistryIntegrityReport {
   missingMcpProfileIds: string[];
 }
 
+const allowedSandboxModes = new Set(["read-only", "workspace-write", "danger-full-access"]);
+const allowedApprovalPolicies = new Set(["untrusted", "on-failure", "on-request", "never"]);
+const allowedReasoningEfforts = new Set(["low", "medium", "high", "xhigh"]);
+const allowedRoles = new Set(["primary", "specialist", "automation"]);
+const allowedStatuses = new Set(["active", "disabled", "archived"]);
+
 export class AgentRegistryService {
   public constructor(private readonly repository: AgentRegistryRepository) {}
 
@@ -54,6 +62,39 @@ export class AgentRegistryService {
 
   public async getAgentBySlug(slug: string): Promise<AgentRecord | null> {
     return this.repository.findAgentBySlug(slug);
+  }
+
+  public async createAgent(input: CreateAgentInput): Promise<AgentRecord> {
+    const slug = normalizeAgentSlug(input.slug);
+    const existing = await this.repository.findAgentBySlug(slug);
+    if (existing) {
+      throw new Error(`Agent slug "${slug}" already exists.`);
+    }
+
+    const record = await this.buildAgentRecord({ ...input, slug });
+    return this.repository.createAgent(record);
+  }
+
+  public async updateAgent(input: UpdateAgentInput): Promise<AgentRecord> {
+    const slug = normalizeAgentSlug(input.slug);
+    const current = await this.repository.findAgentBySlug(slug);
+    if (!current) {
+      throw new Error(`Agent slug "${slug}" is not registered.`);
+    }
+
+    const record = await this.buildAgentRecord(
+      {
+        ...current,
+        ...input,
+        slug: current.slug,
+      },
+      current,
+    );
+    return this.repository.updateAgent(record);
+  }
+
+  public async disableAgent(slug: string): Promise<AgentRecord> {
+    return this.updateAgent({ slug, status: "disabled" });
   }
 
   public async listMcpProfiles(): Promise<AgentMcpProfileRecord[]> {
@@ -184,6 +225,58 @@ export class AgentRegistryService {
         .filter(uniqueValue),
     };
   }
+
+  private async buildAgentRecord(
+    input: CreateAgentInput | (UpdateAgentInput & AgentRecord),
+    current?: AgentRecord,
+  ): Promise<AgentRecord> {
+    const now = new Date().toISOString();
+    const mcpProfileId = normalizeRequiredText(input.mcpProfileId, "mcpProfileId");
+    const mcpProfile = await this.repository.findMcpProfileById(mcpProfileId);
+    if (!mcpProfile) {
+      throw new Error(`MCP profile "${mcpProfileId}" is not registered.`);
+    }
+
+    return {
+      id: current?.id ?? crypto.randomUUID(),
+      slug: normalizeAgentSlug(input.slug),
+      displayName: normalizeRequiredText(input.displayName, "displayName"),
+      role: normalizeEnumValue(
+        input.role,
+        allowedRoles,
+        "role",
+      ) as AgentRecord["role"],
+      description: normalizeRequiredText(input.description, "description"),
+      promptTemplatePath: normalizeOptionalText(input.promptTemplatePath ?? null),
+      promptInline: normalizeOptionalText(input.promptInline ?? null),
+      skillIds: normalizeStringList(input.skillIds ?? []),
+      mcpProfileId,
+      model: normalizeOptionalText(input.model ?? null),
+      reasoningEffort: normalizeEnumValue(
+        input.reasoningEffort ?? current?.reasoningEffort ?? "medium",
+        allowedReasoningEfforts,
+        "reasoningEffort",
+      ) as AgentRecord["reasoningEffort"],
+      approvalPolicy: normalizeEnumValue(
+        input.approvalPolicy ?? current?.approvalPolicy ?? "never",
+        allowedApprovalPolicies,
+        "approvalPolicy",
+      ) as AgentRecord["approvalPolicy"],
+      sandboxMode: normalizeEnumValue(
+        input.sandboxMode ?? current?.sandboxMode ?? "danger-full-access",
+        allowedSandboxModes,
+        "sandboxMode",
+      ) as AgentRecord["sandboxMode"],
+      searchEnabled: input.searchEnabled ?? current?.searchEnabled ?? false,
+      status: normalizeEnumValue(
+        input.status ?? current?.status ?? "active",
+        allowedStatuses,
+        "status",
+      ) as AgentRecord["status"],
+      createdAt: current?.createdAt ?? now,
+      updatedAt: now,
+    };
+  }
 }
 
 function createDigest(value: string): string {
@@ -219,4 +312,40 @@ function ensureSessionExists(sessions: AgentSessionRecord[], sessionId: string):
 
 function uniqueValue<T>(value: T, index: number, items: T[]): boolean {
   return items.indexOf(value) === index;
+}
+
+function normalizeAgentSlug(value: string): string {
+  const slug = value.trim().toLowerCase();
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    throw new Error(`Agent slug "${value}" is invalid. Use lowercase letters, numbers and hyphens.`);
+  }
+  return slug;
+}
+
+function normalizeRequiredText(value: string | null | undefined, fieldName: string): string {
+  const normalized = value?.trim() ?? "";
+  if (!normalized) {
+    throw new Error(`Field "${fieldName}" is required.`);
+  }
+  return normalized;
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+  return normalized || null;
+}
+
+function normalizeStringList(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function normalizeEnumValue<T extends string>(
+  value: string,
+  allowed: Set<string>,
+  fieldName: string,
+): T {
+  if (!allowed.has(value)) {
+    throw new Error(`Field "${fieldName}" has invalid value "${value}".`);
+  }
+  return value as T;
 }

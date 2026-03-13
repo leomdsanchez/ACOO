@@ -47,6 +47,21 @@ export class AgentRegistryRepository {
     return record ? mapAgentRecord(record) : null;
   }
 
+  public async createAgent(record: AgentRecord): Promise<AgentRecord> {
+    const stored = await this.prisma.agent.create({
+      data: serializeAgent(record),
+    });
+    return mapAgentRecord(stored);
+  }
+
+  public async updateAgent(record: AgentRecord): Promise<AgentRecord> {
+    const stored = await this.prisma.agent.update({
+      where: { id: record.id },
+      data: serializeAgent(record),
+    });
+    return mapAgentRecord(stored);
+  }
+
   public async listMcpProfiles(): Promise<AgentMcpProfileRecord[]> {
     const records = await this.prisma.agentMcpProfile.findMany({ orderBy: { name: "asc" } });
     return records.map(mapMcpProfileRecord);
@@ -199,6 +214,28 @@ function serializeSession(record: AgentSessionRecord) {
     status: record.status,
     startedAt: new Date(record.startedAt),
     lastUsedAt: new Date(record.lastUsedAt),
+  };
+}
+
+function serializeAgent(record: AgentRecord) {
+  return {
+    id: record.id,
+    slug: record.slug,
+    displayName: record.displayName,
+    role: record.role,
+    description: record.description,
+    promptTemplatePath: record.promptTemplatePath,
+    promptInline: record.promptInline,
+    skillIdsJson: JSON.stringify(record.skillIds),
+    mcpProfileId: record.mcpProfileId,
+    model: record.model,
+    reasoningEffort: record.reasoningEffort,
+    approvalPolicy: record.approvalPolicy,
+    sandboxMode: record.sandboxMode,
+    searchEnabled: record.searchEnabled,
+    status: record.status,
+    createdAt: new Date(record.createdAt),
+    updatedAt: new Date(record.updatedAt),
   };
 }
 

@@ -1,6 +1,7 @@
 export * from "./bootstrap.js";
 export * from "./agents/AgentRegistryRepository.js";
 export * from "./agents/AgentRegistryService.js";
+export * from "./agents/AgentRuntimeProfile.js";
 export * from "./bot/OperationalBot.js";
 export * from "./config/AppConfig.js";
 export * from "./config/loadEnvironment.js";
@@ -10,6 +11,7 @@ export * from "./controller/AgentController.js";
 export * from "./domain/models.js";
 export * from "./engine/AgentEngine.js";
 export * from "./mcp/McpRegistryService.js";
+export * from "./mcp/McpPolicyEvaluator.js";
 export * from "./mcp/manifest.js";
 export * from "./status/RuntimeStatusService.js";
 export * from "./skills/SkillLoader.js";

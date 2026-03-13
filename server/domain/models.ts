@@ -160,6 +160,40 @@ export interface AgentRecord {
   updatedAt: string;
 }
 
+export interface CreateAgentInput {
+  approvalPolicy?: AgentRecord["approvalPolicy"];
+  description: string;
+  displayName: string;
+  mcpProfileId: string;
+  model?: string | null;
+  promptInline?: string | null;
+  promptTemplatePath?: string | null;
+  reasoningEffort?: AgentRecord["reasoningEffort"];
+  role: AgentRole;
+  sandboxMode?: AgentRecord["sandboxMode"];
+  searchEnabled?: boolean;
+  skillIds?: string[];
+  slug: string;
+  status?: AgentLifecycleStatus;
+}
+
+export interface UpdateAgentInput {
+  approvalPolicy?: AgentRecord["approvalPolicy"];
+  description?: string;
+  displayName?: string;
+  mcpProfileId?: string;
+  model?: string | null;
+  promptInline?: string | null;
+  promptTemplatePath?: string | null;
+  reasoningEffort?: AgentRecord["reasoningEffort"];
+  role?: AgentRole;
+  sandboxMode?: AgentRecord["sandboxMode"];
+  searchEnabled?: boolean;
+  skillIds?: string[];
+  slug: string;
+  status?: AgentLifecycleStatus;
+}
+
 export interface AgentSessionRecord {
   id: string;
   agentId: string;

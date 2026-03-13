@@ -73,6 +73,17 @@ Status consolidado do runtime:
 npm run server:status -- --pretty
 ```
 
+CRUD mínimo do registry de agentes:
+
+```bash
+npm run server:agents -- list --json
+npm run server:agents -- skills --json
+npm run server:agents -- profiles --json
+npm run server:agents -- create --slug ops-qa --name "Ops QA" --role automation --description "agente temporario" --mcp-profile mcp-profile-research
+npm run server:agents -- update --slug ops-qa --search true --skills revisao-operacional-coo,alfredo-thread-writer
+npm run server:agents -- disable --slug ops-qa
+```
+
 Desenvolvimento local completo:
 
 ```bash
