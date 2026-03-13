@@ -2,10 +2,10 @@
 
 ## Contexto Inicial
 - Assunto: possível ampliação das tarefas administrativas delegadas para `Lucía`.
-- Pessoas: Leonardo Sánchez, Lucía.
+- Pessoas: Leonardo Sánchez, Lucía Rodriguez.
 - Objetivo: estruturar a expansão do apoio administrativo com proposta financeira e posterior definição de processos, se houver aceite.
 - Grupo(s): não aplicável.
-- WhatsApp (contato/nome): não aplicável.
+- WhatsApp (contato/nome): `Lucía Rodriguez`.
 - E-mail(s): não aplicável.
 - Outros canais: Telegram do ACOO.
 
@@ -19,3 +19,8 @@
 - Estado inicial classificado como `Aguardando execução`.
 - Próxima trava real: `execução` para compilar o escopo delegável e preparar a proposta financeira após `19/03/2026`.
 - Evidência mínima: canal `Telegram`, em `13/03/2026 14:25` (-03), relato direto do Leonardo.
+
+### 2026-03-13 14:30 | Identificação do canal e contato
+- Leonardo confirmou que o canal operacional deste assunto é `WhatsApp`.
+- Nome do contato: `Lucía Rodriguez`.
+- Estado mantido como `Aguardando execução`.
