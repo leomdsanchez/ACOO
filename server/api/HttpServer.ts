@@ -113,8 +113,15 @@ export class HttpServer {
     }
 
     if (request.method === "GET" && context.pathname === "/api/agents/skills") {
+      const skills = await this.options.runtime.skills.loader.loadAll();
       sendJson(response, 200, {
-        data: await this.options.runtime.skills.loader.loadAll(),
+        data: skills.map((skill) => ({
+          description: skill.description,
+          id: skill.id,
+          keywords: skill.keywords,
+          name: skill.name,
+          sourcePath: skill.sourcePath,
+        })),
       });
       return;
     }
