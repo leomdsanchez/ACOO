@@ -11,22 +11,24 @@ const services = [
     args: ["run", "server:api"],
     enabled: true,
     name: "api",
+    restartOnFailure: true,
   },
   {
     args: ["run", "dev:ui"],
     enabled: true,
     name: "ui",
+    restartOnFailure: false,
   },
   {
     args: ["run", "dev:telegram"],
     enabled: isEnabled(process.env.ACOO_TELEGRAM_ENABLED),
     name: "telegram",
+    restartOnFailure: true,
   },
 ];
 
-const running = services
-  .filter((service) => service.enabled)
-  .map((service) => startService(service.name, service.args));
+const enabledServices = services.filter((service) => service.enabled);
+const running = enabledServices.map((service) => startService(service));
 
 if (running.length === 0) {
   process.stderr.write("Nenhum serviço de desenvolvimento habilitado.\n");
@@ -36,37 +38,72 @@ if (running.length === 0) {
 let shuttingDown = false;
 
 for (const child of running) {
-  child.process.on("exit", (code, signal) => {
-    if (!shuttingDown) {
-      const detail = signal ? `signal ${signal}` : `code ${code ?? 0}`;
-      process.stderr.write(`[${child.name}] terminou com ${detail}\n`);
-      shutdown(code ?? 1);
-    }
-  });
+  attachLifecycle(child);
 }
 
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
-function startService(name, args) {
-  const child = spawn("npm", args, {
+function startService(service) {
+  const child = spawn("npm", service.args, {
     cwd: repoRoot,
     env: process.env,
     stdio: ["inherit", "pipe", "pipe"],
   });
 
   child.stdout.on("data", (chunk) => {
-    process.stdout.write(prefixLines(name, String(chunk)));
+    process.stdout.write(prefixLines(service.name, String(chunk)));
   });
 
   child.stderr.on("data", (chunk) => {
-    process.stderr.write(prefixLines(name, String(chunk)));
+    process.stderr.write(prefixLines(service.name, String(chunk)));
   });
 
   return {
-    name,
+    attempts: 0,
     process: child,
+    service,
   };
+}
+
+function attachLifecycle(child) {
+  child.process.on("exit", (code, signal) => {
+    if (shuttingDown) {
+      return;
+    }
+
+    const detail = signal ? `signal ${signal}` : `code ${code ?? 0}`;
+    process.stderr.write(`[${child.service.name}] terminou com ${detail}\n`);
+
+    if (shouldRestart(child, code, signal)) {
+      child.attempts += 1;
+      const delayMs = Math.min(5_000, 1_000 * child.attempts);
+      process.stderr.write(`[${child.service.name}] reiniciando em ${delayMs}ms\n`);
+      setTimeout(() => {
+        if (shuttingDown) {
+          return;
+        }
+        const restarted = startService(child.service);
+        child.process = restarted.process;
+        attachLifecycle(child);
+      }, delayMs);
+      return;
+    }
+
+    shutdown(code ?? 1);
+  });
+}
+
+function shouldRestart(child, code, signal) {
+  if (!child.service.restartOnFailure) {
+    return false;
+  }
+
+  if (signal === "SIGINT" || signal === "SIGTERM") {
+    return false;
+  }
+
+  return (code ?? 1) !== 0;
 }
 
 function shutdown(exitCode) {
