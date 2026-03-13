@@ -44,6 +44,8 @@ Variáveis relevantes em `.env`:
 - `VITE_APP_NAME`: nome exibido no frontend local.
 - `DATABASE_URL`: caminho do SQLite usado pelo Prisma para o registry do ACOO.
 - `ACOO_CODEX_CLI_BIN`: binário da Codex CLI.
+- `ACOO_API_HOST`: host do servidor HTTP local do ACOO.
+- `ACOO_API_PORT`: porta do servidor HTTP local do ACOO.
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
@@ -93,7 +95,27 @@ Desenvolvimento local completo:
 npm run dev
 ```
 
-Esse comando sobe a UI e, se `ACOO_TELEGRAM_ENABLED=true`, também sobe o polling do Telegram.
+Esse comando sobe a API HTTP local, a UI e, se `ACOO_TELEGRAM_ENABLED=true`, também sobe o polling do Telegram.
+
+API HTTP local:
+
+```bash
+npm run server:api
+```
+
+Endpoints iniciais:
+
+- `GET /healthz`
+- `GET /api/status`
+- `GET /api/mcp`
+- `GET /api/agents`
+- `POST /api/agents`
+- `GET /api/agents/:slug`
+- `PATCH /api/agents/:slug`
+- `GET /api/agents/profiles`
+- `GET /api/agents/skills`
+- `GET /api/sessions`
+- `GET /api/runs`
 
 Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 

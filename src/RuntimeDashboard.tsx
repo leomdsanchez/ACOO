@@ -11,6 +11,7 @@ import {
   readRuntimeProfileDefaults,
   runtimeProfileStorageKey,
 } from "./runtimeProfileState";
+import { fetchRuntimeStatus, type RuntimeStatusSnapshot } from "./runtimeApi";
 
 interface RuntimeDashboardProps {
   appName: string;
@@ -19,34 +20,72 @@ interface RuntimeDashboardProps {
 export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
   const defaults = readRuntimeProfileDefaults();
   const [profile, setProfile] = useState<RuntimeProfile>(() => loadRuntimeProfile(defaults));
+  const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatusSnapshot | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(runtimeProfileStorageKey, JSON.stringify(profile));
   }, [profile]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadStatus = async () => {
+      try {
+        const next = await fetchRuntimeStatus();
+        if (!active) {
+          return;
+        }
+        setRuntimeStatus(next);
+        setStatusError(null);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setStatusError(error instanceof Error ? error.message : "Falha ao carregar status.");
+      }
+    };
+
+    void loadStatus();
+    const timer = window.setInterval(() => {
+      void loadStatus();
+    }, 15_000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const commandPreview = buildCommandPreview(profile);
 
   return (
     <main className="shell">
-      <Hero appName={appName} profile={profile} />
+      <Hero appName={appName} profile={profile} runtimeStatus={runtimeStatus} />
 
       <section className="panel-grid" aria-label="Runtime controls">
         <CodexProfileCard
           commandPreview={commandPreview}
           profile={profile}
           setProfile={setProfile}
+          runtimeStatus={runtimeStatus}
         />
-        <TelegramProfileCard profile={profile} setProfile={setProfile} />
-        <RuntimeShapeCard defaults={defaults} resetProfile={() => setProfile(defaults)} />
+        <TelegramProfileCard profile={profile} setProfile={setProfile} runtimeStatus={runtimeStatus} />
+        <RuntimeShapeCard
+          defaults={defaults}
+          resetProfile={() => setProfile(defaults)}
+          runtimeStatus={runtimeStatus}
+          statusError={statusError}
+        />
       </section>
 
       <section className="chip-rail" aria-label="Operational zones">
         {[
           "threads/, tasks/",
           "gpt-5.4 / effort / sandbox / approval",
-          "telegram staged",
+          "api / telegram / codex",
           "playwright, notion, stripe",
-          "npm run server:status",
+          "npm run server:api",
           "npm run server:run",
         ].map((item) => (
           <span className="rail-chip" key={item}>
@@ -58,15 +97,33 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
   );
 }
 
-function Hero({ appName, profile }: { appName: string; profile: RuntimeProfile }) {
+function Hero({
+  appName,
+  profile,
+  runtimeStatus,
+}: {
+  appName: string;
+  profile: RuntimeProfile;
+  runtimeStatus: RuntimeStatusSnapshot | null;
+}) {
   const topStats = [
-    { label: "runtime", value: "codex-backed", tone: "good" },
-    { label: "model", value: profile.model, tone: "good" },
-    { label: "effort", value: profile.reasoningEffort, tone: "good" },
+    {
+      label: "runtime",
+      value: runtimeStatus ? (runtimeStatus.issues.length === 0 ? "healthy" : "degraded") : "loading",
+      tone: runtimeStatus ? (runtimeStatus.issues.length === 0 ? "good" : "warn") : "warn",
+    },
+    { label: "model", value: runtimeStatus?.defaults.model ?? profile.model, tone: "good" },
+    { label: "effort", value: runtimeStatus?.defaults.reasoningEffort ?? profile.reasoningEffort, tone: "good" },
     {
       label: "telegram",
-      value: profile.telegramEnabled ? "channel staged" : "not enabled",
-      tone: profile.telegramEnabled ? "warn" : "good",
+      value: runtimeStatus
+        ? runtimeStatus.telegram.enabled
+          ? `live / ${runtimeStatus.telegram.activeChats} chat`
+          : "disabled"
+        : profile.telegramEnabled
+          ? "configured"
+          : "not enabled",
+      tone: runtimeStatus?.telegram.enabled ? "good" : "warn",
     },
   ];
 
@@ -97,15 +154,18 @@ function CodexProfileCard({
   commandPreview,
   profile,
   setProfile,
-}: RuntimeCardProps & { commandPreview: string }) {
+  runtimeStatus,
+}: RuntimeCardProps & { commandPreview: string; runtimeStatus: RuntimeStatusSnapshot | null }) {
   return (
     <article className="panel-card panel-card--form">
       <div className="panel-head">
         <h2>Codex CLI</h2>
-        <span className="surface-pill surface-pill--good">defaults</span>
+        <span className="surface-pill surface-pill--good">
+          {runtimeStatus ? "runtime live" : "draft"}
+        </span>
       </div>
       <p className="panel-note">
-        Perfil local do app. Ainda nao grava no `.env` nem altera o runtime do server.
+        Perfil local do app. O snapshot real do runtime aparece abaixo quando a API local responde.
       </p>
       <div className="form-grid">
         <TextField
@@ -155,19 +215,27 @@ function CodexProfileCard({
   );
 }
 
-function TelegramProfileCard({ profile, setProfile }: RuntimeCardProps) {
+function TelegramProfileCard({
+  profile,
+  setProfile,
+  runtimeStatus,
+}: RuntimeCardProps & { runtimeStatus: RuntimeStatusSnapshot | null }) {
   return (
     <article className="panel-card panel-card--form">
       <div className="panel-head">
         <h2>Telegram</h2>
         <span
-          className={`surface-pill ${profile.telegramEnabled ? "surface-pill--warn" : "surface-pill--good"}`}
+          className={`surface-pill ${
+            runtimeStatus?.telegram.enabled || profile.telegramEnabled
+              ? "surface-pill--good"
+              : "surface-pill--warn"
+          }`}
         >
-          {profile.telegramEnabled ? "staged" : "off"}
+          {runtimeStatus?.telegram.enabled ? "live" : profile.telegramEnabled ? "configured" : "off"}
         </span>
       </div>
       <p className="panel-note">
-        Canal ainda nao implementado. Aqui fica so a prontidao do perfil operacional.
+        Draft local do canal. O runtime real usa a API e pode estar em estado diferente do browser.
       </p>
       <div className="form-grid">
         <ToggleField
@@ -214,12 +282,16 @@ function TelegramProfileCard({ profile, setProfile }: RuntimeCardProps) {
       </div>
       <div className="mini-grid">
         <div className="mini-card">
-          <span>input plan</span>
-          <strong>text / voice / document</strong>
+          <span>bot</span>
+          <strong>{(runtimeStatus?.telegram.botUsername ?? profile.telegramBotUsername) || "-"}</strong>
         </div>
         <div className="mini-card">
-          <span>adapter</span>
-          <strong>pending</strong>
+          <span>sessions</span>
+          <strong>
+            {runtimeStatus
+              ? `${runtimeStatus.telegram.activeChats}/${runtimeStatus.telegram.totalChats}`
+              : "local only"}
+          </strong>
         </div>
       </div>
     </article>
@@ -229,36 +301,52 @@ function TelegramProfileCard({ profile, setProfile }: RuntimeCardProps) {
 function RuntimeShapeCard({
   defaults,
   resetProfile,
+  runtimeStatus,
+  statusError,
 }: {
   defaults: RuntimeProfile;
   resetProfile: () => void;
+  runtimeStatus: RuntimeStatusSnapshot | null;
+  statusError: string | null;
 }) {
   return (
     <article className="panel-card">
       <div className="panel-head">
         <h2>Runtime</h2>
-        <span className="surface-pill surface-pill--good">shape</span>
+        <span className="surface-pill surface-pill--good">api</span>
       </div>
       <div className="panel-rows">
         <div className="panel-row">
           <span>status</span>
-          <strong>server:status</strong>
+          <strong>{statusError ? "api offline" : runtimeStatus ? "live snapshot" : "loading"}</strong>
         </div>
         <div className="panel-row">
           <span>mcp</span>
-          <strong>playwright / notion / stripe</strong>
+          <strong>
+            {runtimeStatus
+              ? `${runtimeStatus.integrations.configured} configured`
+              : "playwright / notion / stripe"}
+          </strong>
         </div>
         <div className="panel-row">
           <span>channels</span>
-          <strong>cli active / telegram planned</strong>
+          <strong>
+            {runtimeStatus
+              ? `cli active / telegram ${runtimeStatus.channels.telegram}`
+              : "cli active / telegram loading"}
+          </strong>
         </div>
         <div className="panel-row">
           <span>defaults</span>
-          <strong>{`${defaults.model} / ${defaults.reasoningEffort}`}</strong>
+          <strong>
+            {runtimeStatus
+              ? `${runtimeStatus.defaults.model ?? defaults.model} / ${runtimeStatus.defaults.reasoningEffort}`
+              : `${defaults.model} / ${defaults.reasoningEffort}`}
+          </strong>
         </div>
         <div className="panel-row">
           <span>persistence</span>
-          <strong>browser-local preview</strong>
+          <strong>{runtimeStatus ? `${runtimeStatus.agents.active} agents / ${runtimeStatus.agents.sessions} sessions` : "browser-local draft"}</strong>
         </div>
       </div>
       <div className="panel-actions">

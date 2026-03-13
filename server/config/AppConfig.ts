@@ -19,6 +19,11 @@ export interface TelegramConfig {
   replyAudioByDefault: boolean;
 }
 
+export interface ApiConfig {
+  host: string;
+  port: number;
+}
+
 export interface TranscriptionConfig {
   binary: string;
   enabled: boolean;
@@ -39,6 +44,7 @@ export interface PlaywrightMcpRuntimeConfig {
 }
 
 export interface AppConfig {
+  api: ApiConfig;
   appName: string;
   codexApprovalPolicy: CodexApprovalPolicy;
   codexCliBinary: string;
@@ -58,6 +64,10 @@ export function loadAppConfig(repoRoot: string): AppConfig {
   const transcriptionModel = readString("ACOO_STT_MODEL", "base");
 
   return {
+    api: {
+      host: readString("ACOO_API_HOST", "127.0.0.1"),
+      port: readNumber("ACOO_API_PORT", 4317),
+    },
     appName: readString("VITE_APP_NAME", "ACOO"),
     codexApprovalPolicy: readApprovalPolicy("ACOO_CODEX_APPROVAL_POLICY", "never"),
     codexCliBinary: readString("ACOO_CODEX_CLI_BIN", "codex"),

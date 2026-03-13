@@ -8,6 +8,11 @@ dotenv.config({ path: path.join(repoRoot, ".env") });
 
 const services = [
   {
+    args: ["run", "server:api"],
+    enabled: true,
+    name: "api",
+  },
+  {
     args: ["run", "dev:ui"],
     enabled: true,
     name: "ui",

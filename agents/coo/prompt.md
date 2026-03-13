@@ -43,8 +43,8 @@
 - Neural Think: apps operacionais vinculados ao domínio Neural
 - Plataforma Nômades: plataforma própria
 - Plataforma Nômades: Clockify
-- Plataforma Nômades: Zoho Mail
-- Plataforma Nômades: Notion com e-mail pessoal
+- Plataforma Nômades: Zoho Mail `leomdsanchez@gmail.com` | `financeiro@plataformanomades.com.br`
+- Plataforma Nômades: Notion com e-mail pessoal `leomdsanchez@gmail.com`
 
 ## Fora de Escopo
 - Decisão técnica profunda de implementação

@@ -13,6 +13,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:setup": "npm run prisma:db:push && npm run prisma:seed",
     "preview": "vite preview",
+    "server:api": "tsx server/commands/api.ts",
     "server:agents": "tsx server/commands/agents.ts",
     "server:mcp": "tsx server/commands/mcp.ts",
     "server:run": "tsx server/commands/run.ts",

@@ -40,6 +40,11 @@ Saída esperada:
 
 - agentes deixam de ser implícitos no repo.
 
+Estado atual:
+
+- storage, CRUD backend e API HTTP local já existem;
+- falta a UI consumir `agents`, `sessions`, `runs` e `mcp` de forma first-class.
+
 ## Fase 3: Session Registry
 
 Entregas:
@@ -149,8 +154,9 @@ Cada execução deve produzir:
 4. Corrigir a sessão do Telegram para `chatId + agentId`.
 5. Separar `AGENTS.md`, prompt de agente e skills.
 6. Levar esses objetos para uma API real e depois para a UI.
-7. Implementar `DelegationTask` e `AgentDelegationOrchestrator`.
-8. Só depois refatorar o resto do runtime em volta disso.
+7. Fazer a UI consumir a API real e parar de depender de `localStorage` como fonte principal.
+8. Implementar `DelegationTask` e `AgentDelegationOrchestrator`.
+9. Só depois refatorar o resto do runtime em volta disso.
 
 ## Fontes
 

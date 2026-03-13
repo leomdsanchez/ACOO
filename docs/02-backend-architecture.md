@@ -111,6 +111,23 @@ Adaptadores finos:
 
 Eles não executam raciocínio. Só traduzem eventos para `AgentRequest`.
 
+### 7. Local Control Plane API
+
+Servidor HTTP local do ACOO para a UI e automações locais.
+
+Endpoints mínimos:
+
+- `GET /api/status`
+- `GET /api/agents`
+- `GET /api/agents/:slug`
+- `POST /api/agents`
+- `PATCH /api/agents/:slug`
+- `GET /api/agents/profiles`
+- `GET /api/agents/skills`
+- `GET /api/sessions`
+- `GET /api/runs`
+- `GET /api/mcp`
+
 ## Estrutura alvo
 
 ```text
@@ -133,6 +150,8 @@ server/
   channels/
     telegram/
     web/
+  api/
+    HttpServer.ts
   runs/
     AgentRunRepository.ts
     AgentRunService.ts
