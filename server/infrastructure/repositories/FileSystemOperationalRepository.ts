@@ -22,7 +22,6 @@ import { parseTaskRecord, parseThreadRecord, toFileSlug } from "../markdown/pars
 import {
   appendTaskStatusUpdate,
   appendThreadLogMarkdown,
-  renderTaskMarkdown,
   renderThreadMarkdown,
 } from "../markdown/templates.js";
 
@@ -36,9 +35,11 @@ export interface FileSystemOperationalRepositoryOptions {
 }
 
 export class FileSystemOperationalRepository implements OperationalRepository {
+  private readonly activeTasksFile: string;
   private readonly activeThreadsDir: string;
   private readonly archivedThreadsDir: string;
   private readonly activeTasksDir: string;
+  private readonly completedTasksFile: string;
   private readonly completedTasksDir: string;
   private readonly projectsFile: string;
   private readonly contactsFile: string;
@@ -53,9 +54,14 @@ export class FileSystemOperationalRepository implements OperationalRepository {
       options.archivedThreadsDir ?? "threads-arquivadas",
     );
     this.activeTasksDir = path.join(options.repoRoot, options.activeTasksDir ?? "tasks");
+    this.activeTasksFile = path.join(this.activeTasksDir, "TAREFAS_ATIVAS.md");
     this.completedTasksDir = path.join(
       options.repoRoot,
       options.completedTasksDir ?? "tasks-finalizadas",
+    );
+    this.completedTasksFile = path.join(
+      this.completedTasksDir,
+      "TAREFAS_CONCLUIDAS.md",
     );
     const dataDir = path.join(options.repoRoot, options.dataDir ?? "data");
     this.projectsFile = path.join(dataDir, "projects.json");
@@ -170,9 +176,9 @@ export class FileSystemOperationalRepository implements OperationalRepository {
   }
 
   public async listTasks(options?: TaskListOptions): Promise<TaskSummary[]> {
-    const active = await this.readTaskDirectory(this.activeTasksDir, "active");
+    const active = await this.readTaskCollection(this.activeTasksFile, "active");
     const completed = options?.includeCompleted
-      ? await this.readTaskDirectory(this.completedTasksDir, "completed")
+      ? await this.readTaskCollection(this.completedTasksFile, "completed")
       : [];
 
     return [...active, ...completed].sort(compareTaskRecords);
@@ -192,24 +198,41 @@ export class FileSystemOperationalRepository implements OperationalRepository {
     const thread = input.relatedThreadSlug
       ? await this.getThreadBySlug(input.relatedThreadSlug)
       : null;
-    const fileName = `${input.plannedDate}_task-${slug}.md`;
-    const filePath = path.join(this.activeTasksDir, fileName);
+    const taskSlug = `${input.plannedDate}_task-${slug}`;
+    const filePath = this.activeTasksFile;
+    const tasks = await this.readTaskCollectionEntries(this.activeTasksFile, "active");
+    const entry = buildTaskCollectionEntry(
+      {
+        createdAt: input.timestamp,
+        description: input.objective,
+        id: `task-${slug}-${input.plannedDate}`,
+        latestContext:
+          input.contextLines?.[0] ?? "Definir contexto validado na primeira execução.",
+        owner: input.owner,
+        plannedDate: input.plannedDate,
+        priority: input.priority,
+        relatedThreadPath: thread?.filePath ?? null,
+        slug: taskSlug,
+        status: input.status,
+        title: input.title,
+      },
+      filePath,
+      "active",
+      [
+        `${input.timestamp}: task criada pelo core operacional.`,
+        ...(input.executionLines ?? []),
+        ...(input.checklist ?? []).map((line) => `Checklist pendente: ${line}`),
+      ],
+    );
 
     await mkdir(this.activeTasksDir, { recursive: true });
     await writeFile(
       filePath,
-      renderTaskMarkdown(
-        {
-          ...input,
-          slug,
-        },
-        thread,
-        filePath,
-      ),
+      renderTaskCollectionDocument("Tarefas Ativas", [...tasks, entry]),
       "utf8",
     );
 
-    const created = await this.getTaskBySlug(`${input.plannedDate}_task-${slug}`);
+    const created = await this.getTaskBySlug(taskSlug);
     if (!created) {
       throw new Error(`Task "${slug}" could not be read after creation.`);
     }
@@ -218,18 +241,81 @@ export class FileSystemOperationalRepository implements OperationalRepository {
   }
 
   public async updateTaskStatus(input: UpdateTaskStatusInput): Promise<TaskRecord> {
-    const task = await this.findTaskRecord(input.taskSlug);
+    const activeTasks = await this.readTaskCollectionEntries(this.activeTasksFile, "active");
+    const completedTasks = await this.readTaskCollectionEntries(
+      this.completedTasksFile,
+      "completed",
+    );
+    const activeTask = activeTasks.find((task) => matchesTaskSlug(task.slug, input.taskSlug));
+    const completedTask = completedTasks.find((task) =>
+      matchesTaskSlug(task.slug, input.taskSlug),
+    );
+    const task = activeTask ?? completedTask ?? (await this.findLegacyTaskRecord(input.taskSlug));
     if (!task) {
       throw new Error(`Task "${input.taskSlug}" not found.`);
+    }
+
+    const note = input.note
+      ? `${input.timestamp}: ${input.note}`
+      : `${input.timestamp}: status atualizado para ${input.status}.`;
+
+    if (isTaskCollectionEntry(task)) {
+      const updatedTask: TaskCollectionEntry = {
+        ...task,
+        history: [...task.history, note],
+        latestContext: input.note ?? task.latestContext,
+        status: input.status,
+      };
+
+      if (task.storage === "active" && input.status === "Concluído") {
+        const nextActive = activeTasks.filter(
+          (current) => !matchesTaskSlug(current.slug, input.taskSlug),
+        );
+        const completedEntry: TaskCollectionEntry = {
+          ...updatedTask,
+          filePath: this.completedTasksFile,
+          storage: "completed",
+        };
+        const nextCompleted = [...completedTasks, completedEntry];
+
+        await mkdir(this.activeTasksDir, { recursive: true });
+        await mkdir(this.completedTasksDir, { recursive: true });
+        await writeFile(
+          this.activeTasksFile,
+          renderTaskCollectionDocument("Tarefas Ativas", nextActive),
+          "utf8",
+        );
+        await writeFile(
+          this.completedTasksFile,
+          renderTaskCollectionDocument("Tarefas Concluídas", nextCompleted),
+          "utf8",
+        );
+      } else {
+        const sourceTasks = task.storage === "completed" ? completedTasks : activeTasks;
+        const nextTasks = sourceTasks.map((current) =>
+          matchesTaskSlug(current.slug, input.taskSlug) ? updatedTask : current,
+        );
+        const targetFile =
+          task.storage === "completed" ? this.completedTasksFile : this.activeTasksFile;
+        const title =
+          task.storage === "completed" ? "Tarefas Concluídas" : "Tarefas Ativas";
+
+        await mkdir(path.dirname(targetFile), { recursive: true });
+        await writeFile(targetFile, renderTaskCollectionDocument(title, nextTasks), "utf8");
+      }
+
+      const refreshed = await this.getTaskBySlug(input.taskSlug);
+      if (!refreshed) {
+        throw new Error(`Task "${input.taskSlug}" could not be read after update.`);
+      }
+
+      return refreshed;
     }
 
     const updatedTask: TaskRecord = {
       ...task,
       status: input.status,
     };
-    const note = input.note
-      ? `${input.timestamp}: ${input.note}`
-      : `${input.timestamp}: status atualizado para ${input.status}.`;
 
     await writeFile(
       task.filePath,
@@ -275,6 +361,35 @@ export class FileSystemOperationalRepository implements OperationalRepository {
     return records;
   }
 
+  private async readTaskCollection(
+    filePath: string,
+    storage: "active" | "completed",
+  ): Promise<TaskRecord[]> {
+    const collection = await this.readTaskCollectionEntries(filePath, storage);
+    if (collection.length > 0 || (await this.fileExists(filePath))) {
+      return collection;
+    }
+
+    const fallbackDir = storage === "active" ? this.activeTasksDir : this.completedTasksDir;
+    return this.readTaskDirectory(fallbackDir, storage);
+  }
+
+  private async readTaskCollectionEntries(
+    filePath: string,
+    storage: "active" | "completed",
+  ): Promise<TaskCollectionEntry[]> {
+    try {
+      const content = await readFile(filePath, "utf8");
+      return parseTaskCollection(filePath, content, storage);
+    } catch (error) {
+      if (isMissingPathError(error)) {
+        return [];
+      }
+
+      throw error;
+    }
+  }
+
   private async readMarkdownPaths(directoryPath: string): Promise<string[]> {
     try {
       const entries = await readdir(directoryPath, { withFileTypes: true });
@@ -301,12 +416,39 @@ export class FileSystemOperationalRepository implements OperationalRepository {
   }
 
   private async findTaskRecord(slug: string): Promise<TaskRecord | null> {
+    const active = await this.findTaskBySlugInCollection(this.activeTasksFile, slug, "active");
+    if (active) {
+      return active;
+    }
+
+    const completed = await this.findTaskBySlugInCollection(
+      this.completedTasksFile,
+      slug,
+      "completed",
+    );
+    if (completed) {
+      return completed;
+    }
+
+    return this.findLegacyTaskRecord(slug);
+  }
+
+  private async findLegacyTaskRecord(slug: string): Promise<TaskRecord | null> {
     const active = await this.findTaskBySlugInDirectory(this.activeTasksDir, slug, "active");
     if (active) {
       return active;
     }
 
     return this.findTaskBySlugInDirectory(this.completedTasksDir, slug, "completed");
+  }
+
+  private async findTaskBySlugInCollection(
+    filePath: string,
+    slug: string,
+    storage: "active" | "completed",
+  ): Promise<TaskRecord | null> {
+    const tasks = await this.readTaskCollectionEntries(filePath, storage);
+    return tasks.find((task) => matchesTaskSlug(task.slug, slug)) ?? null;
   }
 
   private async findTaskBySlugInDirectory(
@@ -361,6 +503,19 @@ export class FileSystemOperationalRepository implements OperationalRepository {
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, `${JSON.stringify(items, null, 2)}\n`, "utf8");
   }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await readFile(filePath, "utf8");
+      return true;
+    } catch (error) {
+      if (isMissingPathError(error)) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
 }
 
 function compareThreadRecords(left: ThreadSummary, right: ThreadSummary): number {
@@ -377,4 +532,176 @@ function compareTaskRecords(left: TaskSummary, right: TaskSummary): number {
 
 function isMissingPathError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
+interface TaskCollectionEntry extends TaskRecord {
+  description: string;
+  history: string[];
+  latestContext: string | null;
+  owner: string | null;
+  plannedDate: string | null;
+}
+
+function isTaskCollectionEntry(task: TaskRecord | TaskCollectionEntry): task is TaskCollectionEntry {
+  return "history" in task && Array.isArray(task.history);
+}
+
+function parseTaskCollection(
+  filePath: string,
+  content: string,
+  storage: "active" | "completed",
+): TaskCollectionEntry[] {
+  const sections = content
+    .split(/^##\s+/m)
+    .slice(1)
+    .map((section) => {
+      const [heading, ...lines] = section.split("\n");
+      return {
+        body: lines.join("\n").trim(),
+        raw: `## ${section.trim()}`,
+        slug: heading.trim(),
+      };
+    });
+
+  return sections.map((section) => {
+    const slug = section.slug;
+    const body = section.body;
+    const historyBlock = body.match(/### Histórico\n([\s\S]*)$/m)?.[1] ?? "";
+    const fieldBlock = body.replace(/\n### Histórico[\s\S]*$/m, "");
+    const fields = new Map(
+      [...fieldBlock.matchAll(/^- ([^:]+):\s*(.+)$/gm)].map((match) => [
+        match[1].trim(),
+        match[2].trim(),
+      ]),
+    );
+    const history = [...historyBlock.matchAll(/^- `([^`]+)`$/gm)].map((match) => match[1]);
+    const relatedThreadPath = readInlineMarkdownTarget(fields.get("Thread associada"));
+
+    return buildTaskCollectionEntry(
+      {
+        createdAt: readBacktickedValue(fields.get("Criada em")) ?? null,
+        description: readBacktickedValue(fields.get("Descrição")) ?? "",
+        id: readBacktickedValue(fields.get("ID")) ?? slug,
+        latestContext: readBacktickedValue(fields.get("Último contexto relevante")),
+        owner: readBacktickedValue(fields.get("Responsável")),
+        plannedDate: readBacktickedValue(fields.get("Prazo")),
+        priority: readBacktickedValue(fields.get("Prioridade")),
+        relatedThreadPath,
+        slug,
+        status: readBacktickedValue(fields.get("Status")),
+        title: readBacktickedValue(fields.get("Nome")) ?? slug,
+      },
+      filePath,
+      storage,
+      history,
+      section.raw,
+    );
+  });
+}
+
+function buildTaskCollectionEntry(
+  input: {
+    createdAt: string | null;
+    description: string;
+    id: string;
+    latestContext: string | null;
+    owner: string | null;
+    plannedDate: string | null;
+    priority: string | null;
+    relatedThreadPath: string | null;
+    slug: string;
+    status: string | null;
+    title: string;
+  },
+  filePath: string,
+  storage: "active" | "completed",
+  history: string[] = [],
+  content?: string,
+): TaskCollectionEntry {
+  const entry: TaskCollectionEntry = {
+    content: content ?? "",
+    createdAt: input.createdAt,
+    description: input.description,
+    filePath,
+    history,
+    id: input.id,
+    latestContext: input.latestContext,
+    owner: input.owner,
+    plannedDate: input.plannedDate,
+    priority: input.priority,
+    relatedThreadPath: input.relatedThreadPath,
+    slug: input.slug,
+    status: input.status,
+    storage,
+    title: input.title,
+  };
+  entry.content = content ?? renderTaskCollectionEntry(entry);
+  return entry;
+}
+
+function renderTaskCollectionDocument(
+  title: "Tarefas Ativas" | "Tarefas Concluídas",
+  tasks: TaskCollectionEntry[],
+): string {
+  const header = [
+    `# ${title}`,
+    "",
+    "> Documento canônico de tarefas do ACOO.",
+    "",
+  ].join("\n");
+
+  if (tasks.length === 0) {
+    return `${header}Nenhuma tarefa registrada.\n`;
+  }
+
+  const ordered = [...tasks].sort(compareTaskRecords);
+  return `${header}${ordered.map((task) => renderTaskCollectionEntry(task)).join("\n\n")}\n`;
+}
+
+function renderTaskCollectionEntry(task: TaskCollectionEntry): string {
+  const threadLine = task.relatedThreadPath
+    ? `[${path.basename(task.relatedThreadPath)}](${task.relatedThreadPath})`
+    : "Não vinculada.";
+  const history =
+    task.history.length > 0
+      ? task.history.map((item) => `- \`${item}\``).join("\n")
+      : "- `Sem histórico adicional registrado.`";
+
+  return [
+    `## ${task.slug}`,
+    `- ID: \`${task.id}\``,
+    `- Nome: \`${task.title}\``,
+    `- Descrição: ${task.description || "Sem descrição."}`,
+    `- Status: \`${task.status ?? "Pendente"}\``,
+    `- Thread associada: ${threadLine}`,
+    `- Responsável: \`${task.owner ?? "Sem responsável"}\``,
+    `- Prazo: \`${task.plannedDate ?? "Sem prazo"}\``,
+    `- Prioridade: \`${task.priority ?? "Sem prioridade"}\``,
+    `- Criada em: \`${task.createdAt ?? "Sem data"}\``,
+    `- Último contexto relevante: ${task.latestContext ?? "Sem contexto resumido."}`,
+    "### Histórico",
+    history,
+  ].join("\n");
+}
+
+function matchesTaskSlug(candidate: string, slug: string): boolean {
+  return candidate === slug || candidate.endsWith(`_task-${slug}`);
+}
+
+function readBacktickedValue(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/`([^`]+)`/);
+  return match?.[1]?.trim() ?? value.trim();
+}
+
+function readInlineMarkdownTarget(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/\[[^\]]+\]\(([^)]+)\)/);
+  return match?.[1] ?? null;
 }
