@@ -1,12 +1,16 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { McpRuntimeCatalog } from "./McpRuntimeCatalog.js";
+import type {
+  ManagedMcpRuntimeDefinition,
+  McpRuntimeCatalog,
+} from "./McpRuntimeCatalog.js";
 
 const execFileAsync = promisify(execFile);
 
 export interface ManagedMcpRuntimeHealth {
   autostart: boolean;
   healthy: boolean;
+  healthcheckCommand: string | null;
   healthcheckUrl: string;
   name: string;
   startupCommand: string;
@@ -45,7 +49,7 @@ export class McpSessionBootstrapper {
         continue;
       }
 
-      const healthyBefore = await this.checkHealth(runtime.healthcheckUrl);
+      const healthyBefore = await this.checkHealth(runtime);
       if (healthyBefore) {
         results.push({
           healthy: true,
@@ -76,7 +80,7 @@ export class McpSessionBootstrapper {
         maxBuffer: 1024 * 1024,
       });
 
-      const healthyAfter = await this.checkHealth(runtime.healthcheckUrl);
+      const healthyAfter = await this.checkHealth(runtime);
       results.push({
         healthy: healthyAfter,
         manualStartRequired: !healthyAfter,
@@ -95,7 +99,8 @@ export class McpSessionBootstrapper {
     return Promise.all(
       runtimes.map(async (runtime) => ({
         autostart: runtime.autostart,
-        healthy: await this.checkHealth(runtime.healthcheckUrl),
+        healthy: await this.checkHealth(runtime),
+        healthcheckCommand: runtime.healthcheckCommand,
         healthcheckUrl: runtime.healthcheckUrl,
         name: runtime.name,
         startupCommand: runtime.startupCommand,
@@ -103,11 +108,29 @@ export class McpSessionBootstrapper {
     );
   }
 
-  private async checkHealth(healthcheckUrl: string): Promise<boolean> {
+  private async checkHealth(runtime: ManagedMcpRuntimeDefinition): Promise<boolean> {
+    if (runtime.healthcheckCommand) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6_000);
+      try {
+        await execFileAsync("zsh", ["-lc", runtime.healthcheckCommand], {
+          cwd: this.cwd,
+          env: process.env,
+          maxBuffer: 1024 * 1024,
+          signal: controller.signal,
+        });
+        return true;
+      } catch {
+        return false;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 2_500);
     try {
-      const response = await fetch(healthcheckUrl, {
+      const response = await fetch(runtime.healthcheckUrl, {
         method: "GET",
         signal: controller.signal,
       });

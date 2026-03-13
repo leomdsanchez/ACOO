@@ -8,9 +8,13 @@ Padronizar o uso do browser MCP do ACOO com `Brave` em perfil persistente, reduz
 
 - launcher manual da janela dedicada: `~/.local/bin/playwright-mcp-brave-open`
 - wrapper MCP da Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
+- healthcheck real do ACOO: `node scripts/playwright-mcp-healthcheck.mjs`
 - endpoint CDP esperado: `http://127.0.0.1:9222/json/version`
 - profile isolado do MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
 - config da Codex: `~/.codex/config.toml`
+
+No ambiente local atual, o wrapper esta pinado em `@playwright/mcp@0.0.68`.
+Se for necessario atualizar, fazer isso de forma intencional, nao via `@latest`.
 
 O wrapper `playwright-mcp-brave-persistent` nao abre o browser sozinho.
 Ele apenas faz `attach` no endpoint CDP ja exposto pelo `Brave`.
@@ -18,7 +22,7 @@ Ele apenas faz `attach` no endpoint CDP ja exposto pelo `Brave`.
 ## Estado atual validado
 
 - o ACOO enxerga o MCP `playwright` corretamente na Codex CLI;
-- o runtime gerenciado fica `unhealthy` quando o CDP do Brave nao esta de pe;
+- o runtime gerenciado agora valida `attach` real via CDP, nao apenas `GET /json/version`;
 - o preflight atual exige subida manual por padrao;
 - o profile do MCP e separado do browser pessoal e tem preferencias proprias.
 
@@ -34,8 +38,15 @@ Antes de usar uma skill que depende de browser:
 Sinais de runtime saudavel:
 
 - `server:status` sem advisory de Playwright indisponivel
-- `curl http://127.0.0.1:9222/json/version` responde
+- `node scripts/playwright-mcp-healthcheck.mjs` responde com `ok: true`
 - o MCP consegue listar tabs sem erro de attach
+
+O healthcheck do ACOO faz duas validacoes:
+
+1. `GET /json/version`
+2. `chromium.connectOverCDP(...)`
+
+Assim, `browser de pe` deixou de ser tratado como sinonimo de `runtime realmente anexavel`.
 
 ## Comportamentos que sao esperados
 
@@ -79,6 +90,7 @@ Errado:
 
 - dizer que o Playwright "nao existe" sem validar o runtime
 - tentar operar browser com o CDP ainda fora do ar
+- confiar apenas em `curl /json/version` como prova de attach funcional
 
 ### Tratar troca visual de tema como troca de sessao
 
