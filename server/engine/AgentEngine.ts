@@ -1,7 +1,16 @@
 import type { CodexCliExecResult, CodexCliService } from "../codex/CodexCliService.js";
 
+export interface AgentExecutionProfile {
+  approvalPolicy?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
+  sandboxMode?: string | null;
+  searchEnabled?: boolean;
+}
+
 export interface AgentEngineRequest {
   cwd: string;
+  executionProfile?: AgentExecutionProfile;
   ephemeral?: boolean;
   prompt: string;
   resumeLast?: boolean;
@@ -15,6 +24,7 @@ export class AgentEngine {
     return this.codex.run({
       cwd: request.cwd,
       ephemeral: request.ephemeral,
+      overrides: request.executionProfile,
       prompt: request.prompt,
       resumeLast: request.resumeLast,
       sessionId: request.sessionId,

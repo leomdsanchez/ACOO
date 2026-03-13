@@ -10,6 +10,7 @@ import { CodexCliService } from "./codex/CodexCliService.js";
 import { OperationalContextService } from "./context/OperationalContextService.js";
 import { AgentEngine } from "./engine/AgentEngine.js";
 import { FileSystemOperationalRepository } from "./infrastructure/repositories/FileSystemOperationalRepository.js";
+import { McpPolicyEvaluator } from "./mcp/McpPolicyEvaluator.js";
 import { McpRegistryService } from "./mcp/McpRegistryService.js";
 import { RuntimeStatusService } from "./status/RuntimeStatusService.js";
 import { LocalTranscriptionService } from "./transcription/LocalTranscriptionService.js";
@@ -51,6 +52,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     sandboxMode: config.codexSandboxMode,
   });
   const context = new OperationalContextService(workspace);
+  const mcpPolicyEvaluator = new McpPolicyEvaluator(agentRegistry, codex);
   const skillLoader = new SkillLoader({
     roots: config.skillRoots,
   });
@@ -60,6 +62,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const engine = new AgentEngine(codex);
   const controller = new AgentController(
     agentRegistry,
+    mcpPolicyEvaluator,
     engine,
     context,
     skillLoader,

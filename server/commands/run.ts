@@ -7,7 +7,7 @@ async function main() {
 
   if (!prompt) {
     process.stderr.write(
-      "Usage: npm run server:run -- [--cwd DIR] [--session ID | --resume-last] [--ephemeral] [--json] \"seu prompt\"\n",
+      "Usage: npm run server:run -- [--agent SLUG] [--cwd DIR] [--session ID | --resume-last] [--ephemeral] [--json] \"seu prompt\"\n",
     );
     process.exitCode = 1;
     return;
@@ -15,6 +15,7 @@ async function main() {
 
   const runtime = createOperationalRuntime();
   const response = await runtime.bot.handleTextMessage({
+    agentSlug: args.values.get("--agent") ?? undefined,
     cwd: args.values.get("--cwd") ?? process.cwd(),
     ephemeral: args.flags.has("--ephemeral"),
     interaction: {

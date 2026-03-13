@@ -89,22 +89,51 @@ npm run server:mcp -- --pretty
 
 Sessão persistente oficial do browser para MCP:
 
+- launcher manual do browser: `~/.local/bin/playwright-mcp-brave-open`
 - wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
 - config da Codex: `~/.codex/config.toml`
 - profile persistente reutilizado pelo MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
+- endpoint CDP persistente: `http://127.0.0.1:9222`
 - browser oficial para fluxos MCP: `Brave Browser`
 
 Fluxo recomendado de reuso:
 
-1. abrir o Brave com esse profile uma vez e concluir os logins manuais necessários;
-2. manter o profile `brave-profile` como profile operacional do MCP;
-3. deixar o `playwright` da Codex sempre apontando para o wrapper `playwright-mcp-brave-persistent`;
-4. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo.
+1. subir o `Brave` dedicado manualmente com `~/.local/bin/playwright-mcp-brave-open`;
+2. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
+3. manter o profile `brave-profile` como profile operacional do MCP;
+4. concluir os logins manuais uma vez nesse profile;
+5. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
+6. quando a janela precisar ser encerrada de verdade, fechar o `Brave` sem medo de auto-reabertura do wrapper.
+
+Com esse modelo, a janela do `Brave` deixa de depender do ciclo de vida do turno do Codex e não deve mais fechar ao final de cada resposta.
+
+Uso operacional do browser:
+
+1. começar por `tabs -> snapshot -> select/verify tab`;
+2. reutilizar abas existentes sempre que possível;
+3. evitar fechar abas durante login, OAuth ou 2FA;
+4. para sistemas críticos, validar a aba pelo cabeçalho e pela URL antes de clicar;
+5. quando a tarefa exigir login manual, deixar a tela aberta para o Leonardo concluir no mesmo profile;
+6. não reciclar abas de WhatsApp Web, Google login, Clockify login ou Bubble enquanto houver handoff manual em andamento;
+7. depois de abrir uma tela para ação manual do Leonardo, preservar a aba ativa e não fazer limpeza de memória por fechamento de abas.
+
+Notas práticas:
+
+- A profile operacional do MCP é exclusiva do fluxo automatizado.
+- O attach via `CDP` melhora bastante a estabilidade da janela entre turnos.
+- O wrapper da Codex só faz `attach`; ele não deve abrir o browser sozinho.
+- Em fluxos Bubble, a rota direta pode voltar para o dashboard; quando isso acontecer, preferir a navegação interna da própria UI.
 
 Execução do agente via Codex CLI usando o contexto operacional do repo:
 
 ```bash
 npm run server:run -- "revisar as frentes ativas e apontar a próxima trava"
+```
+
+Execução com agente explícito:
+
+```bash
+npm run server:run -- --agent research "pesquisar concorrentes e resumir evidencias"
 ```
 
 Provisionamento do banco local do ACOO:
@@ -141,6 +170,7 @@ npm run server:telegram -- --status
 
 Opções úteis:
 
+- `--agent SLUG`: força o agente do registry para a execução no canal CLI.
 - `--json`: devolve a resposta completa com `command`, `stdout` e `stderr`.
 - `--cwd DIR`: executa a Codex CLI em outro diretório.
 - `--session ID`: retoma uma sessão específica da Codex CLI.
@@ -155,6 +185,8 @@ Opções úteis:
 - MCPs entram como integrações externas já registradas na Codex CLI.
 - O catálogo suportado fica em `server/mcp/manifest.ts`.
 - Integrações configuradas na CLI e fora do catálogo continuam visíveis como `configuredUnknown`.
+- O backend valida MCP obrigatório por agente antes da execução.
+- MCP bloqueado por agente não é desligado dinamicamente da CLI; ele entra como política explícita no prompt até existir isolamento por profile da Codex.
 - Se no futuro o ACOO precisar expor um MCP próprio, isso deve ser tratado como interface opcional, não como núcleo do sistema.
 
 ## Estratégia de Canais

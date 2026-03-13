@@ -4,7 +4,7 @@ export interface ParsedFlagArgs {
   positionals: string[];
 }
 
-const VALUE_FLAGS = new Set(["--cwd", "--session"]);
+const VALUE_FLAGS = new Set(["--agent", "--cwd", "--session"]);
 
 export function parseFlagArgs(argv: string[]): ParsedFlagArgs {
   const flags = new Set<string>();

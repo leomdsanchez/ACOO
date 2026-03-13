@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
+import {
+  buildAgentExecutionProfile,
+  ensureAgentCanRun,
+  renderAgentRuntimeSummary,
+} from "../agents/AgentRuntimeProfile.js";
+import type { McpPolicyEvaluation, McpPolicyEvaluator } from "../mcp/McpPolicyEvaluator.js";
 import type { AgentRecord } from "../domain/models.js";
 import type { OperationalContextService } from "../context/OperationalContextService.js";
 import type { AgentEngine } from "../engine/AgentEngine.js";
@@ -51,6 +57,7 @@ export interface AgentResponse {
 export class AgentController {
   public constructor(
     private readonly agentRegistry: AgentRegistryService,
+    private readonly mcpPolicyEvaluator: McpPolicyEvaluator,
     private readonly engine: AgentEngine,
     private readonly contextService: OperationalContextService,
     private readonly skillLoader: SkillLoader,
@@ -61,18 +68,26 @@ export class AgentController {
   public async handle(request: AgentRequest): Promise<AgentResponse> {
     const interaction = resolveInteractionContext(request.interaction);
     const activeAgent = await this.resolveActiveAgent(request.agentSlug);
-    const [skills, operationalContext, promptOverlay] = await Promise.all([
+    const [skills, operationalContext, mcpPolicy] = await Promise.all([
       this.skillLoader.loadAll(),
       this.contextService.build(request.prompt, request.preferredThreadSlugs, interaction),
-      this.buildAgentPromptOverlay(activeAgent, request.cwd ?? process.cwd()),
+      this.mcpPolicyEvaluator.evaluate(activeAgent),
     ]);
+    ensureAgentCanRun(activeAgent, mcpPolicy);
+    const promptOverlay = await this.buildAgentPromptOverlay(
+      activeAgent,
+      mcpPolicy,
+      request.cwd ?? process.cwd(),
+    );
 
     const availableSkills = filterSkillsForAgent(skills, activeAgent);
     const activeSkill = await this.skillRouter.chooseSkill(request.prompt, availableSkills);
     const skillContext = this.skillExecutor.buildSkillContext(activeSkill);
+    const executionProfile = buildAgentExecutionProfile(activeAgent);
     const result = await this.engine.run({
       cwd: request.cwd ?? process.cwd(),
       ephemeral: request.ephemeral,
+      executionProfile,
       prompt: [promptOverlay, skillContext, operationalContext, request.prompt].filter(Boolean).join("\n\n"),
       resumeLast: request.resumeLast,
       sessionId: request.sessionId,
@@ -98,7 +113,7 @@ export class AgentController {
   private async resolveActiveAgent(agentSlug: string | undefined): Promise<AgentRecord | null> {
     const slug = agentSlug?.trim() || "coo";
     const agent = await this.agentRegistry.getAgentBySlug(slug);
-    if (!agent && agentSlug?.trim()) {
+    if (!agent) {
       throw new Error(`Agent slug "${slug}" is not registered.`);
     }
     return agent;
@@ -106,6 +121,7 @@ export class AgentController {
 
   private async buildAgentPromptOverlay(
     agent: AgentRecord | null,
+    mcpPolicy: McpPolicyEvaluation,
     cwd: string,
   ): Promise<string | null> {
     if (!agent) {
@@ -115,6 +131,7 @@ export class AgentController {
     const sections = [
       `Agente ativo: ${agent.displayName} (${agent.slug})`,
       agent.description.trim(),
+      ...renderAgentRuntimeSummary(agent, mcpPolicy),
       agent.promptInline?.trim() ?? "",
     ].filter(Boolean);
 

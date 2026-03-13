@@ -19,9 +19,26 @@ export interface CodexCliOptions {
 export interface CodexCliExecRequest {
   cwd?: string;
   ephemeral?: boolean;
+  overrides?: CodexCliRunOverrides;
   prompt: string;
   resumeLast?: boolean;
   sessionId?: string;
+}
+
+export interface CodexCliRunOverrides {
+  approvalPolicy?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
+  sandboxMode?: string | null;
+  searchEnabled?: boolean;
+}
+
+interface ResolvedRunOptions {
+  approvalPolicy: string;
+  model: string | null;
+  reasoningEffort: string | null;
+  sandboxMode: string;
+  searchEnabled: boolean;
 }
 
 export interface CodexCliExecResult {
@@ -78,6 +95,11 @@ export class CodexCliService {
     };
   }
 
+  public async listMcpServers(): Promise<CodexCliMcpServer[]> {
+    const mcpList = await this.safeRun(["mcp", "list"]);
+    return parseMcpList(mcpList.stdout);
+  }
+
   public async run(request: CodexCliExecRequest): Promise<CodexCliExecResult> {
     await this.assertRunnable();
 
@@ -132,13 +154,14 @@ export class CodexCliService {
 
   private buildExecArgs(request: CodexCliExecRequest, outputFile: string, cwd: string): string[] {
     const prompt = request.prompt.trim();
-    const globalArgs = this.buildGlobalArgs();
+    const resolved = this.resolveRunOptions(request.overrides);
+    const globalArgs = this.buildGlobalArgs(resolved);
     if (request.resumeLast) {
       return [
         ...globalArgs,
         "exec",
         "resume",
-        ...this.buildResumeOptions(outputFile, request),
+        ...this.buildResumeOptions(outputFile, request, resolved),
         "--last",
         prompt,
       ];
@@ -149,26 +172,30 @@ export class CodexCliService {
         ...globalArgs,
         "exec",
         "resume",
-        ...this.buildResumeOptions(outputFile, request),
+        ...this.buildResumeOptions(outputFile, request, resolved),
         request.sessionId,
         prompt,
       ];
     }
 
-    return [...globalArgs, "exec", ...this.buildExecOptions(outputFile, cwd, request), prompt];
+    return [...globalArgs, "exec", ...this.buildExecOptions(outputFile, cwd, request, resolved), prompt];
   }
 
-  private buildGlobalArgs(): string[] {
+  private buildGlobalArgs(resolved: ResolvedRunOptions): string[] {
     const args: string[] = [];
 
-    if (this.shouldBypassApprovalsAndSandbox()) {
+    if (this.shouldBypassApprovalsAndSandbox(resolved.approvalPolicy, resolved.sandboxMode)) {
       args.push("--dangerously-bypass-approvals-and-sandbox");
     } else {
-      args.push("-a", this.options.approvalPolicy);
+      args.push("-a", resolved.approvalPolicy);
     }
 
-    if (this.options.reasoningEffort) {
-      args.push("-c", `model_reasoning_effort="${this.options.reasoningEffort}"`);
+    if (resolved.reasoningEffort) {
+      args.push("-c", `model_reasoning_effort="${resolved.reasoningEffort}"`);
+    }
+
+    if (resolved.searchEnabled) {
+      args.push("--search");
     }
 
     return args;
@@ -178,6 +205,7 @@ export class CodexCliService {
     outputFile: string,
     cwd: string,
     request: CodexCliExecRequest,
+    resolved: ResolvedRunOptions,
   ): string[] {
     const args = [
       "-C",
@@ -187,12 +215,12 @@ export class CodexCliService {
       outputFile,
     ];
 
-    if (!this.shouldBypassApprovalsAndSandbox()) {
-      args.push("--sandbox", this.options.sandboxMode);
+    if (!this.shouldBypassApprovalsAndSandbox(resolved.approvalPolicy, resolved.sandboxMode)) {
+      args.push("--sandbox", resolved.sandboxMode);
     }
 
-    if (this.options.model) {
-      args.push("--model", this.options.model);
+    if (resolved.model) {
+      args.push("--model", resolved.model);
     }
 
     if (request.ephemeral) {
@@ -202,11 +230,15 @@ export class CodexCliService {
     return args;
   }
 
-  private buildResumeOptions(outputFile: string, request: CodexCliExecRequest): string[] {
+  private buildResumeOptions(
+    outputFile: string,
+    request: CodexCliExecRequest,
+    resolved: ResolvedRunOptions,
+  ): string[] {
     const args = ["--json", "--output-last-message", outputFile];
 
-    if (this.options.model) {
-      args.push("--model", this.options.model);
+    if (resolved.model) {
+      args.push("--model", resolved.model);
     }
 
     if (request.ephemeral) {
@@ -216,11 +248,21 @@ export class CodexCliService {
     return args;
   }
 
-  private shouldBypassApprovalsAndSandbox(): boolean {
+  private shouldBypassApprovalsAndSandbox(approvalPolicy: string, sandboxMode: string): boolean {
     return (
-      this.options.approvalPolicy === "never" &&
-      this.options.sandboxMode === "danger-full-access"
+      approvalPolicy === "never" &&
+      sandboxMode === "danger-full-access"
     );
+  }
+
+  private resolveRunOptions(overrides?: CodexCliRunOverrides): ResolvedRunOptions {
+    return {
+      approvalPolicy: overrides?.approvalPolicy ?? this.options.approvalPolicy,
+      model: overrides?.model ?? this.options.model ?? null,
+      reasoningEffort: overrides?.reasoningEffort ?? this.options.reasoningEffort ?? null,
+      sandboxMode: overrides?.sandboxMode ?? this.options.sandboxMode,
+      searchEnabled: overrides?.searchEnabled ?? false,
+    };
   }
 
   private async assertRunnable(): Promise<void> {
