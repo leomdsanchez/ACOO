@@ -159,7 +159,13 @@ export class CodexCliService {
   }
 
   private buildGlobalArgs(): string[] {
-    const args: string[] = ["-a", this.options.approvalPolicy];
+    const args: string[] = [];
+
+    if (this.shouldBypassApprovalsAndSandbox()) {
+      args.push("--dangerously-bypass-approvals-and-sandbox");
+    } else {
+      args.push("-a", this.options.approvalPolicy);
+    }
 
     if (this.options.reasoningEffort) {
       args.push("-c", `model_reasoning_effort="${this.options.reasoningEffort}"`);
@@ -179,9 +185,11 @@ export class CodexCliService {
       "--json",
       "--output-last-message",
       outputFile,
-      "--sandbox",
-      this.options.sandboxMode,
     ];
+
+    if (!this.shouldBypassApprovalsAndSandbox()) {
+      args.push("--sandbox", this.options.sandboxMode);
+    }
 
     if (this.options.model) {
       args.push("--model", this.options.model);
@@ -206,6 +214,13 @@ export class CodexCliService {
     }
 
     return args;
+  }
+
+  private shouldBypassApprovalsAndSandbox(): boolean {
+    return (
+      this.options.approvalPolicy === "never" &&
+      this.options.sandboxMode === "danger-full-access"
+    );
   }
 
   private async assertRunnable(): Promise<void> {

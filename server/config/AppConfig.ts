@@ -15,6 +15,7 @@ export interface TelegramConfig {
   botToken: string | null;
   botUsername: string | null;
   enabled: boolean;
+  progressPulseMs: number;
   replyAudioByDefault: boolean;
 }
 
@@ -55,7 +56,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexConfigPath: expandHome(readString("ACOO_CODEX_CONFIG_PATH", "~/.codex/config.toml")),
     codexModel: readOptionalString("ACOO_CODEX_MODEL"),
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
-    codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "workspace-write"),
+    codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
     repoRoot,
     skillRoots: readList("ACOO_SKILL_ROOTS", [
       path.join(repoRoot, "agents"),
@@ -66,6 +67,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
       botToken: readOptionalString("ACOO_TELEGRAM_BOT_TOKEN"),
       botUsername: readOptionalString("ACOO_TELEGRAM_BOT_USERNAME"),
       enabled: readBoolean("ACOO_TELEGRAM_ENABLED", false),
+      progressPulseMs: readNumber("ACOO_TELEGRAM_PROGRESS_PULSE_MS", 4_000),
       replyAudioByDefault: readBoolean("ACOO_TELEGRAM_REPLY_AUDIO_BY_DEFAULT", false),
     },
     transcription: {

@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { LoadedSkill } from "./Skill.js";
 
@@ -19,20 +19,9 @@ export class SkillLoader {
     const results = new Set<string>();
 
     for (const root of this.options.roots) {
-      const entries = await safeReadDir(root);
-      for (const entry of entries) {
-        if (!entry.isDirectory()) {
-          continue;
-        }
-
-        const skillMd = path.join(root, entry.name, "SKILL.md");
-        const agentMd = path.join(root, entry.name, "AGENT.md");
-        if (await fileExists(skillMd)) {
-          results.add(skillMd);
-        }
-        if (await fileExists(agentMd)) {
-          results.add(agentMd);
-        }
+      const files = await findInstructionFiles(root);
+      for (const filePath of files) {
+        results.add(filePath);
       }
     }
 
@@ -69,17 +58,36 @@ async function safeReadDir(directoryPath: string) {
   }
 }
 
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath);
-    return true;
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return false;
+async function findInstructionFiles(root: string): Promise<string[]> {
+  const results: string[] = [];
+  const queue = [root];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) {
+      continue;
     }
 
-    throw error;
+    const entries = await safeReadDir(current);
+    for (const entry of entries) {
+      const entryPath = path.join(current, entry.name);
+
+      if (entry.isDirectory()) {
+        queue.push(entryPath);
+        continue;
+      }
+
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      if (entry.name === "SKILL.md" || entry.name === "AGENT.md") {
+        results.push(entryPath);
+      }
+    }
   }
+
+  return results;
 }
 
 function deriveKeywords(baseName: string, content: string): string[] {

@@ -36,6 +36,7 @@ export class TelegramRuntime {
   private readonly logger: Pick<Console, "error" | "info" | "warn">;
   private offset = 0;
   private readonly pollTimeoutSeconds: number;
+  private readonly progressPulseMs: number;
   private readonly sessionBootstrapPrompt =
     "Inicie a sessão do canal Telegram do ACOO. Responda apenas: Sessão iniciada.";
 
@@ -48,6 +49,7 @@ export class TelegramRuntime {
     this.allowedUsers = new Set(options.config.allowedUserIds);
     this.logger = options.logger ?? console;
     this.pollTimeoutSeconds = options.pollTimeoutSeconds ?? 25;
+    this.progressPulseMs = Math.max(2_000, options.config.progressPulseMs);
   }
 
   public async getStatus(): Promise<TelegramRuntimeStatus> {
@@ -149,13 +151,14 @@ export class TelegramRuntime {
       return;
     }
 
-    await this.api.sendChatAction(chatId, "typing");
     const startedAt = Date.now();
-    const response = await this.handleWithSingleSession({
-      inputMode,
-      prompt,
-      senderId,
-    });
+    const response = await this.runWithProgress(chatId, "typing", () =>
+      this.handleWithSingleSession({
+        inputMode,
+        prompt,
+        senderId,
+      }),
+    );
 
     await this.api.sendMessage(chatId, response.answer);
     this.log(
@@ -249,7 +252,9 @@ export class TelegramRuntime {
       let answer = "Sessão da Codex reativada. Pode continuar deste ponto.";
       if (!session.sessionId) {
         try {
-          answer = await this.bootstrapCodexSession(senderId);
+          answer = await this.runWithProgress(chatId, "typing", () =>
+            this.bootstrapCodexSession(senderId),
+          );
         } catch (error) {
           await this.options.sessionStore.end();
           throw error;
@@ -273,7 +278,9 @@ export class TelegramRuntime {
     await this.options.sessionStore.startNew();
     let answer: string;
     try {
-      answer = await this.bootstrapCodexSession(senderId);
+      answer = await this.runWithProgress(chatId, "typing", () =>
+        this.bootstrapCodexSession(senderId),
+      );
     } catch (error) {
       await this.options.sessionStore.end();
       throw error;
@@ -311,7 +318,6 @@ export class TelegramRuntime {
       throw new Error("Transcrição local está desabilitada.");
     }
 
-    await this.api.sendChatAction(chatId, "typing");
     this.log("info", `transcrevendo audio em chat=${chatId}`);
     const startedAt = Date.now();
     const fileId = message.voice?.file_id ?? message.document?.file_id;
@@ -330,7 +336,9 @@ export class TelegramRuntime {
       const extension = resolveAudioExtension(file.file_path);
       const audioPath = path.join(tempDir, `input${extension}`);
       await writeFile(audioPath, bytes);
-      const transcript = await this.options.transcription.transcribe(audioPath);
+      const transcript = await this.runWithProgress(chatId, "typing", () =>
+        this.options.transcription.transcribe(audioPath),
+      );
       const text = transcript.text.trim();
       this.log(
         "info",
@@ -351,6 +359,34 @@ export class TelegramRuntime {
     return response.threadId
       ? "Sessao iniciada e thread Codex anexada. Pode continuar."
       : response.answer || "Sessao iniciada.";
+  }
+
+  private async runWithProgress<T>(
+    chatId: number,
+    action: "typing" | "record_voice",
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const pulse = async () => {
+      try {
+        await this.api.sendChatAction(chatId, action);
+      } catch (error) {
+        this.log(
+          "warn",
+          `falha ao enviar chat action ${action} em chat=${chatId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    };
+
+    await pulse();
+    const interval = setInterval(() => {
+      void pulse();
+    }, this.progressPulseMs);
+
+    try {
+      return await operation();
+    } finally {
+      clearInterval(interval);
+    }
   }
 }
 

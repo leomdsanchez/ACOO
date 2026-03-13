@@ -100,3 +100,12 @@
 ### 2026-03-11 17:08 | Status atual
 - Estado ajustado novamente para `Aguardando terceiro`.
 - Próxima trava real: retorno formal do `Correo Uruguayo` e/ou da `Facturando` com procedimento executável de reemissão, nova solicitação ou recuperação do certificado.
+
+### 2026-03-12 19:47 | Revisão do registro operacional
+- Thread local revisada em resposta à solicitação de checagem da frente dos Correios.
+- Última evidência operacional registrada segue sendo o escalonamento formal executado em `2026-03-11 17:08`.
+- Não há novo retorno do `Correo Uruguayo` nem da `Facturando` documentado nesta base até esta revisão.
+
+### 2026-03-12 19:47 | Status atual
+- Estado permanece `Aguardando terceiro`.
+- Próxima trava real permanece: retorno formal do `Correo Uruguayo` e/ou da `Facturando` com procedimento executável de reemissão, nova solicitação ou recuperação do certificado.

@@ -15,7 +15,7 @@ export function readRuntimeProfileDefaults(): RuntimeProfile {
     approvalPolicy: readApprovalPolicy("VITE_CODEX_APPROVAL_POLICY_DEFAULT", "never"),
     model: readString("VITE_CODEX_MODEL_DEFAULT", "gpt-5.4"),
     reasoningEffort: readReasoningEffort("VITE_CODEX_REASONING_EFFORT_DEFAULT", "high"),
-    sandboxMode: readSandboxMode("VITE_CODEX_SANDBOX_MODE_DEFAULT", "workspace-write"),
+    sandboxMode: readSandboxMode("VITE_CODEX_SANDBOX_MODE_DEFAULT", "danger-full-access"),
     telegramAllowedUsersCount: readNumber("VITE_TELEGRAM_ALLOWED_USERS_COUNT", 0),
     telegramAudioReplyDefault: readBoolean("VITE_TELEGRAM_AUDIO_REPLY_DEFAULT", false),
     telegramBotUsername: readString("VITE_TELEGRAM_BOT_USERNAME", ""),

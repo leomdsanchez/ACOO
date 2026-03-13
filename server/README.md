@@ -46,6 +46,7 @@ Variáveis relevantes em `.env`:
 - `ACOO_TELEGRAM_BOT_TOKEN`: token do bot Telegram.
 - `ACOO_TELEGRAM_BOT_USERNAME`: username público do bot.
 - `ACOO_TELEGRAM_ALLOWED_USER_IDS`: IDs autorizados para falar com o bot.
+- `ACOO_TELEGRAM_PROGRESS_PULSE_MS`: intervalo em ms para renovar o status `typing` enquanto o bot está processando.
 - `ACOO_TELEGRAM_REPLY_AUDIO_BY_DEFAULT`: resposta em áudio como default do canal Telegram.
 - `ACOO_STT_ENABLED`: habilita transcrição local de áudio.
 - `ACOO_STT_BINARY`: binário do `whisper.cpp`, normalmente `whisper-cli`.

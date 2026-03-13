@@ -53,3 +53,8 @@
 ### 2026-03-11 13:38 | Status operacional
 - Estado atual: `Aguardando execução`.
 - Próxima trava real: responder ao Luis Sosa no thread `Generación de Usuarios` com os acessos temporários gerados para `Paulo Pintos`, `Priscila Vellozo` e `Luis Sosa`.
+
+### 2026-03-12 20:20 | Fechamento confirmado internamente
+- Confirmação recebida por mensagem interna de Leonardo Sánchez de que a thread `Generación de Usuarios` já foi fechada e está sem pendências.
+- Estado atual ajustado para `Concluído`.
+- Próxima trava real: não aplicável.

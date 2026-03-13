@@ -35,3 +35,8 @@
 - Conteúdo-chave enviado: confirmação de que o ajuste já foi feito e que o usuário agora figura como `Andres Gonzalez`.
 - Assinatura de `Leonardo Sánchez` / `Neural Think` preservada no final da mensagem.
 - Estado mantido em `Concluído`.
+
+### 2026-03-12 20:20 | Fechamento reconfirmado internamente
+- Confirmação recebida por mensagem interna de Leonardo Sánchez de que a correção de nome permanece fechada.
+- Estado mantido em `Concluído`.
+- Próxima trava real: não aplicável.
