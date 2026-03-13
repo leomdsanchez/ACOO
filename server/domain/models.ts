@@ -14,7 +14,7 @@ export type AgentLifecycleStatus = "active" | "disabled" | "archived";
 export type AgentSessionChannel = "cli" | "telegram" | "web";
 export type AgentSessionMode = "interactive" | "exec" | "exec-resume" | "ephemeral";
 export type AgentSessionStatus = "active" | "ended";
-export type AgentRunStatus = "completed" | "failed";
+export type AgentRunStatus = "completed" | "failed" | "aborted";
 
 export interface ProjectRecord {
   id: string;

@@ -6,6 +6,7 @@ import type { TelegramConfig } from "../config/AppConfig.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
 import type { AgentRequest } from "../controller/AgentController.js";
+import { CodexCliAbortedError } from "../codex/CodexCliService.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 import {
   TelegramBotApi,
@@ -39,6 +40,7 @@ export interface TelegramRuntimeStatus {
 export class TelegramRuntime {
   private readonly api: TelegramBotApi;
   private readonly allowedUsers: Set<string>;
+  private readonly chatAbortControllers = new Map<number, AbortController>();
   private readonly chatBusy = new Set<number>();
   private readonly chatQueues = new Map<number, Promise<void>>();
   private readonly chatQueueDepth = new Map<number, number>();
@@ -105,6 +107,13 @@ export class TelegramRuntime {
 
   private enqueueUpdate(update: TelegramUpdate): Promise<void> {
     const chatId = update.message?.chat.id ?? -1;
+    if (chatId !== -1 && this.chatBusy.has(chatId)) {
+      const controller = this.chatAbortControllers.get(chatId);
+      if (controller && !controller.signal.aborted) {
+        controller.abort();
+        this.log("info", `execucao interrompida por nova mensagem em chat=${chatId}`);
+      }
+    }
     const previous = this.chatQueues.get(chatId) ?? Promise.resolve();
     const depth = (this.chatQueueDepth.get(chatId) ?? 0) + 1;
     this.chatQueueDepth.set(chatId, depth);
@@ -116,16 +125,25 @@ export class TelegramRuntime {
     current = previous
       .catch(() => undefined)
       .then(async () => {
+        const abortController = new AbortController();
+        this.chatAbortControllers.set(chatId, abortController);
         this.chatBusy.add(chatId);
         try {
-          await this.processUpdate(update);
+          await this.processUpdate(update, abortController.signal);
         } catch (error) {
+          if (isInterruptedError(error)) {
+            this.log("info", `update interrompido em chat=${chatId}`);
+            return;
+          }
           this.log(
             "error",
             `falha ao processar update ${update.update_id}: ${error instanceof Error ? error.message : String(error)}`,
           );
           await this.replyWithGenericFailure(update);
         } finally {
+          if (this.chatAbortControllers.get(chatId) === abortController) {
+            this.chatAbortControllers.delete(chatId);
+          }
           this.chatBusy.delete(chatId);
           const nextDepth = (this.chatQueueDepth.get(chatId) ?? 1) - 1;
           if (nextDepth <= 0) {
@@ -143,7 +161,7 @@ export class TelegramRuntime {
     return current;
   }
 
-  private async processUpdate(update: TelegramUpdate): Promise<void> {
+  private async processUpdate(update: TelegramUpdate, abortSignal: AbortSignal): Promise<void> {
     const message = update.message;
     if (!message) {
       return;
@@ -201,6 +219,7 @@ export class TelegramRuntime {
     const response = await this.runWithProgress(chatId, "typing", () =>
       this.handleWithSingleSession({
         activeAgentSlug: session.activeAgentSlug,
+        abortSignal,
         chatId,
         inputMode,
         prompt,
@@ -229,6 +248,7 @@ export class TelegramRuntime {
 
   private async handleWithSingleSession(input: {
     activeAgentSlug: string;
+    abortSignal?: AbortSignal;
     chatId: number;
     inputMode: "text" | "voice" | "document";
     prompt: string;
@@ -250,6 +270,11 @@ export class TelegramRuntime {
       await this.persistCompletedRun(agentId, input.chatId, input.prompt, sessionMode, nextSession.sessionId, response);
       return response;
     } catch (error) {
+      if (isInterruptedError(error)) {
+        await this.persistAbortedRun(agentId, input.chatId, input.prompt, session.sessionId);
+        throw error;
+      }
+
       if (!session.sessionId) {
         await this.persistFailedRun(agentId, input.prompt, error);
         throw error;
@@ -259,6 +284,7 @@ export class TelegramRuntime {
       await this.options.sessionStore.startNew();
       const fallbackResponse = await this.options.bot.handleMessage({
         ...request,
+        abortSignal: input.abortSignal,
         sessionId: undefined,
       });
       const recreatedSession = fallbackResponse.threadId
@@ -638,6 +664,7 @@ export class TelegramRuntime {
   private buildAgentRequest(
     input: {
       activeAgentSlug: string;
+      abortSignal?: AbortSignal;
       inputMode: "text" | "voice" | "document";
       prompt: string;
       senderId: string;
@@ -646,6 +673,7 @@ export class TelegramRuntime {
   ): AgentRequest {
     return {
       agentSlug: input.activeAgentSlug,
+      abortSignal: input.abortSignal,
       interaction: {
         channel: "telegram",
         inputMode: input.inputMode,
@@ -696,6 +724,35 @@ export class TelegramRuntime {
       resultSummary: error instanceof Error ? error.message : String(error),
       sessionId: null,
       status: "failed",
+    });
+  }
+
+  private async persistAbortedRun(
+    agentId: string,
+    chatId: number,
+    prompt: string,
+    codexThreadId: string | null,
+  ): Promise<void> {
+    const agentSession = codexThreadId
+      ? await this.options.agentRegistry.upsertSession({
+        agentId,
+        channel: "telegram",
+        channelThreadId: String(chatId),
+        codexThreadId,
+        cwd: process.cwd(),
+        mode: "exec-resume",
+        status: "active",
+      })
+      : null;
+
+    await this.options.agentRegistry.recordRun({
+      agentId,
+      channel: "telegram",
+      command: "",
+      prompt,
+      resultSummary: "Execution aborted by a newer Telegram message.",
+      sessionId: agentSession?.id ?? null,
+      status: "aborted",
     });
   }
 }
@@ -857,4 +914,8 @@ function deriveSessionTitle(prompt: string, bootstrapPrompt: string): string | n
   }
 
   return normalized.length <= 72 ? normalized : `${normalized.slice(0, 69)}...`;
+}
+
+function isInterruptedError(error: unknown): boolean {
+  return error instanceof CodexCliAbortedError;
 }

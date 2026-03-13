@@ -32,6 +32,7 @@ export interface TranscriptionConfig {
 }
 
 export interface PlaywrightMcpRuntimeConfig {
+  autostart: boolean;
   healthcheckUrl: string;
   startupCommand: string;
 }
@@ -64,6 +65,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
     codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
     playwrightMcp: {
+      autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", false),
       healthcheckUrl: readString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL", "http://127.0.0.1:9222/json/version"),
       startupCommand: expandHome(
         readString("ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND", "~/.local/bin/playwright-mcp-brave-open"),

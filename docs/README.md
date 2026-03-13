@@ -17,6 +17,8 @@ Este diretório define como o ACOO deve ser construído em cima da Codex CLI rea
 - [03-agent-registry-and-subagents.md](/Users/leosanchez/Documents/DEV/ACOO/docs/03-agent-registry-and-subagents.md): modelo de agentes, subagentes, sessões e delegação.
 - [04-agents-skills-mcp.md](/Users/leosanchez/Documents/DEV/ACOO/docs/04-agents-skills-mcp.md): como usar `AGENTS.md`, `SKILL.md` e MCP de forma profissional.
 - [05-implementation-roadmap.md](/Users/leosanchez/Documents/DEV/ACOO/docs/05-implementation-roadmap.md): sequência de implementação no backend.
+- [06-codex-cli-delegation.md](/Users/leosanchez/Documents/DEV/ACOO/docs/06-codex-cli-delegation.md): como implementar delegação real entre agentes sem confundir troca de agente com handoff.
+- [07-architect-review-reconciliation.md](/Users/leosanchez/Documents/DEV/ACOO/docs/07-architect-review-reconciliation.md): reconciliação entre a análise externa, o código atual e a direção oficial do projeto.
 
 ## Diagnóstico do repo atual
 

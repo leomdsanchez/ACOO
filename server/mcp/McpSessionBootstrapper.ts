@@ -5,6 +5,7 @@ import type { McpRuntimeCatalog } from "./McpRuntimeCatalog.js";
 const execFileAsync = promisify(execFile);
 
 export interface ManagedMcpRuntimeHealth {
+  autostart: boolean;
   healthy: boolean;
   healthcheckUrl: string;
   name: string;
@@ -13,8 +14,10 @@ export interface ManagedMcpRuntimeHealth {
 
 export interface McpBootstrapResult {
   healthy: boolean;
+  manualStartRequired: boolean;
   managed: boolean;
   name: string;
+  startupCommand: string | null;
   startupAttempted: boolean;
 }
 
@@ -33,8 +36,10 @@ export class McpSessionBootstrapper {
       if (!runtime) {
         results.push({
           healthy: true,
+          manualStartRequired: false,
           managed: false,
           name,
+          startupCommand: null,
           startupAttempted: false,
         });
         continue;
@@ -44,8 +49,22 @@ export class McpSessionBootstrapper {
       if (healthyBefore) {
         results.push({
           healthy: true,
+          manualStartRequired: false,
           managed: true,
           name,
+          startupCommand: runtime.startupCommand,
+          startupAttempted: false,
+        });
+        continue;
+      }
+
+      if (!runtime.autostart) {
+        results.push({
+          healthy: false,
+          manualStartRequired: true,
+          managed: true,
+          name,
+          startupCommand: runtime.startupCommand,
           startupAttempted: false,
         });
         continue;
@@ -60,8 +79,10 @@ export class McpSessionBootstrapper {
       const healthyAfter = await this.checkHealth(runtime.healthcheckUrl);
       results.push({
         healthy: healthyAfter,
+        manualStartRequired: !healthyAfter,
         managed: true,
         name,
+        startupCommand: runtime.startupCommand,
         startupAttempted: true,
       });
     }
@@ -73,6 +94,7 @@ export class McpSessionBootstrapper {
     const runtimes = this.runtimeCatalog.list();
     return Promise.all(
       runtimes.map(async (runtime) => ({
+        autostart: runtime.autostart,
         healthy: await this.checkHealth(runtime.healthcheckUrl),
         healthcheckUrl: runtime.healthcheckUrl,
         name: runtime.name,

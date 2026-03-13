@@ -103,7 +103,7 @@ npm run server:mcp -- --pretty
 
 Sessão persistente oficial do browser para MCP:
 
-- launcher do browser usado no preflight automático: `~/.local/bin/playwright-mcp-brave-open`
+- launcher manual esperado: `~/.local/bin/playwright-mcp-brave-open`
 - wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
 - config da Codex: `~/.codex/config.toml`
 - profile persistente reutilizado pelo MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
@@ -112,8 +112,9 @@ Sessão persistente oficial do browser para MCP:
 
 Fluxo operacional:
 
-1. o ACOO faz preflight automático do `playwright` antes de uma sessão que realmente precise desse MCP;
-2. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
+1. subir manualmente o `Brave` quando o fluxo realmente precisar de browser: `~/.local/bin/playwright-mcp-brave-open`;
+2. o ACOO só verifica a saúde do runtime quando uma skill exigir `playwright`;
+3. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
 3. manter o profile `brave-profile` como profile operacional do MCP;
 4. concluir os logins manuais uma vez nesse profile;
 5. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
@@ -136,6 +137,7 @@ Notas práticas:
 - A profile operacional do MCP é exclusiva do fluxo automatizado.
 - O attach via `CDP` melhora bastante a estabilidade da janela entre turnos.
 - O wrapper da Codex só faz `attach`; ele não deve abrir o browser sozinho.
+- O autostart do runtime gerenciado deve permanecer desabilitado por padrão.
 - Em fluxos Bubble, a rota direta pode voltar para o dashboard; quando isso acontecer, preferir a navegação interna da própria UI.
 
 Execução do agente via Codex CLI usando o contexto operacional do repo:

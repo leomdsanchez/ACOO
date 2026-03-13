@@ -14,6 +14,7 @@ Conclusão para o ACOO:
 
 - mantenha um `AGENTS.md` de base no repo;
 - não tente representar todos os agentes do sistema só por arquivos `AGENTS.md`.
+- não trate `AGENTS.md`, prompt de agente e skill como o mesmo artefato.
 
 ## Estratégia correta para AGENTS no ACOO
 
@@ -36,6 +37,13 @@ Uso:
 
 Esse overlay deve ser gerado pelo backend, não exigido como arquivo global fixo do repo.
 
+Estratégia recomendada:
+
+- `AGENTS.md` na raiz: instrução global do repo;
+- `agents/<slug>/prompt.md`: overlay de identidade e regras do agente;
+- `/.agents/skills/*/SKILL.md`: skills do projeto;
+- `~/.codex/skills`: skills globais do usuário/sistema.
+
 ### 3. Nested AGENTS quando houver escopo real
 
 Uso:
@@ -52,7 +60,9 @@ No ambiente local observado:
 
 - skills do usuário vivem em `~/.codex/skills`;
 - skills de sistema vivem em `~/.codex/skills/.system`;
-- o ACOO também carrega `AGENT.md` local.
+- o ACOO hoje também carrega `AGENT.md` local por compatibilidade histórica.
+
+Isso é uma compatibilidade transitória, não o alvo final da arquitetura.
 
 ## Estratégia correta para Skills no ACOO
 
@@ -73,7 +83,13 @@ O backend deve ter um catálogo próprio com metadata:
 O backend deve continuar compatível com o filesystem que a Codex usa hoje:
 
 - `SKILL.md`
-- `AGENT.md`
+- `AGENTS.md`
+
+Mas com separação conceitual:
+
+- `AGENTS.md`: instrução de escopo
+- `prompt.md` do agente: identidade/overlay
+- `SKILL.md`: workflow reutilizável
 
 ### 3. Skill bindings por agente
 
@@ -144,8 +160,19 @@ Até que a OpenAI documente com clareza uma configuração dinâmica por agente 
 - MCP instalado globalmente;
 - política por agente no ACOO;
 - validação antes da execução;
-- prompt/tool policy por agente;
+- compilação de flags/config por agente no ACOO;
 - se necessário, perfis separados da CLI.
+
+## Correção arquitetural importante
+
+O ACOO deve convergir para esta organização:
+
+- `AGENTS.md` na raiz
+- `agents/<slug>/prompt.md`
+- `.agents/skills/` para skills do projeto
+- `~/.codex/skills/` para skills globais
+
+Isso reduz a mistura atual entre `agents/` e `skills`, e alinha melhor o projeto ao uso esperado da Codex.
 
 ## Skills + MCP por agente
 

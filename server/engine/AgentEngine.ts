@@ -10,6 +10,7 @@ export interface AgentExecutionProfile {
 }
 
 export interface AgentEngineRequest {
+  abortSignal?: AbortSignal;
   cwd: string;
   executionProfile?: AgentExecutionProfile;
   ephemeral?: boolean;
@@ -23,6 +24,7 @@ export class AgentEngine {
 
   public run(request: AgentEngineRequest): Promise<CodexCliExecResult> {
     return this.codex.run({
+      abortSignal: request.abortSignal,
       cwd: request.cwd,
       ephemeral: request.ephemeral,
       overrides: request.executionProfile,

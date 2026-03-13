@@ -29,6 +29,7 @@ export interface AgentInteractionContext {
 
 export interface AgentRequest {
   agentSlug?: string;
+  abortSignal?: AbortSignal;
   cwd?: string;
   ephemeral?: boolean;
   interaction?: Partial<AgentInteractionContext>;
@@ -92,6 +93,7 @@ export class AgentController {
       mcpPolicy,
     );
     const result = await this.engine.run({
+      abortSignal: request.abortSignal,
       cwd: request.cwd ?? process.cwd(),
       ephemeral: request.ephemeral,
       executionProfile,

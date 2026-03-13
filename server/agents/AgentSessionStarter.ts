@@ -33,9 +33,17 @@ export class AgentSessionStarter {
       );
     }
 
-    const requiredMcpServers = [...new Set([...mcpPolicy.configuredRequired, ...skillRequirements])].sort();
+    const requiredMcpServers = [...new Set(skillRequirements)].sort();
     const bootstrapResults = await this.bootstrapper.ensureReady(requiredMcpServers);
-    const failed = bootstrapResults.filter((result) => result.managed && !result.healthy);
+    const manualStartRequired = bootstrapResults.filter((result) => result.managed && result.manualStartRequired);
+    if (manualStartRequired.length > 0) {
+      const instructions = manualStartRequired
+        .map((item) => `${item.name}: ${item.startupCommand}`)
+        .join("; ");
+      throw new Error(`Managed MCP runtimes require manual startup before this skill can run: ${instructions}.`);
+    }
+
+    const failed = bootstrapResults.filter((result) => result.managed && !result.healthy && !result.manualStartRequired);
     if (failed.length > 0) {
       throw new Error(
         `Failed to prepare managed MCP runtimes: ${failed.map((item) => item.name).join(", ")}.`,

@@ -1,6 +1,7 @@
 import type { PlaywrightMcpRuntimeConfig } from "../config/AppConfig.js";
 
 export interface ManagedMcpRuntimeDefinition {
+  autostart: boolean;
   healthcheckUrl: string;
   name: string;
   startupCommand: string;
@@ -11,6 +12,7 @@ export class McpRuntimeCatalog {
 
   public constructor(playwright: PlaywrightMcpRuntimeConfig) {
     this.managed.set("playwright", {
+      autostart: playwright.autostart,
       healthcheckUrl: playwright.healthcheckUrl,
       name: "playwright",
       startupCommand: playwright.startupCommand,

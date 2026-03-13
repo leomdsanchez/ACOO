@@ -94,13 +94,23 @@ type AgentRun = {
 
 O COO não precisa "conversar internamente" com subagentes como objetos em memória.
 
-Ele deve delegar assim:
+Mas existe uma distinção crítica:
 
-1. escolher subagente pelo registry;
-2. compilar contexto do subagente;
-3. rodar `codex exec` ou `codex exec resume` com a identidade desse subagente;
-4. capturar resultado estruturado;
-5. resumir de volta para o canal principal.
+- `troca de agente no canal`: o chat deixa de falar com o COO e passa a falar com outro agente;
+- `delegação real`: o usuário continua falando com o COO, e o COO aciona um subagente em sessão filha.
+
+No ACOO, a delegação correta é a segunda.
+
+Ela deve funcionar assim:
+
+1. COO escolhe o subagente pelo registry;
+2. o backend compila contexto do subagente;
+3. o backend abre ou retoma uma sessão filha da Codex para esse subagente;
+4. o subagente executa a tarefa;
+5. o backend captura resultado estruturado;
+6. o COO resume isso de volta para o canal principal.
+
+Ou seja: o `activeAgentSlug` do canal principal não deve ser sobrescrito para simular delegação.
 
 ## Padrões de sessão
 
@@ -131,6 +141,58 @@ Implementação:
 
 - `exec --ephemeral`
 
+## O que a Codex CLI suporta hoje
+
+Pela superfície atual da CLI:
+
+- `codex exec`: execução não interativa;
+- `codex exec resume`: retomada de sessão persistida;
+- `codex resume` / `codex fork`: retomada e bifurcação de sessões interativas;
+- `codex cloud exec`: submissão de tarefas remotas em Codex Cloud;
+- `codex app-server`: protocolo experimental.
+
+A CLI terminal não expõe um recurso first-class de "delegar para subagente e voltar o resultado para o agente pai" no mesmo chat.
+
+Então, no ACOO:
+
+- `troca de agente por Telegram` é controle de canal;
+- `delegação COO -> subagente` precisa ser implementada no backend.
+
+## Modelo recomendado para delegação real
+
+### DelegationTask
+
+```ts
+type DelegationTask = {
+  id: string;
+  parentAgentId: string;
+  childAgentId: string;
+  parentSessionId: string | null;
+  childSessionId: string | null;
+  channel: "telegram" | "web" | "cli";
+  status: "queued" | "running" | "completed" | "failed";
+  prompt: string;
+  resultSummary: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
+### Regras
+
+- o COO mantém a sessão principal;
+- cada subagente roda em sessão própria;
+- a sessão filha pode ser `resume` ou `ephemeral`, dependendo da estratégia do agente;
+- o resultado do subagente volta ao COO como input estruturado;
+- o usuário continua vendo o COO como dono do chat.
+
+## Estratégia recomendada por runtime
+
+- preferir `Codex SDK` quando a meta for multi-thread, multi-run e handoff mais forte;
+- usar `Codex CLI + exec/resume` para a primeira implementação local;
+- usar `Codex Cloud` para fan-out assíncrono e tarefas paralelas mais longas;
+- não depender de "troca de agente do canal" como substituto de delegação.
+
 ## Seleção via Telegram
 
 O Telegram deve operar sobre o registry.
@@ -150,11 +212,16 @@ Exemplo de UX:
 - `/research`
 - o canal passa a usar o subagente `research` até nova troca
 
+Isso é útil como controle manual do operador.
+
+Mas isso nao substitui delegação real do COO.
+
 ## O que não fazer
 
 - não usar uma única sessão da Codex para todos os agentes;
 - não misturar policy, MCP e skills de agentes distintos dentro de um só prompt gigante;
 - não fazer o COO "simular" subagentes só com prefixo textual.
+- não tratar `/research` ou `/<slug>` como se isso fosse handoff interno entre agentes.
 
 ## Decisão para o ACOO
 

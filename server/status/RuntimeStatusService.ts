@@ -130,7 +130,11 @@ export class RuntimeStatusService {
         : "Nenhuma integração MCP está configurada na Codex CLI para o ACOO usar.",
       ...managedMcpRuntime
         .filter((runtime) => !runtime.healthy)
-        .map((runtime) => `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}).`),
+        .map((runtime) =>
+          runtime.autostart
+            ? `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}).`
+            : `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}). Inicie manualmente com: ${runtime.startupCommand}.`,
+        ),
       mcp.recommendedMissing.length > 0
         ? `Integrações MCP recomendadas ausentes: ${mcp.recommendedMissing.join(", ")}.`
         : null,

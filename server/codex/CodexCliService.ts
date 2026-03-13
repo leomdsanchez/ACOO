@@ -17,6 +17,7 @@ export interface CodexCliOptions {
 }
 
 export interface CodexCliExecRequest {
+  abortSignal?: AbortSignal;
   cwd?: string;
   ephemeral?: boolean;
   overrides?: CodexCliRunOverrides;
@@ -49,6 +50,13 @@ export interface CodexCliExecResult {
   stderr: string;
   stdout: string;
   threadId: string | null;
+}
+
+export class CodexCliAbortedError extends Error {
+  public constructor(message = "Codex CLI execution aborted.") {
+    super(message);
+    this.name = "CodexCliAbortedError";
+  }
 }
 
 export interface CodexCliMcpServer {
@@ -111,11 +119,23 @@ export class CodexCliService {
 
     try {
       const args = this.buildExecArgs(request, outputFile, cwd);
-      const { stdout, stderr } = await execFileAsync(this.options.binary, args, {
-        cwd,
-        env: process.env,
-        maxBuffer: 10 * 1024 * 1024,
-      });
+      let stdout: string;
+      let stderr: string;
+      try {
+        const result = await execFileAsync(this.options.binary, args, {
+          cwd,
+          env: process.env,
+          maxBuffer: 10 * 1024 * 1024,
+          signal: request.abortSignal,
+        });
+        stdout = result.stdout;
+        stderr = result.stderr;
+      } catch (error) {
+        if (isAbortError(error)) {
+          throw new CodexCliAbortedError();
+        }
+        throw error;
+      }
       const parsed = parseExecJson(stdout);
 
       let lastMessage = "";
@@ -337,6 +357,10 @@ function quoteShellArg(value: string): string {
   }
 
   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && ((error as { name?: string }).name === "AbortError" || (error as { code?: string }).code === "ABORT_ERR");
 }
 
 function parseMcpList(stdout: string): CodexCliMcpServer[] {
