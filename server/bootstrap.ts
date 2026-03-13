@@ -1,5 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { AgentRegistryRepository } from "./agents/AgentRegistryRepository.js";
+import { AgentRegistryService } from "./agents/AgentRegistryService.js";
 import { OperationalBot } from "./bot/OperationalBot.js";
 import { AgentController } from "./controller/AgentController.js";
 import { OperationalWorkspace } from "./application/services/OperationalWorkspace.js";
@@ -16,6 +18,7 @@ import { SkillLoader } from "./skills/SkillLoader.js";
 import { SkillRouter } from "./skills/SkillRouter.js";
 
 export interface OperationalRuntime {
+  agentRegistry: AgentRegistryService;
   bot: OperationalBot;
   config: ReturnType<typeof loadAppConfig>;
   context: OperationalContextService;
@@ -35,6 +38,7 @@ export interface OperationalRuntime {
 
 export function createOperationalRuntime(repoRoot = resolveRepoRoot()): OperationalRuntime {
   const config = loadAppConfig(repoRoot);
+  const agentRegistry = new AgentRegistryService(new AgentRegistryRepository(repoRoot));
   const repository = new FileSystemOperationalRepository({ repoRoot });
   const workspace = new OperationalWorkspace(repository);
   const codex = new CodexCliService({
@@ -67,12 +71,14 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     config,
     codex,
     mcpRegistry,
+    agentRegistry,
     skillLoader,
     workspace,
     transcription,
   );
 
   return {
+    agentRegistry,
     bot,
     config,
     context,

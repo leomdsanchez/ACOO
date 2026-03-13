@@ -1,0 +1,31 @@
+[
+  {
+    "id": "mcp-profile-coo-default",
+    "name": "COO Default",
+    "description": "Perfil padrao do COO com browser automation e base operacional documental.",
+    "required": [
+      "playwright",
+      "notion"
+    ],
+    "optional": [
+      "stripe"
+    ],
+    "blocked": [],
+    "createdAt": "2026-03-13T00:00:00.000Z",
+    "updatedAt": "2026-03-13T00:00:00.000Z"
+  },
+  {
+    "id": "mcp-profile-research",
+    "name": "Research",
+    "description": "Perfil de pesquisa sem MCP obrigatorio, pensado para usar search nativo e fontes externas.",
+    "required": [],
+    "optional": [
+      "playwright"
+    ],
+    "blocked": [
+      "stripe"
+    ],
+    "createdAt": "2026-03-13T00:00:00.000Z",
+    "updatedAt": "2026-03-13T00:00:00.000Z"
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "agent-coo",
+    "slug": "coo",
+    "displayName": "AI COO",
+    "role": "primary",
+    "description": "Agente principal de operacoes do ACOO. Coordena contexto, escolhe o subagente correto e acompanha a proxima trava real.",
+    "promptTemplatePath": "agents/coo/AGENT.md",
+    "promptInline": null,
+    "skillIds": [
+      "revisao-operacional-coo",
+      "playwright-mcp-brave-session"
+    ],
+    "mcpProfileId": "mcp-profile-coo-default",
+    "model": "gpt-5.4",
+    "reasoningEffort": "high",
+    "approvalPolicy": "never",
+    "sandboxMode": "danger-full-access",
+    "searchEnabled": true,
+    "status": "active",
+    "createdAt": "2026-03-13T00:00:00.000Z",
+    "updatedAt": "2026-03-13T00:00:00.000Z"
+  },
+  {
+    "id": "agent-ops",
+    "slug": "ops",
+    "displayName": "Operations Specialist",
+    "role": "specialist",
+    "description": "Subagente de execucao operacional focado em threads, tasks e follow-up de operacao.",
+    "promptTemplatePath": null,
+    "promptInline": "Voce e um subagente operacional do ACOO. Trabalhe de forma objetiva, com foco em status, proxima trava e atualizacao de contexto operacional.",
+    "skillIds": [
+      "revisao-operacional-coo",
+      "alfredo-thread-writer"
+    ],
+    "mcpProfileId": "mcp-profile-coo-default",
+    "model": "gpt-5.4",
+    "reasoningEffort": "medium",
+    "approvalPolicy": "never",
+    "sandboxMode": "danger-full-access",
+    "searchEnabled": false,
+    "status": "active",
+    "createdAt": "2026-03-13T00:00:00.000Z",
+    "updatedAt": "2026-03-13T00:00:00.000Z"
+  },
+  {
+    "id": "agent-research",
+    "slug": "research",
+    "displayName": "Research Specialist",
+    "role": "specialist",
+    "description": "Subagente de pesquisa que prioriza busca web, comparacao de fontes e consolidacao de evidencias.",
+    "promptTemplatePath": null,
+    "promptInline": "Voce e um subagente de pesquisa do ACOO. Priorize fontes primarias, contexto objetivo e respostas verificaveis.",
+    "skillIds": [],
+    "mcpProfileId": "mcp-profile-research",
+    "model": "gpt-5.4",
+    "reasoningEffort": "high",
+    "approvalPolicy": "never",
+    "sandboxMode": "danger-full-access",
+    "searchEnabled": true,
+    "status": "active",
+    "createdAt": "2026-03-13T00:00:00.000Z",
+    "updatedAt": "2026-03-13T00:00:00.000Z"
+  }
+]

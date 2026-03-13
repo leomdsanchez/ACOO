@@ -3,10 +3,17 @@ import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
+import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 
 export interface RuntimeStatus {
+  agents: {
+    active: number;
+    mcpProfiles: number;
+    sessions: number;
+    slugs: string[];
+  };
   channels: {
     cli: "active";
     telegram: "available";
@@ -67,6 +74,7 @@ export class RuntimeStatusService {
     private readonly config: AppConfig,
     private readonly codex: CodexCliService,
     private readonly mcpRegistry: McpRegistryService,
+    private readonly agentRegistry: AgentRegistryService,
     private readonly skills: SkillLoader,
     private readonly workspace: OperationalWorkspace,
     private readonly transcription: LocalTranscriptionService,
@@ -74,7 +82,7 @@ export class RuntimeStatusService {
 
   public async getStatus(): Promise<RuntimeStatus> {
     const telegramSessionStore = new TelegramSessionStore(this.config.repoRoot);
-    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription] = await Promise.all([
+    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription, agents, mcpProfiles, sessions, agentIntegrity] = await Promise.all([
       this.codex.getStatus(),
       this.skills.loadAll(),
       this.workspace.projects.listProjects(),
@@ -83,6 +91,10 @@ export class RuntimeStatusService {
       this.workspace.tasks.listTasks({ includeCompleted: false }),
       telegramSessionStore.load(),
       this.transcription.getHealth(),
+      this.agentRegistry.listAgents(),
+      this.agentRegistry.listMcpProfiles(),
+      this.agentRegistry.listSessions(),
+      this.agentRegistry.getIntegrityReport(),
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
 
@@ -96,6 +108,12 @@ export class RuntimeStatusService {
         : null,
       this.config.transcription.enabled && !transcription.ffmpegAvailable
         ? `Transcrição local habilitada, mas o binário "${this.config.transcription.ffmpegBinary}" não está disponível.`
+        : null,
+      agentIntegrity.duplicateSlugs.length > 0
+        ? `Registry de agentes contém slugs duplicados: ${agentIntegrity.duplicateSlugs.join(", ")}.`
+        : null,
+      agentIntegrity.duplicateMcpProfileIds.length > 0
+        ? `Registry de MCP profiles contém IDs duplicados: ${agentIntegrity.duplicateMcpProfileIds.join(", ")}.`
         : null,
     ].filter((issue): issue is string => issue !== null);
     const advisories = [
@@ -114,9 +132,24 @@ export class RuntimeStatusService {
       this.config.transcription.enabled && !transcription.modelAvailable
         ? `Modelo local de transcrição ainda não encontrado em ${transcription.modelPath}; será baixado na primeira transcrição.`
         : null,
+      agentIntegrity.missingMcpProfileIds.length > 0
+        ? `Alguns agentes apontam para MCP profiles inexistentes: ${agentIntegrity.missingMcpProfileIds.join(", ")}.`
+        : null,
+      agentIntegrity.missingAgentIdsInSessions.length > 0
+        ? `Existem sessões vinculadas a agentes inexistentes: ${agentIntegrity.missingAgentIdsInSessions.join(", ")}.`
+        : null,
+      agentIntegrity.duplicateSessionKeys.length > 0
+        ? `Existem sessões duplicadas para a mesma combinação agente/canal/thread: ${agentIntegrity.duplicateSessionKeys.join(", ")}.`
+        : null,
     ].filter((advisory): advisory is string => advisory !== null);
 
     return {
+      agents: {
+        active: agents.length,
+        mcpProfiles: mcpProfiles.length,
+        sessions: sessions.length,
+        slugs: agents.map((agent) => agent.slug),
+      },
       channels: {
         cli: "active",
         telegram: "available",

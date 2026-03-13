@@ -30,12 +30,18 @@ Estrutura inicial do backend operacional para o ACOO.
 - `tasks/` e `tasks-finalizadas/`: execução operacional em Markdown.
 - `data/projects.json`: seed inicial para projetos estruturados.
 - `data/contacts.json`: seed inicial para contatos estruturados.
+- `data/acoo.db`: banco SQLite do registry operacional do ACOO.
+- `data/agents.json`: seed inicial de agentes e subagentes do ACOO.
+- `data/agent-mcp-profiles.json`: seed inicial de perfis de MCP.
+- `data/agent-sessions.json`: seed inicial de sessões por agente/canal.
+- `data/agent-runs.json`: seed inicial de histórico resumido de execuções por agente.
 
 ## Ambiente
 
 Variáveis relevantes em `.env`:
 
 - `VITE_APP_NAME`: nome exibido no frontend local.
+- `DATABASE_URL`: caminho do SQLite usado pelo Prisma para o registry do ACOO.
 - `ACOO_CODEX_CLI_BIN`: binário da Codex CLI.
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
@@ -81,10 +87,30 @@ Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 npm run server:mcp -- --pretty
 ```
 
+Sessão persistente oficial do browser para MCP:
+
+- wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
+- config da Codex: `~/.codex/config.toml`
+- profile persistente reutilizado pelo MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
+- browser oficial para fluxos MCP: `Brave Browser`
+
+Fluxo recomendado de reuso:
+
+1. abrir o Brave com esse profile uma vez e concluir os logins manuais necessários;
+2. manter o profile `brave-profile` como profile operacional do MCP;
+3. deixar o `playwright` da Codex sempre apontando para o wrapper `playwright-mcp-brave-persistent`;
+4. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo.
+
 Execução do agente via Codex CLI usando o contexto operacional do repo:
 
 ```bash
 npm run server:run -- "revisar as frentes ativas e apontar a próxima trava"
+```
+
+Provisionamento do banco local do ACOO:
+
+```bash
+npm run prisma:setup
 ```
 
 Polling do canal Telegram:

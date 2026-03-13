@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id                 String         @id
+  slug               String         @unique
+  displayName        String
+  role               String
+  description        String
+  promptTemplatePath String?
+  promptInline       String?
+  skillIdsJson       String
+  mcpProfileId       String
+  model              String?
+  reasoningEffort    String
+  approvalPolicy     String
+  sandboxMode        String
+  searchEnabled      Boolean
+  status             String
+  createdAt          DateTime
+  updatedAt          DateTime
+  mcpProfile         AgentMcpProfile @relation(fields: [mcpProfileId], references: [id], onDelete: Restrict)
+  sessions           AgentSession[]
+  runs               AgentRun[]
+}
+
+model AgentMcpProfile {
+  id          String  @id
+  name        String
+  description String
+  requiredJson String
+  optionalJson String
+  blockedJson  String
+  createdAt   DateTime
+  updatedAt   DateTime
+  agents      Agent[]
+}
+
+model AgentSession {
+  id              String    @id
+  agentId         String
+  channel         String
+  channelThreadId String
+  codexThreadId   String?
+  cwd             String
+  mode            String
+  status          String
+  startedAt       DateTime
+  lastUsedAt      DateTime
+  agent           Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  runs            AgentRun[]
+
+  @@unique([agentId, channel, channelThreadId])
+}
+
+model AgentRun {
+  id            String    @id
+  agentId       String
+  sessionId     String?
+  channel       String
+  command       String
+  promptDigest  String
+  resultSummary String
+  status        String
+  createdAt     DateTime
+  agent         Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  session       AgentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
