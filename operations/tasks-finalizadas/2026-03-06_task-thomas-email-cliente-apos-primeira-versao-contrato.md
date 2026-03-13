@@ -14,7 +14,7 @@ Preparar apenas o rascunho do email ao cliente Thomas J. Schandy, mantendo alinh
 - Planejada: `2026-03-10` (ou assim que a primeira versão chegar antes disso)
 
 ## Thread relacionada
-- [2026-03-04_thomas-schandy-juridico-rodrigo.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_thomas-schandy-juridico-rodrigo.md)
+- [2026-03-04_thomas-schandy-juridico-rodrigo.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_thomas-schandy-juridico-rodrigo.md)
 
 ## Contexto validado
 - Rodrigo informou em `2026-03-06 09:36-09:37` que já adiantou o contrato.

@@ -4,10 +4,12 @@ Repositório operacional de apoio ao COO, com threads, tasks e instruções de e
 
 ## Estrutura
 
-- `threads/`: histórico operacional ativo
-- `threads-arquivadas/`: histórico encerrado
-- `tasks/`: itens acionáveis em andamento
-- `tasks-arquivadas/`: itens concluídos ou retirados de execução
+- `operations/threads/`: histórico operacional ativo
+- `operations/threads-arquivadas/`: histórico encerrado
+- `operations/tasks/`: itens acionáveis em andamento
+- `operations/tasks-finalizadas/`: itens concluídos ou retirados de execução
+- `operations/projects/`: catálogo estruturado de projetos
+- `operations/people/`: catálogo estruturado de pessoas
 - `agents/`: instruções operacionais dos agentes
 
 ## Observação

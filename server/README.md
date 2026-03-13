@@ -4,7 +4,7 @@ Estrutura inicial do backend operacional para o ACOO.
 
 ## Objetivo
 
-- preservar `threads/` e `tasks/` atuais como acervo operacional;
+- preservar `operations/threads/` e `operations/tasks/` como acervo operacional;
 - introduzir um domínio explícito para `projects`, `contacts`, `threads` e `tasks`;
 - usar a Codex CLI autenticada como runtime real do agente, sem duplicar sessão nem memória conversacional;
 - estruturar um núcleo local enxuto com `bot`, `controller`, `engine`, `context`, `skills` e `status`;
@@ -27,8 +27,8 @@ Estrutura inicial do backend operacional para o ACOO.
 
 ## Fonte de verdade nesta fase
 
-- `threads/` e `threads-arquivadas/`: memória operacional em Markdown.
-- `tasks/` e `tasks-finalizadas/`: execução operacional em Markdown.
+- `operations/threads/` e `operations/threads-arquivadas/`: memória operacional em Markdown.
+- `operations/tasks/` e `operations/tasks-finalizadas/`: execução operacional em Markdown.
 - `data/projects.json`: seed inicial para projetos estruturados.
 - `data/contacts.json`: seed inicial para contatos estruturados.
 - `data/acoo.db`: banco SQLite do registry operacional do ACOO.

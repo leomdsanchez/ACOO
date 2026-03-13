@@ -20,7 +20,7 @@ Enviar atualização formal para Geaseg:
 - Executada: `05/03/2026 13:44`.
 
 ## Thread relacionada
-- [2026-03-04_geaseg-projeto-status.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_geaseg-projeto-status.md)
+- [2026-03-04_geaseg-projeto-status.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_geaseg-projeto-status.md)
 
 ## Fontes de validação
 - Notion (Documento Executivo Geaseg): entrega "Integração com WhatsApp Business API" em 02/03/2026, pendente.

@@ -168,7 +168,7 @@ server/
 
 ## O que manter do repo atual
 
-- `threads/` e `tasks/` como acervo operacional e fonte de contexto;
+- `operations/threads/` e `operations/tasks/` como acervo operacional e fonte de contexto;
 - `AGENTS.md` na raiz como instrução base do repositório;
 - `agents/<slug>/prompt.md` como política específica de cada agente;
 - Telegram como canal de entrada;

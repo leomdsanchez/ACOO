@@ -15,7 +15,7 @@ Enviar orientação clara para o Maunto sobre como usar o Clockify no fluxo da N
 - Executada: `05/03/2026 13:49`.
 
 ## Thread relacionada
-- [2026-03-04_maunto-onboarding-comunicacao.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_maunto-onboarding-comunicacao.md)
+- [2026-03-04_maunto-onboarding-comunicacao.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_maunto-onboarding-comunicacao.md)
 
 ## Canal e destino
 - Canal: WhatsApp

@@ -18,7 +18,7 @@ Responder à Facturando pedindo esclarecimento objetivo sobre a senha solicitada
 - Executada: `05/03/2026 13:48`.
 
 ## Thread relacionada
-- [2026-03-04_neural-uy-certificado-ticket.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_neural-uy-certificado-ticket.md)
+- [2026-03-04_neural-uy-certificado-ticket.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_neural-uy-certificado-ticket.md)
 
 ## Contexto operacional
 - Já houve envio de certificado/arquivos por e-mail para `comercial@facturando.uy`.

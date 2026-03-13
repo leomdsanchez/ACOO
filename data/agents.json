@@ -13,7 +13,7 @@
     ],
     "mcpProfileId": "mcp-profile-coo-default",
     "model": "gpt-5.4",
-    "reasoningEffort": "high",
+    "reasoningEffort": "medium",
     "approvalPolicy": "never",
     "sandboxMode": "danger-full-access",
     "searchEnabled": true,

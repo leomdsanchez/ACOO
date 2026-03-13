@@ -35,6 +35,7 @@ export interface FileSystemOperationalRepositoryOptions {
 }
 
 export class FileSystemOperationalRepository implements OperationalRepository {
+  private static readonly operationsRoot = "operations";
   private readonly activeTasksFile: string;
   private readonly activeThreadsDir: string;
   private readonly archivedThreadsDir: string;
@@ -47,17 +48,24 @@ export class FileSystemOperationalRepository implements OperationalRepository {
   public constructor(options: FileSystemOperationalRepositoryOptions) {
     this.activeThreadsDir = path.join(
       options.repoRoot,
-      options.activeThreadsDir ?? "threads",
+      options.activeThreadsDir ??
+        path.join(FileSystemOperationalRepository.operationsRoot, "threads"),
     );
     this.archivedThreadsDir = path.join(
       options.repoRoot,
-      options.archivedThreadsDir ?? "threads-arquivadas",
+      options.archivedThreadsDir ??
+        path.join(FileSystemOperationalRepository.operationsRoot, "threads-arquivadas"),
     );
-    this.activeTasksDir = path.join(options.repoRoot, options.activeTasksDir ?? "tasks");
+    this.activeTasksDir = path.join(
+      options.repoRoot,
+      options.activeTasksDir ??
+        path.join(FileSystemOperationalRepository.operationsRoot, "tasks"),
+    );
     this.activeTasksFile = path.join(this.activeTasksDir, "TAREFAS_ATIVAS.md");
     this.completedTasksDir = path.join(
       options.repoRoot,
-      options.completedTasksDir ?? "tasks-finalizadas",
+      options.completedTasksDir ??
+        path.join(FileSystemOperationalRepository.operationsRoot, "tasks-finalizadas"),
     );
     this.completedTasksFile = path.join(
       this.completedTasksDir,

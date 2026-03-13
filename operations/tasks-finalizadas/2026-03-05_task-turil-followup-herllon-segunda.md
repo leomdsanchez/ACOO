@@ -18,7 +18,7 @@ Fazer follow-up com Herllon para confirmar:
 - Planejada: `2026-03-09` (segunda-feira), início do expediente.
 
 ## Thread relacionada
-- [2026-03-04_turil-followup-herllon.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_turil-followup-herllon.md)
+- [2026-03-04_turil-followup-herllon.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_turil-followup-herllon.md)
 
 ## Evidência de status atual
 - Última mensagem de Herllon em 2026-03-04 19:00.

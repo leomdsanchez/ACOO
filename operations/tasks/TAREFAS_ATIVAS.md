@@ -7,7 +7,7 @@
 - Nome: `Certificado Neural - validar senha do .pfx com Ronel e Correo`
 - Descrição: Destravar a pendência com a Facturando confirmando se cabe recuperação ou reemissão do certificado, já que a credencial candidata localizada no histórico com o Ronel falhou e foi reconfirmada sem alternativa válida.
 - Status: `Aguardando terceiro`
-- Thread associada: [2026-03-04_neural-uy-certificado-ticket.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_neural-uy-certificado-ticket.md)
+- Thread associada: [2026-03-04_neural-uy-certificado-ticket.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_neural-uy-certificado-ticket.md)
 - Responsável: `Alfredo`
 - Prazo: `2026-03-06`
 - Prioridade: `Alta`
@@ -23,7 +23,7 @@
 - Nome: `UTEC - validar assinatura da renovação atual do contrato`
 - Descrição: Confirmar se a renovação atual do contrato com a UTEC já foi assinada e comunicada, evitando confusão com o contrato original assinado há 1-2 anos.
 - Status: `Aguardando terceiro`
-- Thread associada: [2026-03-04_sala-utec.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_sala-utec.md)
+- Thread associada: [2026-03-04_sala-utec.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_sala-utec.md)
 - Responsável: `Alfredo`
 - Prazo: `2026-03-06`
 - Prioridade: `Alta`
@@ -38,7 +38,7 @@
 - Nome: `Turil - follow-up com Herllon na quarta-feira`
 - Descrição: Retomar com o Herllon a execução pendente da frente Turil, já que a trava atual é interna e não mais de retorno externo.
 - Status: `Aguardando execução`
-- Thread associada: [2026-03-04_turil-followup-herllon.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_turil-followup-herllon.md)
+- Thread associada: [2026-03-04_turil-followup-herllon.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_turil-followup-herllon.md)
 - Responsável: `Alfredo`
 - Prazo: `2026-03-11`
 - Prioridade: `Média`
@@ -52,7 +52,7 @@
 - Nome: `Lucía - compilar escopo e preparar proposta financeira`
 - Descrição: Definir o escopo de tarefas administrativas que podem ser delegadas para Lucía e preparar uma proposta financeira para envio após 19/03/2026.
 - Status: `Aguardando execução`
-- Thread associada: [2026-03-13_lucia-expansao-apoio-administrativo.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-13_lucia-expansao-apoio-administrativo.md)
+- Thread associada: [2026-03-13_lucia-expansao-apoio-administrativo.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-13_lucia-expansao-apoio-administrativo.md)
 - Responsável: `Leonardo Sánchez`
 - Prazo: `2026-03-20`
 - Prioridade: `Média`
@@ -67,7 +67,7 @@
 - Nome: `Turil - documentar caso de carnet de estudante no Notion`
 - Descrição: Documentar no Notion da Turil o caso em que o assistente insistiu na venda de passagem diante de uma demanda fora do escopo sobre carnet de estudante.
 - Status: `Aguardando execução`
-- Thread associada: [2026-03-13_turil-assistente-carnet-estudante-escopo.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-13_turil-assistente-carnet-estudante-escopo.md)
+- Thread associada: [2026-03-13_turil-assistente-carnet-estudante-escopo.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-13_turil-assistente-carnet-estudante-escopo.md)
 - Responsável: `Alfredo`
 - Prazo: `2026-03-16`
 - Prioridade: `Média`

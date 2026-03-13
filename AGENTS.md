@@ -4,4 +4,4 @@
 - Keep `AGENTS.md`, agent prompts and skills as separate concepts.
 - Use `agents/<slug>/prompt.md` for agent overlays.
 - Use `.agents/skills/` for project-local skills and `~/.codex/skills/` for global skills.
-- Preserve `threads/` and `tasks/` as operational context sources.
+- Preserve `operations/threads/` and `operations/tasks/` as operational context sources.

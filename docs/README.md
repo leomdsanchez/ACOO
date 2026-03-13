@@ -25,7 +25,7 @@ Este diretório define como o ACOO deve ser construído em cima da Codex CLI rea
 
 O repo atual já tem bons ativos:
 
-- contexto operacional em `threads/` e `tasks/`;
+- contexto operacional em `operations/threads/` e `operations/tasks/`;
 - um `prompt.md` dedicado por agente;
 - integração real com Codex CLI, Telegram, STT e MCP.
 

@@ -14,7 +14,7 @@ Avisar a Erika que a validação técnica do certificado foi concluída e que el
 - Planejada: `2026-03-06`
 
 ## Thread relacionada
-- [2026-03-04_nomades-certificado-patricia-cert.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_nomades-certificado-patricia-cert.md)
+- [2026-03-04_nomades-certificado-patricia-cert.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_nomades-certificado-patricia-cert.md)
 
 ## Contexto validado
 - Karen confirmou no WhatsApp: `Ok completamos aqui pode reativar se quiser, obrigado pela atenção`.

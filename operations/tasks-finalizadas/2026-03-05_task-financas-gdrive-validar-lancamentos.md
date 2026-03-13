@@ -14,7 +14,7 @@ Revisar os controles financeiros no Google Drive e validar se os lançamentos re
 - Planejada: `2026-03-05` (hoje), conforme disponibilidade operacional.
 
 ## Thread relacionada
-- [2026-03-04_panorama-prioridades-turil-geaseg-thomas.md](/Users/leosanchez/Documents/DEV/ACOO/threads/2026-03-04_panorama-prioridades-turil-geaseg-thomas.md)
+- [2026-03-04_panorama-prioridades-turil-geaseg-thomas.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_panorama-prioridades-turil-geaseg-thomas.md)
 
 ## Escopo
 - Planilhas/pastas financeiras no Google Drive (Neural e frentes relacionadas do dia).
