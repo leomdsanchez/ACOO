@@ -13,6 +13,7 @@ async function main() {
   }
 
   const telegram = new TelegramRuntime({
+    agentRegistry: runtime.agentRegistry,
     bot: runtime.bot,
     config: telegramConfig,
     transcription: runtime.transcription,

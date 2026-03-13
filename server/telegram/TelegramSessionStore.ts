@@ -3,6 +3,7 @@ import path from "node:path";
 
 export interface TelegramSessionState {
   active: boolean;
+  activeAgentSlug: string;
   sessionId: string | null;
   updatedAt: string;
 }
@@ -47,8 +48,23 @@ export class TelegramSessionStore {
   }
 
   public async startNew(): Promise<TelegramSessionState> {
+    const current = await this.load();
     const next = {
       active: true,
+      activeAgentSlug: current.activeAgentSlug,
+      sessionId: null,
+      updatedAt: new Date().toISOString(),
+    } satisfies TelegramSessionState;
+    await this.saveState(next);
+    return next;
+  }
+
+  public async switchAgent(activeAgentSlug: string): Promise<TelegramSessionState> {
+    const current = await this.load();
+    const next = {
+      ...current,
+      active: false,
+      activeAgentSlug,
       sessionId: null,
       updatedAt: new Date().toISOString(),
     } satisfies TelegramSessionState;
@@ -57,8 +73,10 @@ export class TelegramSessionStore {
   }
 
   public async attachSession(sessionId: string): Promise<TelegramSessionState> {
+    const current = await this.load();
     const next = {
       active: true,
+      activeAgentSlug: current.activeAgentSlug,
       sessionId,
       updatedAt: new Date().toISOString(),
     } satisfies TelegramSessionState;
@@ -75,6 +93,10 @@ export class TelegramSessionStore {
 function normalizeState(input: Partial<TelegramSessionState>): TelegramSessionState {
   return {
     active: input.active === true,
+    activeAgentSlug:
+      typeof input.activeAgentSlug === "string" && input.activeAgentSlug.trim()
+        ? input.activeAgentSlug.trim()
+        : "coo",
     sessionId: typeof input.sessionId === "string" && input.sessionId.trim() ? input.sessionId : null,
     updatedAt:
       typeof input.updatedAt === "string" && input.updatedAt.trim()
@@ -86,6 +108,7 @@ function normalizeState(input: Partial<TelegramSessionState>): TelegramSessionSt
 function buildEmptyState(): TelegramSessionState {
   return {
     active: false,
+    activeAgentSlug: "coo",
     sessionId: null,
     updatedAt: new Date().toISOString(),
   };

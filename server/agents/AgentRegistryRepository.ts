@@ -78,6 +78,37 @@ export class AgentRegistryRepository {
     return mapSessionRecord(stored);
   }
 
+  public async updateSessionStatus(
+    agentId: string,
+    channel: AgentSessionRecord["channel"],
+    channelThreadId: string,
+    status: AgentSessionRecord["status"],
+  ): Promise<AgentSessionRecord | null> {
+    const current = await this.prisma.agentSession.findUnique({
+      where: {
+        agentId_channel_channelThreadId: {
+          agentId,
+          channel,
+          channelThreadId,
+        },
+      },
+    });
+
+    if (!current) {
+      return null;
+    }
+
+    const stored = await this.prisma.agentSession.update({
+      where: { id: current.id },
+      data: {
+        lastUsedAt: new Date(),
+        status,
+      },
+    });
+
+    return mapSessionRecord(stored);
+  }
+
   public async listRuns(): Promise<AgentRunRecord[]> {
     const records = await this.prisma.agentRun.findMany({ orderBy: { createdAt: "desc" } });
     return records.map(mapRunRecord);

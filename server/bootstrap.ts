@@ -59,6 +59,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const transcription = new LocalTranscriptionService(repoRoot, config.transcription);
   const engine = new AgentEngine(codex);
   const controller = new AgentController(
+    agentRegistry,
     engine,
     context,
     skillLoader,

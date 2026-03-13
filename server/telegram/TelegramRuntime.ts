@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { TelegramConfig } from "../config/AppConfig.js";
+import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
 import type { AgentRequest } from "../controller/AgentController.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
@@ -14,6 +15,7 @@ import {
 import type { TelegramSessionStore } from "./TelegramSessionStore.js";
 
 export interface TelegramRuntimeOptions {
+  agentRegistry: AgentRegistryService;
   bot: OperationalBot;
   config: TelegramConfig;
   logger?: Pick<Console, "error" | "info" | "warn">;
@@ -24,6 +26,7 @@ export interface TelegramRuntimeOptions {
 
 export interface TelegramRuntimeStatus {
   active: boolean;
+  activeAgentSlug: string;
   botUser: TelegramUser;
   offset: number;
   sessionId: string | null;
@@ -57,6 +60,7 @@ export class TelegramRuntime {
     const session = await this.options.sessionStore.load();
     return {
       active: session.active,
+      activeAgentSlug: session.activeAgentSlug,
       botUser,
       offset: this.offset,
       sessionId: session.sessionId,
@@ -115,7 +119,7 @@ export class TelegramRuntime {
 
     const rawText = message.text?.trim() ?? null;
     if (rawText) {
-      const command = parseCommand(rawText, this.options.config.botUsername);
+      const command = this.parseCommand(rawText);
       if (command) {
         this.log(
           "info",
@@ -154,6 +158,8 @@ export class TelegramRuntime {
     const startedAt = Date.now();
     const response = await this.runWithProgress(chatId, "typing", () =>
       this.handleWithSingleSession({
+        activeAgentSlug: session.activeAgentSlug,
+        chatId,
         inputMode,
         prompt,
         senderId,
@@ -180,32 +186,30 @@ export class TelegramRuntime {
   }
 
   private async handleWithSingleSession(input: {
+    activeAgentSlug: string;
+    chatId: number;
     inputMode: "text" | "voice" | "document";
     prompt: string;
     senderId: string;
-  }): Promise<Awaited<ReturnType<OperationalBot["handleMessage"]>>> {
+  }): Promise<TelegramBotResponse> {
     const session = await this.options.sessionStore.load();
-    const requestedOutputMode = this.options.config.replyAudioByDefault ? "audio" : "text";
-    const request: AgentRequest = {
-      interaction: {
-        channel: "telegram" as const,
-        inputMode: input.inputMode,
-        requestedOutputMode,
-        senderId: input.senderId,
-      },
-      prompt: input.prompt,
-      sessionId: session.sessionId ?? undefined,
-    };
+    const agentId = await this.resolveAgentId(input.activeAgentSlug);
+    const request = this.buildAgentRequest(input, session.sessionId);
 
     try {
       const response = await this.options.bot.handleMessage(request);
+      const nextSession = response.threadId && response.threadId !== session.sessionId
+        ? await this.options.sessionStore.attachSession(response.threadId)
+        : session;
+      const sessionMode = session.sessionId ? "exec-resume" : "exec";
       if (!session.sessionId && response.threadId) {
-        await this.options.sessionStore.attachSession(response.threadId);
         this.log("info", `sessao criada: ${response.threadId}`);
       }
+      await this.persistCompletedRun(agentId, input.chatId, input.prompt, sessionMode, nextSession.sessionId, response);
       return response;
     } catch (error) {
       if (!session.sessionId) {
+        await this.persistFailedRun(agentId, input.prompt, error);
         throw error;
       }
 
@@ -215,10 +219,13 @@ export class TelegramRuntime {
         ...request,
         sessionId: undefined,
       });
+      const recreatedSession = fallbackResponse.threadId
+        ? await this.options.sessionStore.attachSession(fallbackResponse.threadId)
+        : await this.options.sessionStore.load();
       if (fallbackResponse.threadId) {
-        await this.options.sessionStore.attachSession(fallbackResponse.threadId);
         this.log("info", `sessao recriada: ${fallbackResponse.threadId}`);
       }
+      await this.persistCompletedRun(agentId, input.chatId, input.prompt, "exec", recreatedSession.sessionId, fallbackResponse);
       return fallbackResponse;
     }
   }
@@ -228,45 +235,84 @@ export class TelegramRuntime {
     chatId: number,
     senderId: string,
   ): Promise<void> {
-    if (command === "help") {
+    if (command.kind === "help") {
       await this.api.sendMessage(
         chatId,
-        "Comandos: /start inicia ou reativa a sessão, /end encerra a sessão atual, /new abre uma nova sessão, /status mostra o estado atual e /reset é alias de /new.",
+        "Comandos: /agents lista agentes, /coo volta ao agente principal, /start inicia ou reativa a sessao, /end encerra a sessao atual, /new abre uma nova sessao, /status mostra o estado atual e /reset e alias de /new.",
       );
       this.log("info", `help enviado em chat=${chatId}`);
       return;
     }
 
-    if (command === "status") {
+    if (command.kind === "agents") {
+      const agents = await this.options.agentRegistry.listAgents();
       const session = await this.options.sessionStore.load();
+      const lines = agents.map((agent) => {
+        const current = agent.slug === session.activeAgentSlug ? " [ativo]" : "";
+        return `/${agent.slug} - ${agent.displayName}${current}`;
+      });
+      await this.api.sendMessage(chatId, `Agentes disponiveis:\n${lines.join("\n")}`);
+      this.log("info", `agents enviado em chat=${chatId}`);
+      return;
+    }
+
+    if (command.kind === "select-agent") {
+      const selected = await this.options.agentRegistry.getAgentBySlug(command.agentSlug);
+      if (!selected) {
+        await this.api.sendMessage(chatId, `Agente /${command.agentSlug} nao existe.`);
+        this.log("warn", `agente inexistente solicitado em chat=${chatId} slug=${command.agentSlug}`);
+        return;
+      }
+
+      const current = await this.options.sessionStore.load();
+      if (current.sessionId) {
+        await this.endRegistrySession(current.activeAgentSlug, chatId);
+      }
+      await this.options.sessionStore.switchAgent(selected.slug);
+      await this.api.sendMessage(
+        chatId,
+        `Agente ativo alterado para /${selected.slug} (${selected.displayName}). A sessao anterior foi encerrada para evitar misturar contexto. Use /start ou /new para abrir uma thread da Codex para ele.`,
+      );
+      this.log("info", `agente ativo alterado em chat=${chatId} slug=${selected.slug}`);
+      return;
+    }
+
+    if (command.kind === "status") {
+      const session = await this.options.sessionStore.load();
+      const activeAgent = await this.options.agentRegistry.getAgentBySlug(session.activeAgentSlug);
       const statusText = session.active
-        ? `Sessao ativa. Thread Codex: ${session.sessionId ?? "ainda nao anexada"}.`
-        : "Sessao inativa. Use /start para retomar ou /new para abrir uma nova.";
+        ? `Sessao ativa.\nAgente: /${session.activeAgentSlug}${activeAgent ? ` (${activeAgent.displayName})` : ""}\nThread Codex: ${session.sessionId ?? "ainda nao anexada"}.`
+        : `Sessao inativa.\nAgente: /${session.activeAgentSlug}${activeAgent ? ` (${activeAgent.displayName})` : ""}\nUse /start para retomar ou /new para abrir uma nova.`;
       await this.api.sendMessage(chatId, statusText);
       this.log("info", `status enviado em chat=${chatId} session=${session.sessionId ?? "none"}`);
       return;
     }
 
-    if (command === "start") {
+    if (command.kind === "start") {
       const session = await this.options.sessionStore.start();
       let answer = "Sessão da Codex reativada. Pode continuar deste ponto.";
       if (!session.sessionId) {
         try {
           answer = await this.runWithProgress(chatId, "typing", () =>
-            this.bootstrapCodexSession(senderId),
+            this.bootstrapCodexSession(chatId, senderId),
           );
         } catch (error) {
           await this.options.sessionStore.end();
           throw error;
         }
+      } else {
+        await this.activateRegistrySession(session.activeAgentSlug, chatId, session.sessionId, "exec-resume");
       }
       await this.api.sendMessage(chatId, answer);
       this.log("info", `sessao iniciada em chat=${chatId} existing=${session.sessionId ?? "none"}`);
       return;
     }
 
-    if (command === "end") {
+    if (command.kind === "end") {
       const session = await this.options.sessionStore.end();
+      if (session.sessionId) {
+        await this.endRegistrySession(session.activeAgentSlug, chatId);
+      }
       const answer = session.sessionId
         ? "Sessão encerrada. Use /start para retomar ou /new para abrir uma nova."
         : "Nenhuma sessão ativa para encerrar. Use /start para iniciar.";
@@ -275,11 +321,15 @@ export class TelegramRuntime {
       return;
     }
 
+    const current = await this.options.sessionStore.load();
+    if (current.sessionId) {
+      await this.endRegistrySession(current.activeAgentSlug, chatId);
+    }
     await this.options.sessionStore.startNew();
     let answer: string;
     try {
       answer = await this.runWithProgress(chatId, "typing", () =>
-        this.bootstrapCodexSession(senderId),
+        this.bootstrapCodexSession(chatId, senderId),
       );
     } catch (error) {
       await this.options.sessionStore.end();
@@ -350,8 +400,11 @@ export class TelegramRuntime {
     }
   }
 
-  private async bootstrapCodexSession(senderId: string): Promise<string> {
+  private async bootstrapCodexSession(chatId: number, senderId: string): Promise<string> {
+    const session = await this.options.sessionStore.load();
     const response = await this.handleWithSingleSession({
+      activeAgentSlug: session.activeAgentSlug,
+      chatId,
       inputMode: "text",
       prompt: this.sessionBootstrapPrompt,
       senderId,
@@ -388,9 +441,147 @@ export class TelegramRuntime {
       clearInterval(interval);
     }
   }
+
+  private parseCommand(prompt: string): TelegramCommand | null {
+    const token = prompt.trim().split(/\s+/, 1)[0] ?? "";
+    const normalized = normalizeCommandToken(token, this.options.config.botUsername);
+    if (!normalized.startsWith("/")) {
+      return null;
+    }
+
+    switch (normalized) {
+      case "/start":
+        return { kind: "start" };
+      case "/end":
+        return { kind: "end" };
+      case "/new":
+      case "/reset":
+        return { kind: "new" };
+      case "/help":
+        return { kind: "help" };
+      case "/status":
+        return { kind: "status" };
+      case "/agents":
+        return { kind: "agents" };
+      default: {
+        const slug = normalized.slice(1);
+        if (!slug) {
+          return null;
+        }
+        return { kind: "select-agent", agentSlug: slug };
+      }
+    }
+  }
+
+  private async resolveAgentId(agentSlug: string): Promise<string> {
+    const agent = await this.options.agentRegistry.getAgentBySlug(agentSlug);
+    if (!agent) {
+      throw new Error(`Agent slug "${agentSlug}" is not registered.`);
+    }
+    return agent.id;
+  }
+
+  private async activateRegistrySession(
+    agentSlug: string,
+    chatId: number,
+    codexThreadId: string | null,
+    mode: "exec" | "exec-resume",
+  ): Promise<void> {
+    const agentId = await this.resolveAgentId(agentSlug);
+    await this.options.agentRegistry.upsertSession({
+      agentId,
+      channel: "telegram",
+      channelThreadId: String(chatId),
+      codexThreadId,
+      cwd: process.cwd(),
+      mode,
+      status: "active",
+    });
+  }
+
+  private async endRegistrySession(agentSlug: string, chatId: number): Promise<void> {
+    const agentId = await this.resolveAgentId(agentSlug);
+    await this.options.agentRegistry.setSessionStatus({
+      agentId,
+      channel: "telegram",
+      channelThreadId: String(chatId),
+      status: "ended",
+    });
+  }
+
+  private buildAgentRequest(
+    input: {
+      activeAgentSlug: string;
+      inputMode: "text" | "voice" | "document";
+      prompt: string;
+      senderId: string;
+    },
+    sessionId: string | null,
+  ): AgentRequest {
+    return {
+      agentSlug: input.activeAgentSlug,
+      interaction: {
+        channel: "telegram",
+        inputMode: input.inputMode,
+        requestedOutputMode: this.options.config.replyAudioByDefault ? "audio" : "text",
+        senderId: input.senderId,
+      },
+      prompt: input.prompt,
+      sessionId: sessionId ?? undefined,
+    };
+  }
+
+  private async persistCompletedRun(
+    agentId: string,
+    chatId: number,
+    prompt: string,
+    mode: "exec" | "exec-resume",
+    codexThreadId: string | null,
+    response: TelegramBotResponse,
+  ): Promise<void> {
+    const agentSession = await this.options.agentRegistry.upsertSession({
+      agentId,
+      channel: "telegram",
+      channelThreadId: String(chatId),
+      codexThreadId,
+      cwd: process.cwd(),
+      mode,
+      status: "active",
+    });
+    await this.options.agentRegistry.recordRun({
+      agentId,
+      channel: "telegram",
+      command: response.command,
+      prompt,
+      resultSummary: response.answer,
+      sessionId: agentSession.id,
+      status: "completed",
+    });
+  }
+
+  private async persistFailedRun(agentId: string, prompt: string, error: unknown): Promise<void> {
+    await this.options.agentRegistry.recordRun({
+      agentId,
+      channel: "telegram",
+      command: "",
+      prompt,
+      resultSummary: error instanceof Error ? error.message : String(error),
+      sessionId: null,
+      status: "failed",
+    });
+  }
 }
 
-type TelegramCommand = "end" | "help" | "new" | "start" | "status";
+type TelegramBotResponse = Awaited<ReturnType<OperationalBot["handleMessage"]>>;
+
+type TelegramCommand =
+  | { kind: "agents" }
+  | { kind: "end" }
+  | { kind: "help" }
+  | { kind: "new" }
+  | { kind: "select-agent"; agentSlug: string }
+  | { kind: "start" }
+  | { kind: "status" };
 
 function detectInputMode(message: TelegramMessage): "text" | "voice" | "document" {
   if (message.voice) {
@@ -402,27 +593,6 @@ function detectInputMode(message: TelegramMessage): "text" | "voice" | "document
   }
 
   return "text";
-}
-
-function parseCommand(prompt: string, botUsername?: string | null): TelegramCommand | null {
-  const token = prompt.trim().split(/\s+/, 1)[0] ?? "";
-  const normalized = normalizeCommandToken(token, botUsername);
-
-  switch (normalized) {
-    case "/start":
-      return "start";
-    case "/end":
-      return "end";
-    case "/new":
-    case "/reset":
-      return "new";
-    case "/help":
-      return "help";
-    case "/status":
-      return "status";
-    default:
-      return null;
-  }
 }
 
 function normalizeCommandToken(token: string, botUsername?: string | null): string {

@@ -119,14 +119,16 @@ Polling do canal Telegram:
 npm run server:telegram -- --drop-pending
 ```
 
-O canal Telegram usa uma única sessão persistida da Codex por padrão.
+O canal Telegram usa uma única sessão persistida da Codex por canal, com um agente ativo selecionável.
 Mensagens de voz passam por transcrição local com `whisper.cpp` antes de entrar no fluxo do agente.
 
 Comandos de sessão no chat:
 
+- `/agents`: lista os agentes ativos disponíveis no registry.
+- `/<slug>`: troca o agente ativo do canal e encerra a sessão anterior para evitar misturar contexto.
 - `/start`: inicia a sessão ou reativa a sessão atual e garante uma thread Codex anexada.
 - `/end`: encerra a sessão atual sem apagar o `sessionId`.
-- `/new`: descarta a sessão atual e abre uma nova thread da Codex.
+- `/new`: descarta a sessão atual e abre uma nova thread da Codex para o agente atualmente selecionado.
 - `/reset`: alias de `/new`.
 - `/status`: mostra o estado atual da sessão do canal.
 - `/help`: resume os comandos de sessão disponíveis.
@@ -158,8 +160,9 @@ Opções úteis:
 ## Estratégia de Canais
 
 - ACOO deve tratar CLI e Telegram como canais de entrada/saída, não como núcleos de raciocínio separados.
-- O runtime atual já aceita metadata de interação (`channel`, `inputMode`, `requestedOutputMode`) para evitar refactor quando o Telegram entrar.
-- A próxima integração de Telegram deve se limitar a adaptar eventos do bot para `AgentRequest` e aplicar estratégias de output na volta.
+- O runtime atual já aceita metadata de interação (`channel`, `inputMode`, `requestedOutputMode`) e seleção explícita de agente por canal.
+- O Telegram já opera em cima do registry de agentes para escolher o agente ativo, abrir/reaproveitar thread da Codex e registrar sessões/runs.
+- O próximo passo do canal é expor essa mesma seleção na UI e aplicar overrides reais de config por agente na execução da Codex.
 
 ## Runtime montado no bootstrap
 
@@ -179,6 +182,6 @@ O `createOperationalRuntime()` agora instancia:
 
 1. Conectar a home ao status real do runtime.
 2. Criar uma camada de settings persistidos para a home alterar defaults reais do runtime em vez de manter só um perfil local no browser.
-3. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
-4. Estruturar `project -> front -> thread -> task -> contact` sem heurística por título.
-5. Expor um MCP próprio do ACOO só se houver necessidade real de servir outras superfícies.
+3. Aplicar overrides reais por agente para `model`, `reasoning effort`, `approval`, `sandbox`, `search` e perfil de MCP na chamada da Codex CLI.
+4. Adicionar importador e sincronização bidirecional entre entidades e Markdown.
+5. Estruturar `project -> front -> thread -> task -> contact` sem heurística por título.

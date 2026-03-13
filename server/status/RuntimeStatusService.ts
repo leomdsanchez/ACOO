@@ -42,6 +42,7 @@ export interface RuntimeStatus {
   };
   telegram: {
     active: boolean;
+    activeAgentSlug: string;
     allowedUsersCount: number;
     botUsername: string | null;
     configured: boolean;
@@ -178,6 +179,7 @@ export class RuntimeStatusService {
       },
       telegram: {
         active: telegramSession.active,
+        activeAgentSlug: telegramSession.activeAgentSlug,
         allowedUsersCount: this.config.telegram.allowedUserIds.length,
         botUsername: this.config.telegram.botUsername,
         configured: hasTelegramSecrets(this.config),

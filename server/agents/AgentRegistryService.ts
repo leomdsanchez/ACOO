@@ -113,6 +113,22 @@ export class AgentRegistryService {
     return this.repository.upsertSession(next);
   }
 
+  public async setSessionStatus(input: {
+    agentId: string;
+    channel: AgentSessionChannel;
+    channelThreadId: string;
+    status: AgentSessionStatus;
+  }): Promise<AgentSessionRecord | null> {
+    const agents = await this.repository.listAgents();
+    ensureAgentExists(agents, input.agentId);
+    return this.repository.updateSessionStatus(
+      input.agentId,
+      input.channel,
+      input.channelThreadId,
+      input.status,
+    );
+  }
+
   public async listRuns(options?: { agentId?: string; limit?: number }): Promise<AgentRunRecord[]> {
     const runs = await this.repository.listRuns();
     const filtered = runs
