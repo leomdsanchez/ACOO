@@ -34,6 +34,18 @@ O retorno do MCP vem em JSON com:
 5. Só então seguir o fluxo seguro da skill:
    `3 pontinhos -> copiar link -> abrir link -> reconfirmar -> agir`
 
+## Sessão persistente recomendada
+
+- Browser operacional: `Brave Browser`
+- Launcher manual esperado: `~/.local/bin/playwright-mcp-brave-open`
+- Wrapper MCP esperado: `~/.local/bin/playwright-mcp-brave-persistent`
+- Profile persistente: `~/Library/Application Support/PlaywrightMCP/brave-profile`
+- Endpoint CDP persistente: `http://127.0.0.1:9222`
+
+Antes de usar as helpers do LinkedIn, subir o `Brave` com `~/.local/bin/playwright-mcp-brave-open` e garantir que o login manual foi feito nesse `brave-profile`. A partir daí, o MCP se anexa via `CDP` na mesma janela do `Brave` e reaproveita a sessão sem encerrar nem reabrir o browser sozinho ao fim do turno.
+
+Durante login manual ou handoff para o Leonardo, não fechar, reciclar nem reaproveitar a aba ativa do browser. Isso vale especialmente para LinkedIn, Google login, WhatsApp Web e Clockify.
+
 ## Limite
 
 Esse helper acelera o inventário e a seleção do alvo, mas não substitui a validação final na UI antes de comentar, dar like ou mandar mensagem.

@@ -109,3 +109,29 @@
 ### 2026-03-12 19:47 | Status atual
 - Estado permanece `Aguardando terceiro`.
 - Próxima trava real permanece: retorno formal do `Correo Uruguayo` e/ou da `Facturando` com procedimento executável de reemissão, nova solicitação ou recuperação do certificado.
+
+### 2026-03-13 11:15 | Validação de origem (Gmail - Correo)
+- Thread `Consulta sobre reemisión o nueva solicitud de certificado digital - NEURAL THINK SAS - RUT 190328400019` revisada diretamente no Gmail da conta `contact@neuralthink.io`.
+- Há resposta nova de `Servicios Electrónicos de Correo Uruguayo` em `12/03/2026 10:02`.
+- Conteúdo objetivo do retorno: o Correo perguntou se o certificado foi instalado, informou que a existência do `.pfx` indica instalação prévia e pediu esclarecer em qual sistema ele não pode ser usado.
+
+### 2026-03-13 11:15 | Validação de origem (Gmail - Facturando)
+- Thread `Envío de firma digital - Neural Think` revisada diretamente no Gmail da conta `leosanchez@neuralthink.io`.
+- Há resposta de `Paula | FACTURANDO.UY` em `11/03/2026 17:27`.
+- Conteúdo objetivo do retorno: `Perfecto, aguardamos.`
+- Não há instrução nova da Facturando além da confirmação de que aguardam o retorno do escalonamento.
+
+### 2026-03-13 11:15 | Reclassificação operacional
+- Estado ajustado de `Aguardando terceiro` para `Aguardando execução`.
+- A dependência externa já respondeu e a próxima ação voltou a ser interna.
+- Próxima trava real ajustada para: responder ao Correo com o sistema exato onde o `.pfx` falha, o ponto do fluxo em que a falha acontece e se o uso é para faturação ou outra rotina específica.
+
+### 2026-03-13 11:28 | Resposta enviada ao Correo com Facturando em cópia
+- Resposta enviada na thread `Consulta sobre reemisión o nueva solicitud de certificado digital - NEURAL THINK SAS - RUT 190328400019` a partir da conta `contact@neuralthink.io`.
+- Conteúdo operacional enviado: uso em ambiente `Windows`, falha na senha do arquivo `.pfx` e impossibilidade de uso do certificado pela `Facturando` para emissão de `eFactura`.
+- A resposta foi enviada com a `Facturando` em cópia, incluindo `info@facturando.uy` e `leticia.coronel`.
+- Envio confirmado visualmente no Gmail às `11:28` com a mensagem aparecendo no histórico da conversa.
+
+### 2026-03-13 11:28 | Status atual
+- Estado ajustado de volta para `Aguardando terceiro`.
+- Próxima trava real: retorno do `Correo Uruguayo` e/ou da `Facturando` com instrução executável sobre reemissão, nova solicitação ou recuperação da credencial correta do certificado.

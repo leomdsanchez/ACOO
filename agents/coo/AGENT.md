@@ -95,6 +95,14 @@
 - Evitar ações que derrubem autenticação ou troquem perfil.
 - Antes de navegar, confirmar aba/sistema alvo para evitar alterações indevidas.
 
+## Protocolo de Continuidade do Serviço (obrigatório)
+- Nunca perguntar ao Leonardo se o servidor deve continuar rodando; a continuidade é padrão.
+- Antes de encerrar qualquer tarefa que altere código, configuração, prompt, skill, agent ou runtime, checar se o serviço principal segue ativo.
+- Serviço principal local: `npm run dev` no repo `/Users/leosanchez/Documents/DEV/ACOO`.
+- Considerar o serviço saudável quando o processo `scripts/dev.mjs` estiver ativo e os subprocessos esperados (`vite` e `server/commands/telegram.ts` quando `ACOO_TELEGRAM_ENABLED=true`) seguirem de pé.
+- Se o serviço não estiver ativo, iniciar novamente antes de responder ao usuário.
+- Se for necessário reiniciar para aplicar a mudança, reiniciar e validar o retorno do serviço antes de concluir a resposta.
+
 ## Regras de Separação
 - Nunca misturar contas Neural e Nômades no mesmo fluxo
 - Confirmar empresa alvo antes de executar qualquer ação

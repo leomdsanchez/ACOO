@@ -44,3 +44,13 @@ O retorno esperado do MCP vem em JSON com:
 ## Limite
 
 Esse helper automatiza a preparação da tela, mas não substitui a conferência final antes de criar a fatura.
+
+## Notas operacionais
+
+- O workspace operacional esperado é `Nomades`.
+- Para onboarding, a API do Clockify pode responder `501` em workspaces sem plano compatível para criação de usuários via API.
+- Nesse caso, o fluxo correto é:
+  1. convidar manualmente pela UI em `Equipe`;
+  2. confirmar que o usuário apareceu na lista, mesmo que como `ainda não aderiu`;
+  3. buscar o `Clockify User ID` pela sessão autenticada do browser.
+- Na sessão web do Clockify, a leitura autenticada de `/api/v1/workspaces/{workspaceId}/users` funciona com o header `X-Auth-Token`.
