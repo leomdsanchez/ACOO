@@ -70,6 +70,8 @@ export class TelegramBotApi {
     return this.request<TelegramUpdate[]>("getUpdates", {
       offset,
       timeout: timeoutSeconds,
+    }, {
+      timeoutMs: Math.max(30_000, (timeoutSeconds * 1_000) + 10_000),
     });
   }
 
@@ -109,12 +111,27 @@ export class TelegramBotApi {
   private async request<T>(
     method: string,
     body?: Record<string, number | string | undefined>,
+    options?: {
+      timeoutMs?: number;
+    },
   ): Promise<T> {
-    const response = await fetch(`${this.baseUrl}/${method}`, {
-      body: body ? JSON.stringify(body) : undefined,
-      headers: body ? { "content-type": "application/json" } : undefined,
-      method: body ? "POST" : "GET",
-    });
+    const controller = new AbortController();
+    const timeoutMs = options?.timeoutMs ?? 15_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}/${method}`, {
+        body: body ? JSON.stringify(body) : undefined,
+        headers: body ? { "content-type": "application/json" } : undefined,
+        method: body ? "POST" : "GET",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Telegram API ${method} request failed: ${detail}`);
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       if (response.status === 409) {

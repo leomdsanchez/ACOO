@@ -82,7 +82,7 @@ export class TelegramRuntime {
 
   public async processPendingUpdates(options?: { dropPending?: boolean; once?: boolean }): Promise<void> {
     if (options?.dropPending) {
-      const updates = await this.api.getUpdates(this.offset, 1);
+      const updates = await this.readUpdatesWithRecovery(this.offset, 1, options);
       if (updates.length > 0) {
         this.offset = updates.at(-1)!.update_id + 1;
         this.log("info", `backlog descartado: ${updates.length} update(s), offset=${this.offset}`);
@@ -93,7 +93,7 @@ export class TelegramRuntime {
     }
 
     do {
-      const updates = await this.api.getUpdates(this.offset, this.pollTimeoutSeconds);
+      const updates = await this.readUpdatesWithRecovery(this.offset, this.pollTimeoutSeconds, options);
       if (updates.length > 0) {
         this.log("info", `poll recebeu ${updates.length} update(s), offset=${this.offset}`);
       }
@@ -105,6 +105,25 @@ export class TelegramRuntime {
         await Promise.allSettled(pending);
       }
     } while (!options?.once);
+  }
+
+  private async readUpdatesWithRecovery(
+    offset: number,
+    timeoutSeconds: number,
+    options?: { dropPending?: boolean; once?: boolean },
+  ): Promise<TelegramUpdate[]> {
+    try {
+      return await this.api.getUpdates(offset, timeoutSeconds);
+    } catch (error) {
+      if (options?.once) {
+        throw error;
+      }
+
+      const detail = error instanceof Error ? error.message : String(error);
+      this.log("warn", `falha ao consultar updates do Telegram; mantendo polling ativo. detalhe=${detail}`);
+      await sleep(2_000);
+      return [];
+    }
   }
 
   private enqueueUpdate(update: TelegramUpdate): Promise<void> {
@@ -969,4 +988,8 @@ function isRetryableResumeError(error: unknown): error is CodexCliResumeError {
 
 function isReadOnlyCommand(command: TelegramCommand): boolean {
   return command.kind === "help" || command.kind === "chats" || command.kind === "agents" || command.kind === "status";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
