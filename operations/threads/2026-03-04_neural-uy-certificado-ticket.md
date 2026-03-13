@@ -135,3 +135,19 @@
 ### 2026-03-13 11:28 | Status atual
 - Estado ajustado de volta para `Aguardando terceiro`.
 - Próxima trava real: retorno do `Correo Uruguayo` e/ou da `Facturando` com instrução executável sobre reemissão, nova solicitação ou recuperação da credencial correta do certificado.
+
+### 2026-03-13 12:36 | Nova instrução operacional do Correo
+- Thread `Consulta sobre reemisión o nueva solicitud de certificado digital - NEURAL THINK SAS - RUT 190328400019` revisada diretamente no Gmail da conta `contact@neuralthink.io`.
+- Após a resposta enviada às `11:28`, entraram retornos adicionais do `Servicios Electrónicos de Correo Uruguayo` às `11:55`, `11:59` e `12:36`.
+- Conteúdo operacional consolidado do delta: o Correo pediu evidência visual do erro no sistema de faturação e orientou uma prova prática para destravar o caso.
+- Instrução objetiva recebida às `12:36`: voltar a exportar a firma para um novo arquivo `.pfx` e definir uma senha mínima, idealmente apenas `1 letra` ou `1 número`, para validar se a `Facturando` consegue abrir/importar o arquivo.
+
+### 2026-03-13 20:39 | Instrução detalhada enviada ao Ronel no WhatsApp
+- Conversa com `Ronel Obando` revisada e confirmada diretamente no WhatsApp antes do envio.
+- Mensagem enviada por `Alfredo` com o passo a passo do teste pedido pelo `Correo Uruguayo`.
+- Conteúdo operacional enviado: gerar novo `.pfx`, usar senha nova e muito simples só para a prova, validar localmente a abertura do arquivo e depois reenviar o `.pfx` com a senha exata para teste da `Facturando`.
+- Envio confirmado visualmente no WhatsApp às `20:39` com estado `Enviada`.
+
+### 2026-03-13 20:39 | Status atual
+- Estado mantido em `Aguardando terceiro`.
+- Próxima trava real: retorno do `Ronel Obando` com o novo arquivo `.pfx` exportado e a senha simples usada na prova para teste com a `Facturando`.

@@ -12,11 +12,13 @@
 - Prazo: `2026-03-06`
 - Prioridade: `Alta`
 - Criada em: `2026-03-06 10:49`
-- Último contexto relevante: Facturando e Correo seguem como dependência externa; Ronel reconfirmou a senha `Neural2025`, mas ela continua falhando no `.pfx`.
+- Último contexto relevante: o `Correo Uruguayo` já orientou uma nova prova com reexportação do `.pfx` e senha mínima; em `13/03/2026 20:39`, `Alfredo` repassou a instrução detalhada ao `Ronel Obando` no WhatsApp e agora aguarda o novo arquivo para teste com a `Facturando`.
 ### Histórico
 - `2026-03-09 10:41: follow-up enviado ao Ronel Obando no WhatsApp informando que a senha repassada não funcionou para o .pfx.`
 - `2026-03-11 16:49: validação de origem concluída; Gmail segue sem novo retorno da Facturando após 06/03/2026 13:59.`
 - `2026-03-11 17:08: contingência executada com e-mail ao Correo Uruguayo, resposta à Leticia Coronel e aviso ao Ronel Obando.`
+- `2026-03-13 12:36: Correo Uruguayo orientou reexportar o certificado para novo .pfx com senha mínima para prova com a Facturando.`
+- `2026-03-13 20:39: instrução detalhada enviada ao Ronel Obando no WhatsApp em nome do Alfredo, aguardando novo .pfx e senha usada.`
 
 ## 2026-03-06_task-utec-validar-assinatura-renovacao-contrato
 - ID: `task-utec-validar-renovacao-contrato-2026-03-06`
@@ -75,4 +77,3 @@
 - Último contexto relevante: A direção já foi definida; falta apenas registrar o caso no doc correto de ajustes no Notion da Turil.
 ### Histórico
 - `2026-03-13 13:50: Leonardo esclareceu que a task é só documentar o caso no Notion.`
-
