@@ -16,6 +16,20 @@ export function buildAgentExecutionProfile(agent: AgentRecord | null): AgentExec
   };
 }
 
+export function applyMcpPolicyToExecutionProfile(
+  profile: AgentExecutionProfile | undefined,
+  mcpPolicy: McpPolicyEvaluation,
+): AgentExecutionProfile | undefined {
+  if (!profile && mcpPolicy.disabledForRun.length === 0) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    configOverrides: mcpPolicy.disabledForRun.map((name) => `mcp_servers.${name}.enabled=false`),
+  };
+}
+
 export function ensureAgentCanRun(agent: AgentRecord | null, mcpPolicy: McpPolicyEvaluation): void {
   if (!agent || mcpPolicy.missingRequired.length === 0) {
     return;
@@ -68,6 +82,10 @@ function renderMcpPolicy(mcpPolicy: McpPolicyEvaluation): string | null {
   if (mcpPolicy.blockedConfigured.length > 0) {
     lines.push(`- blocked for this agent: ${mcpPolicy.blockedConfigured.join(", ")}`);
     lines.push("- do not use blocked MCPs even if globally configured in the CLI");
+  }
+
+  if (mcpPolicy.disabledForRun.length > 0) {
+    lines.push(`- disabled for this run: ${mcpPolicy.disabledForRun.join(", ")}`);
   }
 
   return lines.join("\n");

@@ -27,6 +27,7 @@ export interface CodexCliExecRequest {
 
 export interface CodexCliRunOverrides {
   approvalPolicy?: string | null;
+  configOverrides?: string[];
   model?: string | null;
   reasoningEffort?: string | null;
   sandboxMode?: string | null;
@@ -35,6 +36,7 @@ export interface CodexCliRunOverrides {
 
 interface ResolvedRunOptions {
   approvalPolicy: string;
+  configOverrides: string[];
   model: string | null;
   reasoningEffort: string | null;
   sandboxMode: string;
@@ -190,6 +192,10 @@ export class CodexCliService {
       args.push("-a", resolved.approvalPolicy);
     }
 
+    for (const override of resolved.configOverrides) {
+      args.push("-c", override);
+    }
+
     if (resolved.reasoningEffort) {
       args.push("-c", `model_reasoning_effort="${resolved.reasoningEffort}"`);
     }
@@ -258,6 +264,7 @@ export class CodexCliService {
   private resolveRunOptions(overrides?: CodexCliRunOverrides): ResolvedRunOptions {
     return {
       approvalPolicy: overrides?.approvalPolicy ?? this.options.approvalPolicy,
+      configOverrides: overrides?.configOverrides ?? [],
       model: overrides?.model ?? this.options.model ?? null,
       reasoningEffort: overrides?.reasoningEffort ?? this.options.reasoningEffort ?? null,
       sandboxMode: overrides?.sandboxMode ?? this.options.sandboxMode,

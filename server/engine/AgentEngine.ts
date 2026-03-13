@@ -2,6 +2,7 @@ import type { CodexCliExecResult, CodexCliService } from "../codex/CodexCliServi
 
 export interface AgentExecutionProfile {
   approvalPolicy?: string | null;
+  configOverrides?: string[];
   model?: string | null;
   reasoningEffort?: string | null;
   sandboxMode?: string | null;

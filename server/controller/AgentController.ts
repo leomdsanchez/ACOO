@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
+import type { AgentSessionStarter } from "../agents/AgentSessionStarter.js";
 import {
+  applyMcpPolicyToExecutionProfile,
   buildAgentExecutionProfile,
   ensureAgentCanRun,
   renderAgentRuntimeSummary,
@@ -57,6 +59,7 @@ export interface AgentResponse {
 export class AgentController {
   public constructor(
     private readonly agentRegistry: AgentRegistryService,
+    private readonly agentSessionStarter: AgentSessionStarter,
     private readonly mcpPolicyEvaluator: McpPolicyEvaluator,
     private readonly engine: AgentEngine,
     private readonly contextService: OperationalContextService,
@@ -83,7 +86,11 @@ export class AgentController {
     const availableSkills = filterSkillsForAgent(skills, activeAgent);
     const activeSkill = await this.skillRouter.chooseSkill(request.prompt, availableSkills);
     const skillContext = this.skillExecutor.buildSkillContext(activeSkill);
-    const executionProfile = buildAgentExecutionProfile(activeAgent);
+    await this.agentSessionStarter.prepare(activeSkill, mcpPolicy);
+    const executionProfile = applyMcpPolicyToExecutionProfile(
+      buildAgentExecutionProfile(activeAgent),
+      mcpPolicy,
+    );
     const result = await this.engine.run({
       cwd: request.cwd ?? process.cwd(),
       ephemeral: request.ephemeral,

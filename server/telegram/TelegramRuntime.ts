@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import type { AgentSessionRecord } from "../domain/models.js";
 import type { TelegramConfig } from "../config/AppConfig.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
@@ -28,7 +29,9 @@ export interface TelegramRuntimeStatus {
   active: boolean;
   activeAgentSlug: string;
   botUser: TelegramUser;
+  busyChats: number;
   offset: number;
+  queuedUpdates: number;
   sessionId: string | null;
   updatedAt: string;
 }
@@ -36,6 +39,9 @@ export interface TelegramRuntimeStatus {
 export class TelegramRuntime {
   private readonly api: TelegramBotApi;
   private readonly allowedUsers: Set<string>;
+  private readonly chatBusy = new Set<number>();
+  private readonly chatQueues = new Map<number, Promise<void>>();
+  private readonly chatQueueDepth = new Map<number, number>();
   private readonly logger: Pick<Console, "error" | "info" | "warn">;
   private offset = 0;
   private readonly pollTimeoutSeconds: number;
@@ -62,7 +68,9 @@ export class TelegramRuntime {
       active: session.active,
       activeAgentSlug: session.activeAgentSlug,
       botUser,
+      busyChats: this.chatBusy.size,
       offset: this.offset,
+      queuedUpdates: sumQueuedUpdates(this.chatQueueDepth),
       sessionId: session.sessionId,
       updatedAt: session.updatedAt,
     };
@@ -85,7 +93,30 @@ export class TelegramRuntime {
       if (updates.length > 0) {
         this.log("info", `poll recebeu ${updates.length} update(s), offset=${this.offset}`);
       }
+      const pending = updates.map((update) => this.enqueueUpdate(update));
       for (const update of updates) {
+        this.offset = Math.max(this.offset, update.update_id + 1);
+      }
+      if (options?.once && pending.length > 0) {
+        await Promise.allSettled(pending);
+      }
+    } while (!options?.once);
+  }
+
+  private enqueueUpdate(update: TelegramUpdate): Promise<void> {
+    const chatId = update.message?.chat.id ?? -1;
+    const previous = this.chatQueues.get(chatId) ?? Promise.resolve();
+    const depth = (this.chatQueueDepth.get(chatId) ?? 0) + 1;
+    this.chatQueueDepth.set(chatId, depth);
+    if (depth > 1 && chatId !== -1) {
+      this.log("info", `update enfileirado em chat=${chatId} depth=${depth}`);
+    }
+
+    let current: Promise<void>;
+    current = previous
+      .catch(() => undefined)
+      .then(async () => {
+        this.chatBusy.add(chatId);
         try {
           await this.processUpdate(update);
         } catch (error) {
@@ -95,10 +126,21 @@ export class TelegramRuntime {
           );
           await this.replyWithGenericFailure(update);
         } finally {
-          this.offset = Math.max(this.offset, update.update_id + 1);
+          this.chatBusy.delete(chatId);
+          const nextDepth = (this.chatQueueDepth.get(chatId) ?? 1) - 1;
+          if (nextDepth <= 0) {
+            this.chatQueueDepth.delete(chatId);
+          } else {
+            this.chatQueueDepth.set(chatId, nextDepth);
+          }
+          if (this.chatQueues.get(chatId) === current) {
+            this.chatQueues.delete(chatId);
+          }
         }
-      }
-    } while (!options?.once);
+      });
+
+    this.chatQueues.set(chatId, current);
+    return current;
   }
 
   private async processUpdate(update: TelegramUpdate): Promise<void> {
@@ -236,11 +278,20 @@ export class TelegramRuntime {
     senderId: string,
   ): Promise<void> {
     if (command.kind === "help") {
-      await this.api.sendMessage(
-        chatId,
-        "Comandos: /agents lista agentes, /coo volta ao agente principal, /start inicia ou reativa a sessao, /end encerra a sessao atual, /new abre uma nova sessao, /status mostra o estado atual e /reset e alias de /new.",
-      );
+      await this.api.sendMessage(chatId, formatHelpMessage());
       this.log("info", `help enviado em chat=${chatId}`);
+      return;
+    }
+
+    if (command.kind === "chats") {
+      const [sessions, agents] = await Promise.all([
+        this.listRecentChatSessions(chatId),
+        this.options.agentRegistry.listAgents({ includeDisabled: true }),
+      ]);
+      const current = await this.options.sessionStore.load();
+      const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
+      await this.api.sendMessage(chatId, formatChatsMessage(sessions, agentsById, current.sessionId));
+      this.log("info", `chats enviado em chat=${chatId} count=${sessions.length}`);
       return;
     }
 
@@ -251,16 +302,47 @@ export class TelegramRuntime {
         const current = agent.slug === session.activeAgentSlug ? " [ativo]" : "";
         return `/${agent.slug} - ${agent.displayName}${current}`;
       });
-      await this.api.sendMessage(chatId, `Agentes disponiveis:\n${lines.join("\n")}`);
+      await this.api.sendMessage(chatId, formatAgentsMessage(lines));
       this.log("info", `agents enviado em chat=${chatId}`);
       return;
     }
 
-    if (command.kind === "select-agent") {
-      const selected = await this.options.agentRegistry.getAgentBySlug(command.agentSlug);
-      if (!selected) {
-        await this.api.sendMessage(chatId, `Agente /${command.agentSlug} nao existe.`);
-        this.log("warn", `agente inexistente solicitado em chat=${chatId} slug=${command.agentSlug}`);
+    if (command.kind === "route-target") {
+      const selected = await this.options.agentRegistry.getAgentBySlug(command.target);
+      if (selected) {
+        const current = await this.options.sessionStore.load();
+        if (current.sessionId) {
+          await this.endRegistrySession(current.activeAgentSlug, chatId);
+        }
+        await this.options.sessionStore.switchAgent(selected.slug, { preserveActive: current.active });
+        let answer = `Agente ativo alterado para /${selected.slug} (${selected.displayName}).`;
+        if (current.active) {
+          answer = await this.runWithProgress(chatId, "typing", () => this.bootstrapCodexSession(chatId, senderId));
+          answer = `Agente ativo alterado para /${selected.slug} (${selected.displayName}). ${answer}`;
+        } else {
+          answer = `${answer} Use /start para iniciar a sessao ou /new para abrir uma nova.`;
+        }
+        await this.api.sendMessage(chatId, answer);
+        this.log("info", `agente ativo alterado em chat=${chatId} slug=${selected.slug}`);
+        return;
+      }
+
+      const session = await this.resolveRoutedSession(chatId, command.target);
+      if (!session) {
+        await this.api.sendMessage(
+          chatId,
+          `Nao encontrei /${command.target}. Use /agents para listar agentes ou /chats para listar sessoes recentes.`,
+        );
+        this.log("warn", `atalho desconhecido em chat=${chatId} target=${command.target}`);
+        return;
+      }
+
+      if (!session.codexThreadId) {
+        await this.api.sendMessage(
+          chatId,
+          "A sessao selecionada nao tem thread Codex anexada para retomar.",
+        );
+        this.log("warn", `sessao sem thread retomada em chat=${chatId} session=${session.id}`);
         return;
       }
 
@@ -268,21 +350,30 @@ export class TelegramRuntime {
       if (current.sessionId) {
         await this.endRegistrySession(current.activeAgentSlug, chatId);
       }
-      await this.options.sessionStore.switchAgent(selected.slug);
+      const selectedAgent = await this.resolveAgentRecordById(session.agentId);
+      await this.options.sessionStore.resumeSession(selectedAgent.slug, session.codexThreadId);
+      await this.activateRegistrySession(selectedAgent.slug, chatId, session.codexThreadId, "exec-resume", session.title);
       await this.api.sendMessage(
         chatId,
-        `Agente ativo alterado para /${selected.slug} (${selected.displayName}). A sessao anterior foi encerrada para evitar misturar contexto. Use /start ou /new para abrir uma thread da Codex para ele.`,
+        formatResumedSessionMessage({
+          agentDisplayName: selectedAgent.displayName,
+          agentSlug: selectedAgent.slug,
+          title: session.title,
+        }),
       );
-      this.log("info", `agente ativo alterado em chat=${chatId} slug=${selected.slug}`);
+      this.log("info", `sessao retomada em chat=${chatId} session=${session.id}`);
       return;
     }
 
     if (command.kind === "status") {
       const session = await this.options.sessionStore.load();
       const activeAgent = await this.options.agentRegistry.getAgentBySlug(session.activeAgentSlug);
-      const statusText = session.active
-        ? `Sessao ativa.\nAgente: /${session.activeAgentSlug}${activeAgent ? ` (${activeAgent.displayName})` : ""}\nThread Codex: ${session.sessionId ?? "ainda nao anexada"}.`
-        : `Sessao inativa.\nAgente: /${session.activeAgentSlug}${activeAgent ? ` (${activeAgent.displayName})` : ""}\nUse /start para retomar ou /new para abrir uma nova.`;
+      const statusText = formatStatusMessage({
+        active: session.active,
+        agentDisplayName: activeAgent?.displayName ?? null,
+        agentSlug: session.activeAgentSlug,
+        sessionId: session.sessionId,
+      });
       await this.api.sendMessage(chatId, statusText);
       this.log("info", `status enviado em chat=${chatId} session=${session.sessionId ?? "none"}`);
       return;
@@ -459,16 +550,18 @@ export class TelegramRuntime {
         return { kind: "new" };
       case "/help":
         return { kind: "help" };
+      case "/chats":
+        return { kind: "chats" };
       case "/status":
         return { kind: "status" };
       case "/agents":
         return { kind: "agents" };
       default: {
-        const slug = normalized.slice(1);
-        if (!slug) {
+        const target = normalized.slice(1);
+        if (!target) {
           return null;
         }
-        return { kind: "select-agent", agentSlug: slug };
+        return { kind: "route-target", target };
       }
     }
   }
@@ -481,11 +574,43 @@ export class TelegramRuntime {
     return agent.id;
   }
 
+  private async resolveAgentRecordById(agentId: string) {
+    const agents = await this.options.agentRegistry.listAgents({ includeDisabled: true });
+    const agent = agents.find((item) => item.id === agentId);
+    if (!agent) {
+      throw new Error(`Agent id "${agentId}" is not registered.`);
+    }
+    return agent;
+  }
+
+  private async listRecentChatSessions(chatId: number): Promise<AgentSessionRecord[]> {
+    return this.options.agentRegistry.listRecentChannelSessions({
+      channel: "telegram",
+      channelThreadId: String(chatId),
+      limit: 5,
+    });
+  }
+
+  private async resolveRoutedSession(chatId: number, target: string): Promise<AgentSessionRecord | null> {
+    if (!/^\d+$/.test(target)) {
+      return null;
+    }
+
+    const index = Number(target);
+    if (!Number.isInteger(index) || index < 1) {
+      return null;
+    }
+
+    const sessions = await this.listRecentChatSessions(chatId);
+    return sessions[index - 1] ?? null;
+  }
+
   private async activateRegistrySession(
     agentSlug: string,
     chatId: number,
     codexThreadId: string | null,
     mode: "exec" | "exec-resume",
+    title?: string | null,
   ): Promise<void> {
     const agentId = await this.resolveAgentId(agentSlug);
     await this.options.agentRegistry.upsertSession({
@@ -496,6 +621,7 @@ export class TelegramRuntime {
       cwd: process.cwd(),
       mode,
       status: "active",
+      title,
     });
   }
 
@@ -539,6 +665,7 @@ export class TelegramRuntime {
     codexThreadId: string | null,
     response: TelegramBotResponse,
   ): Promise<void> {
+    const title = deriveSessionTitle(prompt, this.sessionBootstrapPrompt);
     const agentSession = await this.options.agentRegistry.upsertSession({
       agentId,
       channel: "telegram",
@@ -547,6 +674,7 @@ export class TelegramRuntime {
       cwd: process.cwd(),
       mode,
       status: "active",
+      title,
     });
     await this.options.agentRegistry.recordRun({
       agentId,
@@ -576,10 +704,11 @@ type TelegramBotResponse = Awaited<ReturnType<OperationalBot["handleMessage"]>>;
 
 type TelegramCommand =
   | { kind: "agents" }
+  | { kind: "chats" }
   | { kind: "end" }
   | { kind: "help" }
   | { kind: "new" }
-  | { kind: "select-agent"; agentSlug: string }
+  | { kind: "route-target"; target: string }
   | { kind: "start" }
   | { kind: "status" };
 
@@ -645,4 +774,87 @@ function formatSnippet(value: string, maxLength = 140): string {
   }
 
   return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+function sumQueuedUpdates(depths: Map<number, number>): number {
+  let total = 0;
+  for (const value of depths.values()) {
+    total += value;
+  }
+  return total;
+}
+
+function formatHelpMessage(): string {
+  return [
+    "Comandos disponiveis:",
+    "/help - mostra este resumo",
+    "/agents - lista os agentes ativos",
+    "/chats - lista as 5 sessoes mais recentes",
+    "/<slug> - seleciona um agente",
+    "/1, /2, /3... - retomam uma sessao recente da lista",
+    "/status - mostra o agente e a sessao atual",
+    "/start - inicia ou reativa a sessao",
+    "/new - abre uma nova sessao para o agente atual",
+    "/end - encerra a sessao atual",
+    "/reset - alias de /new",
+  ].join("\n");
+}
+
+function formatAgentsMessage(lines: string[]): string {
+  if (lines.length === 0) {
+    return "Nenhum agente ativo disponivel no registry.";
+  }
+
+  return ["Agentes disponiveis:", ...lines, "", "Use /<slug> para trocar o agente ativo."].join("\n");
+}
+
+function formatChatsMessage(
+  sessions: AgentSessionRecord[],
+  agentsById: Map<string, { displayName: string; slug: string }>,
+  currentCodexThreadId: string | null,
+): string {
+  if (sessions.length === 0) {
+    return "Nenhuma sessao recente encontrada neste chat.";
+  }
+
+  const lines = sessions.map((session) => {
+    const index = sessions.indexOf(session) + 1;
+    const agent = agentsById.get(session.agentId);
+    const current = session.codexThreadId && session.codexThreadId === currentCodexThreadId ? " [atual]" : "";
+    const title = session.title ? ` - ${session.title}` : "";
+    return `/${index} - ${agent ? agent.displayName : "Agente desconhecido"}${title}${current}`;
+  });
+  return ["Sessoes recentes:", ...lines, "", "Use /1, /2, /3... para retomar uma sessao."].join("\n");
+}
+
+function formatStatusMessage(input: {
+  active: boolean;
+  agentDisplayName: string | null;
+  agentSlug: string;
+  sessionId: string | null;
+}): string {
+  const agentLine = `Agente: /${input.agentSlug}${input.agentDisplayName ? ` (${input.agentDisplayName})` : ""}`;
+  if (input.active) {
+    return ["Sessao ativa.", agentLine, `Thread Codex: ${input.sessionId ?? "ainda nao anexada"}.`].join("\n");
+  }
+
+  return ["Sessao inativa.", agentLine, "Use /start para retomar ou /new para abrir uma nova."].join("\n");
+}
+
+function formatResumedSessionMessage(input: {
+  agentDisplayName: string;
+  agentSlug: string;
+  title: string | null;
+}): string {
+  const titleLine = input.title ? ` - ${input.title}` : "";
+  return `Sessao retomada com /${input.agentSlug} (${input.agentDisplayName})${titleLine}.`;
+}
+
+function deriveSessionTitle(prompt: string, bootstrapPrompt: string): string | null {
+  const normalized = prompt.replace(/\s+/g, " ").trim();
+  if (!normalized || normalized === bootstrapPrompt) {
+    return null;
+  }
+
+  return normalized.length <= 72 ? normalized : `${normalized.slice(0, 69)}...`;
 }

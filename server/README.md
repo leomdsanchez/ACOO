@@ -23,6 +23,7 @@ Estrutura inicial do backend operacional para o ACOO.
 - `infrastructure/`: leitura/escrita em filesystem e templates Markdown.
 - `mcp/`: catálogo e discovery de integrações MCP já configuradas na Codex CLI.
 - `codex/`: integração real com `codex login status`, `codex mcp list` e `codex exec`.
+- perfis de MCP por agente são aplicados por execução via overrides `-c mcp_servers.<nome>.enabled=false`, em vez de depender só de instrução no prompt.
 
 ## Fonte de verdade nesta fase
 
@@ -48,6 +49,8 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
+- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint usado para verificar se a sessão CDP do Brave já está ativa.
+- `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: comando usado no preflight automático para subir a sessão Brave do Playwright MCP quando necessário.
 - `ACOO_TELEGRAM_ENABLED`: habilita a prontidão de configuração do canal Telegram.
 - `ACOO_TELEGRAM_BOT_TOKEN`: token do bot Telegram.
 - `ACOO_TELEGRAM_BOT_USERNAME`: username público do bot.
@@ -100,16 +103,16 @@ npm run server:mcp -- --pretty
 
 Sessão persistente oficial do browser para MCP:
 
-- launcher manual do browser: `~/.local/bin/playwright-mcp-brave-open`
+- launcher do browser usado no preflight automático: `~/.local/bin/playwright-mcp-brave-open`
 - wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
 - config da Codex: `~/.codex/config.toml`
 - profile persistente reutilizado pelo MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
 - endpoint CDP persistente: `http://127.0.0.1:9222`
 - browser oficial para fluxos MCP: `Brave Browser`
 
-Fluxo recomendado de reuso:
+Fluxo operacional:
 
-1. subir o `Brave` dedicado manualmente com `~/.local/bin/playwright-mcp-brave-open`;
+1. o ACOO faz preflight automático do `playwright` antes de uma sessão que realmente precise desse MCP;
 2. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
 3. manter o profile `brave-profile` como profile operacional do MCP;
 4. concluir os logins manuais uma vez nesse profile;
@@ -165,13 +168,17 @@ Mensagens de voz passam por transcrição local com `whisper.cpp` antes de entra
 Comandos de sessão no chat:
 
 - `/agents`: lista os agentes ativos disponíveis no registry.
-- `/<slug>`: troca o agente ativo do canal e encerra a sessão anterior para evitar misturar contexto.
+- `/chats`: lista as 5 sessões mais recentes do chat atual.
+- `/<slug>`: troca o agente ativo do canal; se a sessão estiver ativa, encerra a thread anterior e já anexa uma nova thread Codex para o novo agente no mesmo chat.
+- `/1`, `/2`, `/3`...: retomam uma das sessões recentes do chat atual pela posição mostrada em `/chats`.
 - `/start`: inicia a sessão ou reativa a sessão atual e garante uma thread Codex anexada.
 - `/end`: encerra a sessão atual sem apagar o `sessionId`.
 - `/new`: descarta a sessão atual e abre uma nova thread da Codex para o agente atualmente selecionado.
 - `/reset`: alias de `/new`.
 - `/status`: mostra o estado atual da sessão do canal.
 - `/help`: resume os comandos de sessão disponíveis.
+
+Mensagens enviadas durante uma execução longa continuam sendo aceitas no chat e ficam enfileiradas por canal para processamento em ordem.
 
 Inspeção rápida da identidade do bot configurado:
 

@@ -59,11 +59,14 @@ export class TelegramSessionStore {
     return next;
   }
 
-  public async switchAgent(activeAgentSlug: string): Promise<TelegramSessionState> {
+  public async switchAgent(
+    activeAgentSlug: string,
+    options?: { preserveActive?: boolean },
+  ): Promise<TelegramSessionState> {
     const current = await this.load();
     const next = {
       ...current,
-      active: false,
+      active: options?.preserveActive ?? current.active,
       activeAgentSlug,
       sessionId: null,
       updatedAt: new Date().toISOString(),
@@ -77,6 +80,17 @@ export class TelegramSessionStore {
     const next = {
       active: true,
       activeAgentSlug: current.activeAgentSlug,
+      sessionId,
+      updatedAt: new Date().toISOString(),
+    } satisfies TelegramSessionState;
+    await this.saveState(next);
+    return next;
+  }
+
+  public async resumeSession(activeAgentSlug: string, sessionId: string): Promise<TelegramSessionState> {
+    const next = {
+      active: true,
+      activeAgentSlug,
       sessionId,
       updatedAt: new Date().toISOString(),
     } satisfies TelegramSessionState;

@@ -77,20 +77,42 @@ export class AgentRegistryRepository {
     return records.map(mapSessionRecord);
   }
 
-  public async upsertSession(record: AgentSessionRecord): Promise<AgentSessionRecord> {
-    const stored = await this.prisma.agentSession.upsert({
-      where: {
-        agentId_channel_channelThreadId: {
-          agentId: record.agentId,
-          channel: record.channel,
-          channelThreadId: record.channelThreadId,
-        },
-      },
-      update: serializeSession(record),
-      create: serializeSession(record),
+  public async createSession(record: AgentSessionRecord): Promise<AgentSessionRecord> {
+    const stored = await this.prisma.agentSession.create({
+      data: serializeSession(record),
     });
-
     return mapSessionRecord(stored);
+  }
+
+  public async updateSession(record: AgentSessionRecord): Promise<AgentSessionRecord> {
+    const stored = await this.prisma.agentSession.update({
+      where: { id: record.id },
+      data: serializeSession(record),
+    });
+    return mapSessionRecord(stored);
+  }
+
+  public async findSessionById(id: string): Promise<AgentSessionRecord | null> {
+    const record = await this.prisma.agentSession.findUnique({ where: { id } });
+    return record ? mapSessionRecord(record) : null;
+  }
+
+  public async findSessionByCodexThreadId(
+    agentId: string,
+    channel: AgentSessionRecord["channel"],
+    channelThreadId: string,
+    codexThreadId: string,
+  ): Promise<AgentSessionRecord | null> {
+    const record = await this.prisma.agentSession.findFirst({
+      where: {
+        agentId,
+        channel,
+        channelThreadId,
+        codexThreadId,
+      },
+      orderBy: { lastUsedAt: "desc" },
+    });
+    return record ? mapSessionRecord(record) : null;
   }
 
   public async updateSessionStatus(
@@ -99,14 +121,14 @@ export class AgentRegistryRepository {
     channelThreadId: string,
     status: AgentSessionRecord["status"],
   ): Promise<AgentSessionRecord | null> {
-    const current = await this.prisma.agentSession.findUnique({
+    const current = await this.prisma.agentSession.findFirst({
       where: {
-        agentId_channel_channelThreadId: {
-          agentId,
-          channel,
-          channelThreadId,
-        },
+        agentId,
+        channel,
+        channelThreadId,
+        status: "active",
       },
+      orderBy: { lastUsedAt: "desc" },
     });
 
     if (!current) {
@@ -180,6 +202,7 @@ function mapSessionRecord(record: AgentSession): AgentSessionRecord {
     channel: record.channel as AgentSessionRecord["channel"],
     channelThreadId: record.channelThreadId,
     codexThreadId: record.codexThreadId,
+    title: record.title,
     cwd: record.cwd,
     mode: record.mode as AgentSessionRecord["mode"],
     status: record.status as AgentSessionRecord["status"],
@@ -209,6 +232,7 @@ function serializeSession(record: AgentSessionRecord) {
     channel: record.channel,
     channelThreadId: record.channelThreadId,
     codexThreadId: record.codexThreadId,
+    title: record.title,
     cwd: record.cwd,
     mode: record.mode,
     status: record.status,

@@ -20,6 +20,7 @@ export interface CreateAgentSessionInput {
   cwd: string;
   mode: AgentSessionMode;
   status?: AgentSessionStatus;
+  title?: string | null;
 }
 
 export interface RecordAgentRunInput {
@@ -34,7 +35,7 @@ export interface RecordAgentRunInput {
 
 export interface AgentRegistryIntegrityReport {
   duplicateMcpProfileIds: string[];
-  duplicateSessionKeys: string[];
+  duplicateSessionThreadBindings: string[];
   duplicateSlugs: string[];
   missingAgentIdsInSessions: string[];
   missingMcpProfileIds: string[];
@@ -108,31 +109,69 @@ export class AgentRegistryService {
   public async listSessions(options?: {
     agentId?: string;
     channel?: AgentSessionChannel;
+    channelThreadId?: string;
     status?: AgentSessionStatus;
   }): Promise<AgentSessionRecord[]> {
     const sessions = await this.repository.listSessions();
     return sessions
       .filter((session) => !options?.agentId || session.agentId === options.agentId)
       .filter((session) => !options?.channel || session.channel === options.channel)
+      .filter((session) => !options?.channelThreadId || session.channelThreadId === options.channelThreadId)
       .filter((session) => !options?.status || session.status === options.status)
       .sort((left, right) => right.lastUsedAt.localeCompare(left.lastUsedAt));
+  }
+
+  public async listRecentChannelSessions(input: {
+    channel: AgentSessionChannel;
+    channelThreadId: string;
+    limit?: number;
+  }): Promise<AgentSessionRecord[]> {
+    const sessions = await this.listSessions({
+      channel: input.channel,
+      channelThreadId: input.channelThreadId,
+    });
+    return sessions.slice(0, input.limit ?? 5);
+  }
+
+  public async findChannelSessionByShortId(input: {
+    channel: AgentSessionChannel;
+    channelThreadId: string;
+    shortId: string;
+  }): Promise<AgentSessionRecord | null> {
+    const normalized = input.shortId.trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    const sessions = await this.listSessions({
+      channel: input.channel,
+      channelThreadId: input.channelThreadId,
+    });
+    const matches = sessions.filter((session) => session.id.toLowerCase().startsWith(normalized));
+    if (matches.length > 1) {
+      throw new Error(`Short session id "${input.shortId}" is ambiguous.`);
+    }
+    return matches[0] ?? null;
   }
 
   public async upsertSession(input: CreateAgentSessionInput): Promise<AgentSessionRecord> {
     const agents = await this.repository.listAgents();
     ensureAgentExists(agents, input.agentId);
     const now = new Date().toISOString();
-    const sessions = await this.repository.listSessions();
-    const current = sessions.find((session) => (
-      session.agentId === input.agentId &&
-      session.channel === input.channel &&
-      session.channelThreadId === input.channelThreadId
-    ));
+    const current = input.codexThreadId
+      ? await this.repository.findSessionByCodexThreadId(
+          input.agentId,
+          input.channel,
+          input.channelThreadId,
+          input.codexThreadId,
+        )
+      : null;
 
     const next: AgentSessionRecord = current
       ? {
           ...current,
           codexThreadId: input.codexThreadId ?? current.codexThreadId,
+          title: normalizeOptionalText(input.title ?? current.title),
           cwd: input.cwd,
           lastUsedAt: now,
           mode: input.mode,
@@ -144,6 +183,7 @@ export class AgentRegistryService {
           channel: input.channel,
           channelThreadId: input.channelThreadId,
           codexThreadId: input.codexThreadId ?? null,
+          title: normalizeOptionalText(input.title),
           cwd: input.cwd,
           lastUsedAt: now,
           mode: input.mode,
@@ -151,7 +191,7 @@ export class AgentRegistryService {
           status: input.status ?? "active",
         };
 
-    return this.repository.upsertSession(next);
+    return current ? this.repository.updateSession(next) : this.repository.createSession(next);
   }
 
   public async setSessionStatus(input: {
@@ -209,10 +249,12 @@ export class AgentRegistryService {
 
     return {
       duplicateMcpProfileIds: findDuplicates(snapshot.mcpProfiles.map((profile) => profile.id)),
-      duplicateSessionKeys: findDuplicates(
-        snapshot.sessions.map((session) => (
-          `${session.agentId}:${session.channel}:${session.channelThreadId}`
-        )),
+      duplicateSessionThreadBindings: findDuplicates(
+        snapshot.sessions
+          .filter((session) => session.codexThreadId)
+          .map((session) => (
+            `${session.agentId}:${session.channel}:${session.channelThreadId}:${session.codexThreadId}`
+          )),
       ),
       duplicateSlugs: findDuplicates(snapshot.agents.map((agent) => agent.slug)),
       missingAgentIdsInSessions: snapshot.sessions

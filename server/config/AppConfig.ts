@@ -31,6 +31,11 @@ export interface TranscriptionConfig {
   threads: number;
 }
 
+export interface PlaywrightMcpRuntimeConfig {
+  healthcheckUrl: string;
+  startupCommand: string;
+}
+
 export interface AppConfig {
   appName: string;
   codexApprovalPolicy: CodexApprovalPolicy;
@@ -39,6 +44,7 @@ export interface AppConfig {
   codexModel: string | null;
   codexReasoningEffort: CodexReasoningEffort;
   codexSandboxMode: CodexSandboxMode;
+  playwrightMcp: PlaywrightMcpRuntimeConfig;
   repoRoot: string;
   skillRoots: string[];
   telegram: TelegramConfig;
@@ -57,6 +63,12 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexModel: readOptionalString("ACOO_CODEX_MODEL"),
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
     codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
+    playwrightMcp: {
+      healthcheckUrl: readString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL", "http://127.0.0.1:9222/json/version"),
+      startupCommand: expandHome(
+        readString("ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND", "~/.local/bin/playwright-mcp-brave-open"),
+      ),
+    },
     repoRoot,
     skillRoots: readList("ACOO_SKILL_ROOTS", [
       path.join(repoRoot, "agents"),

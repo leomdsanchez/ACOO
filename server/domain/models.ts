@@ -200,6 +200,7 @@ export interface AgentSessionRecord {
   channel: AgentSessionChannel;
   channelThreadId: string;
   codexThreadId: string | null;
+  title: string | null;
   cwd: string;
   mode: AgentSessionMode;
   status: AgentSessionStatus;

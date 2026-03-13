@@ -48,6 +48,7 @@ model AgentSession {
   channel         String
   channelThreadId String
   codexThreadId   String?
+  title           String?
   cwd             String
   mode            String
   status          String
@@ -56,7 +57,8 @@ model AgentSession {
   agent           Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
   runs            AgentRun[]
 
-  @@unique([agentId, channel, channelThreadId])
+  @@index([channel, channelThreadId, lastUsedAt])
+  @@index([agentId, channel, channelThreadId, status])
 }
 
 model AgentRun {
