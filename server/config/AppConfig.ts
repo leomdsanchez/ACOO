@@ -47,6 +47,7 @@ export interface PlaywrightMcpRuntimeConfig {
 export interface AppConfig {
   api: ApiConfig;
   appName: string;
+  backupAgentSlug: string | null;
   codexApprovalPolicy: CodexApprovalPolicy;
   codexCliBinary: string;
   codexConfigPath: string;
@@ -73,6 +74,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
       port: readNumber("ACOO_API_PORT", 4317),
     },
     appName: readString("VITE_APP_NAME", "ACOO"),
+    backupAgentSlug: readOptionalAgentSlug("ACOO_BACKUP_AGENT_SLUG"),
     codexApprovalPolicy: readApprovalPolicy("ACOO_CODEX_APPROVAL_POLICY", "never"),
     codexCliBinary: readString("ACOO_CODEX_CLI_BIN", "codex"),
     codexConfigPath: expandHome(readString("ACOO_CODEX_CONFIG_PATH", "~/.codex/config.toml")),
@@ -183,6 +185,21 @@ function readAgentSlug(name: string, fallback: string): string {
   const value = process.env[name]?.trim().toLowerCase();
   if (!value) {
     return fallback;
+  }
+
+  if (!/^[a-z0-9-]+$/.test(value)) {
+    throw new Error(
+      `Environment variable ${name} is invalid. Use lowercase letters, numbers and hyphens.`,
+    );
+  }
+
+  return value;
+}
+
+function readOptionalAgentSlug(name: string): string | null {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return null;
   }
 
   if (!/^[a-z0-9-]+$/.test(value)) {

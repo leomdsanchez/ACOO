@@ -1,15 +1,11 @@
 import type { AppConfig } from "../config/AppConfig.js";
 import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
-import type { AgentRecord } from "../domain/models.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
-import {
-  selectOperationalActiveAgentFromList,
-  type ActiveAgentSelectionSource,
-} from "../agents/OperationalAgentSelector.js";
 import type { McpSessionBootstrapper } from "../mcp/McpSessionBootstrapper.js";
+import { resolveDefaultAgentResolution } from "./DefaultAgentResolution.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 import os from "node:os";
@@ -28,10 +24,9 @@ export interface RuntimeStatus {
   };
   cli: Awaited<ReturnType<CodexCliService["getStatus"]>>;
   defaults: {
-    agentSlug: string;
     agentSlugConfigured: string;
     agentSlugEffective: string | null;
-    agentSlugSource: "configured" | "fallback" | "unresolved";
+    agentSlugSource: "configured" | "backup" | "unresolved";
     approvalPolicy: AppConfig["codexApprovalPolicy"];
     model: string | null;
     reasoningEffort: AppConfig["codexReasoningEffort"];
@@ -128,7 +123,11 @@ export class RuntimeStatusService {
       this.agentRegistry.getAgentBySlug(this.config.defaultAgentSlug),
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
-    const defaultAgentResolution = resolveDefaultAgentResolution(agents, this.config.defaultAgentSlug);
+    const defaultAgentResolution = resolveDefaultAgentResolution(
+      agents,
+      this.config.defaultAgentSlug,
+      this.config.backupAgentSlug,
+    );
 
     const issues = [
       cli.installed ? null : "Codex CLI binary não encontrada no PATH.",
@@ -177,10 +176,10 @@ export class RuntimeStatusService {
         ? `Modelo local de transcrição ainda não encontrado em ${transcription.modelPath}; será baixado na primeira transcrição.`
         : null,
       !defaultAgent
-        ? `Agente default configurado "${this.config.defaultAgentSlug}" não existe no registry; fallback atual: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
+        ? `Agente default configurado "${this.config.defaultAgentSlug}" não existe no registry; origem atual: ${defaultAgentResolution.source}; agente efetivo: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
         : null,
       defaultAgent && defaultAgent.status !== "active"
-        ? `Agente default configurado "${this.config.defaultAgentSlug}" está ${defaultAgent.status}; fallback atual: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
+        ? `Agente default configurado "${this.config.defaultAgentSlug}" está ${defaultAgent.status}; origem atual: ${defaultAgentResolution.source}; agente efetivo: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
         : null,
       agentIntegrity.missingMcpProfileIds.length > 0
         ? `Alguns agentes apontam para MCP profiles inexistentes: ${agentIntegrity.missingMcpProfileIds.join(", ")}.`
@@ -209,7 +208,6 @@ export class RuntimeStatusService {
       },
       cli,
       defaults: {
-        agentSlug: this.config.defaultAgentSlug,
         agentSlugConfigured: this.config.defaultAgentSlug,
         agentSlugEffective: defaultAgentResolution.effectiveSlug,
         agentSlugSource: defaultAgentResolution.source,
@@ -279,31 +277,4 @@ export class RuntimeStatusService {
 
 function hasTelegramSecrets(config: AppConfig): boolean {
   return Boolean(config.telegram.botToken) && config.telegram.allowedUserIds.length > 0;
-}
-
-function resolveDefaultAgentResolution(
-  activeAgents: AgentRecord[],
-  configuredSlug: string,
-): {
-  effectiveSlug: string | null;
-  source: "configured" | "fallback" | "unresolved";
-} {
-  try {
-    const selection = selectOperationalActiveAgentFromList(activeAgents, {
-      defaultAgentSlug: configuredSlug,
-    });
-    return {
-      effectiveSlug: selection.agent.slug,
-      source: mapSelectionSourceToStatusSource(selection.source),
-    };
-  } catch {
-    return {
-      effectiveSlug: null,
-      source: "unresolved",
-    };
-  }
-}
-
-function mapSelectionSourceToStatusSource(source: ActiveAgentSelectionSource): "configured" | "fallback" {
-  return source === "configured-default" ? "configured" : "fallback";
 }

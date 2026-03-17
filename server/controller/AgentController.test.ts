@@ -96,6 +96,7 @@ test("injects a structured runtime error and keeps agent loop running", async ()
       buildSkillContext: () => "skill context",
     } as never,
     "coo",
+    null,
   );
 
   const response = await runnableController.handle({
@@ -153,6 +154,7 @@ test("rethrows non-user-facing preparation errors", async () => {
       buildSkillContext: () => "skill context",
     } as never,
     "coo",
+    null,
   );
 
   await assert.rejects(
@@ -162,4 +164,63 @@ test("rethrows non-user-facing preparation errors", async () => {
       }),
     /unexpected failure/,
   );
+});
+
+test("falls back to configured backup when the configured default is unavailable", async () => {
+  const fallbackAgent: AgentRecord = {
+    ...AGENT,
+    id: "agent-2",
+    slug: "ops",
+    displayName: "Ops Desk",
+  };
+
+  const controller = new AgentController(
+    {
+      getActiveAgentBySlug: async () => null,
+      listAgents: async () => [fallbackAgent],
+    } as never,
+    {
+      load: async () => null,
+    } as never,
+    {
+      prepare: async () => undefined,
+    } as never,
+    {
+      evaluate: async () => ({
+        ...MCP_POLICY,
+        configuredNames: [],
+        configuredRequired: [],
+      }),
+    } as never,
+    {
+      run: async () => ({
+        command: "codex exec",
+        lastMessage: "ok",
+        stderr: "",
+        stdout: "ok",
+        threadId: null,
+      }),
+    } as never,
+    {
+      build: async () => "contexto operacional",
+    } as never,
+    {
+      loadAll: async () => [],
+    } as never,
+    {
+      chooseSkill: async () => null,
+    } as never,
+    {
+      buildSkillContext: () => null,
+    } as never,
+    "coo",
+    "ops",
+  );
+
+  const response = await controller.handle({
+    prompt: "seguir fluxo",
+  });
+
+  assert.equal(response.activeAgentSlug, "ops");
+  assert.equal(response.activeAgentName, "Ops Desk");
 });

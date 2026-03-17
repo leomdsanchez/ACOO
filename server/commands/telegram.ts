@@ -17,6 +17,7 @@ async function main() {
 
   const telegram = new TelegramRuntime({
     agentRegistry: runtime.agentRegistry,
+    backupAgentSlug: runtime.config.backupAgentSlug,
     bot: runtime.bot,
     config: telegramConfig,
     defaultAgentSlug: runtime.config.defaultAgentSlug,

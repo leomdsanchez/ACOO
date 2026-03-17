@@ -5,7 +5,7 @@ import type { AgentRegistryService } from "./AgentRegistryService.js";
 export type ActiveAgentSelectionSource =
   | "preferred"
   | "configured-default"
-  | "fallback-first-active";
+  | "configured-backup";
 
 export interface ActiveAgentSelection<T extends { slug: string } = AgentRecord> {
   agent: T;
@@ -14,11 +14,12 @@ export interface ActiveAgentSelection<T extends { slug: string } = AgentRecord> 
 
 export interface ActiveAgentSelectionInput {
   defaultAgentSlug: string;
+  backupAgentSlug?: string | null;
   preferredSlug?: string | null;
 }
 
 // Shared policy used by controller, Telegram and API:
-// 1) preferred active slug, 2) configured default active slug, 3) first active slug.
+// 1) preferred active slug, 2) configured default active slug, 3) configured backup active slug.
 export function selectOperationalActiveAgentFromList<T extends { slug: string }>(
   activeAgents: T[],
   input: ActiveAgentSelectionInput,
@@ -42,15 +43,24 @@ export function selectOperationalActiveAgentFromList<T extends { slug: string }>
     };
   }
 
-  const first = activeAgents[0];
-  if (first) {
-    return {
-      agent: first,
-      source: "fallback-first-active",
-    };
+  const backupSlug = input.backupAgentSlug?.trim() ?? "";
+  if (backupSlug) {
+    const backupAgent = activeAgents.find((agent) => agent.slug === backupSlug);
+    if (backupAgent) {
+      return {
+        agent: backupAgent,
+        source: "configured-backup",
+      };
+    }
   }
 
-  throw new AgentRegistryConflictError("No active agents available in the registry.");
+  if (activeAgents.length === 0) {
+    throw new AgentRegistryConflictError("No active agents available in the registry.");
+  }
+
+  throw new AgentRegistryConflictError(
+    `No active agent matched preferred/default/backup policy (preferred=${preferredSlug || "none"}, default=${input.defaultAgentSlug}, backup=${backupSlug || "none"}).`,
+  );
 }
 
 export async function resolveOperationalActiveAgent(

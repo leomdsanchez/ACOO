@@ -71,6 +71,7 @@ export class AgentController {
     private readonly skillRouter: SkillRouter,
     private readonly skillExecutor: SkillExecutor,
     private readonly defaultAgentSlug: string,
+    private readonly backupAgentSlug: string | null,
   ) {}
 
   public async handle(request: AgentRequest): Promise<AgentResponse> {
@@ -152,6 +153,7 @@ export class AgentController {
     }
 
     const { agent } = await resolveOperationalActiveAgent(this.agentRegistry, {
+      backupAgentSlug: this.backupAgentSlug,
       defaultAgentSlug: this.defaultAgentSlug,
     });
     return agent;

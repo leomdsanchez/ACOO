@@ -89,10 +89,9 @@ export interface RuntimeStatusSnapshot {
     loginStatus: string;
   };
   defaults: {
-    agentSlug: string;
     agentSlugConfigured: string;
     agentSlugEffective: string | null;
-    agentSlugSource: "configured" | "fallback" | "unresolved";
+    agentSlugSource: "configured" | "backup" | "unresolved";
     approvalPolicy: string;
     model: string | null;
     reasoningEffort: string;

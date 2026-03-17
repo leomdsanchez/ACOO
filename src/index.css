@@ -1,7 +1,21 @@
 :root {
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --font-body: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Sora", "IBM Plex Sans", "Avenir Next", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", "Menlo", monospace;
+  --type-weight-regular: 400;
+  --type-weight-medium: 500;
+  --type-weight-semibold: 600;
+  --type-weight-bold: 700;
+  --type-lh-body: 1.56;
+  --type-lh-meta: 1.34;
+  --type-lh-tight: 1.06;
+  --type-track-display: -0.016em;
+  --type-track-tight: -0.008em;
+  --type-track-label: 0.11em;
+  --type-track-mono: 0.03em;
+  font-family: var(--font-body);
+  line-height: var(--type-lh-body);
+  font-weight: var(--type-weight-regular);
   color: #f7f0e4;
   background:
     radial-gradient(circle at 10% 10%, rgba(224, 122, 58, 0.22), transparent 24%),
@@ -38,11 +52,15 @@ body,
 body {
   margin: 0;
   min-width: 320px;
+  font-family: var(--font-body);
+  font-weight: var(--type-weight-regular);
+  line-height: var(--type-lh-body);
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -98,21 +116,27 @@ button {
   border-radius: 1rem;
   background: linear-gradient(135deg, rgba(240, 164, 92, 0.16), rgba(114, 212, 177, 0.14));
   color: var(--accent);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-semibold);
   font-size: 0.82rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .sidebar-brand strong {
   display: block;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-semibold);
   font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: var(--type-track-tight);
 }
 
 .sidebar-brand p {
   margin: 0.18rem 0 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+  line-height: 1.42;
 }
 
 .sidebar-nav {
@@ -133,12 +157,18 @@ button {
 }
 
 .sidebar-link strong {
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   font-size: 0.98rem;
+  line-height: 1.24;
+  letter-spacing: var(--type-track-tight);
 }
 
 .sidebar-link span {
   color: var(--text-muted);
   font-size: 0.84rem;
+  line-height: var(--type-lh-meta);
+  letter-spacing: 0.01em;
 }
 
 .sidebar-link:hover,
@@ -167,16 +197,20 @@ button {
 }
 
 .sidebar-status strong {
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.82rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--type-track-label);
   color: var(--text-soft);
 }
 
 .sidebar-status span {
   color: #fff4dd;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.82rem;
+  letter-spacing: var(--type-track-mono);
 }
 
 .app-main {
@@ -195,17 +229,21 @@ button {
 .eyebrow,
 .section-kicker {
   margin: 0 0 0.55rem;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   color: var(--accent);
 }
 
 .page-header h1 {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-semibold);
   font-size: clamp(2.4rem, 4.6vw, 4rem);
-  line-height: 0.96;
+  line-height: var(--type-lh-tight);
+  letter-spacing: var(--type-track-display);
 }
 
 .page-subtitle,
@@ -217,13 +255,18 @@ button {
   margin: 0.7rem 0 0;
   color: var(--text-muted);
   font-size: 0.97rem;
+  line-height: var(--type-lh-body);
 }
 
 .primary-button,
 .ghost-button {
+  font-family: var(--font-body);
+  font-weight: var(--type-weight-medium);
   border-radius: 999px;
   padding: 0.72rem 1rem;
   font-size: 0.92rem;
+  line-height: 1.2;
+  letter-spacing: 0.012em;
 }
 
 .primary-button {
@@ -251,6 +294,43 @@ button {
 .primary-button:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+.page-header h1,
+.hero-panel h2,
+.section-head h3,
+.sidebar-brand strong,
+.sidebar-link strong,
+.snapshot-card strong,
+.agent-preview-top strong,
+.table-primary strong,
+.metric-card strong,
+.compact-record strong,
+.profile-name,
+.skill-option strong {
+  font-kerning: normal;
+  font-optical-sizing: auto;
+}
+
+.brand-mark,
+.sidebar-status span,
+.agent-preview-top p,
+.table-primary span,
+.agent-preview-meta dt,
+.agents-table th,
+.filter-chip,
+.status-pill,
+.metric-card span,
+.compact-record p,
+.compact-record span,
+.key-value-list dt,
+.drawer-field span,
+.profile-line strong,
+.skill-tag,
+.mono,
+.drawer-field--readonly code {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 .page-body {
@@ -293,8 +373,11 @@ button {
 
 .hero-panel h2 {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-semibold);
   font-size: clamp(1.7rem, 3vw, 2.7rem);
-  line-height: 1;
+  line-height: 1.04;
+  letter-spacing: var(--type-track-display);
 }
 
 .hero-actions {
@@ -316,7 +399,11 @@ button {
 }
 
 .snapshot-card strong {
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   font-size: 1rem;
+  line-height: 1.3;
+  letter-spacing: var(--type-track-tight);
   color: #fff4dd;
 }
 
@@ -350,7 +437,11 @@ button {
 
 .section-head h3 {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: var(--type-track-tight);
 }
 
 .status-list {
@@ -359,6 +450,7 @@ button {
   margin: 0;
   padding-left: 1.15rem;
   color: #fff4dd;
+  line-height: 1.46;
 }
 
 .status-list li::marker {
@@ -386,15 +478,22 @@ button {
 
 .agent-preview-top strong {
   display: block;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   font-size: 1rem;
+  line-height: 1.28;
+  letter-spacing: var(--type-track-tight);
 }
 
 .agent-preview-top p,
 .table-primary span {
   margin: 0.18rem 0 0;
   color: var(--text-soft);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.82rem;
+  letter-spacing: var(--type-track-mono);
+  line-height: var(--type-lh-meta);
 }
 
 .agent-preview-meta {
@@ -407,15 +506,17 @@ button {
 .agent-preview-meta dt,
 .agents-table th,
 .filter-chip {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.73rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--text-soft);
 }
 
 .agent-preview-meta dd {
   margin: 0.28rem 0 0;
+  line-height: 1.38;
   color: #fff4dd;
 }
 
@@ -472,12 +573,15 @@ button {
   margin: 0 0 0.9rem;
   color: var(--text-muted);
   font-size: 0.88rem;
+  line-height: 1.48;
 }
 
 .status-pill {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.72rem;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .status-pill--good {
@@ -525,7 +629,11 @@ button {
 }
 
 .table-primary strong {
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   font-size: 0.98rem;
+  line-height: 1.28;
+  letter-spacing: var(--type-track-tight);
 }
 
 .table-link {
@@ -550,7 +658,8 @@ button {
 .table-secondary {
   color: var(--text-muted);
   font-size: 0.82rem;
-  line-height: 1.35;
+  line-height: 1.48;
+  letter-spacing: 0.005em;
   overflow-wrap: anywhere;
 }
 
@@ -561,8 +670,10 @@ button {
 }
 
 .mono {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.8rem;
+  letter-spacing: var(--type-track-mono);
 }
 
 .table-skeleton {
@@ -633,9 +744,11 @@ button {
 .key-value-list dt,
 .drawer-field span,
 .profile-line strong {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
+  line-height: var(--type-lh-meta);
   text-transform: uppercase;
   color: var(--text-soft);
 }
@@ -645,6 +758,10 @@ button {
 .profile-name {
   display: block;
   margin-top: 0.35rem;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
+  line-height: 1.28;
+  letter-spacing: var(--type-track-tight);
   color: #fff4dd;
 }
 
@@ -695,12 +812,14 @@ button {
 
 .key-value-list dd {
   margin: 0.35rem 0 0;
+  line-height: 1.46;
   color: #fff4dd;
 }
 
 .profile-copy {
   margin: 0.35rem 0 0;
   color: var(--text-muted);
+  line-height: var(--type-lh-body);
 }
 
 .telegram-card .profile-line span {
@@ -726,6 +845,7 @@ button {
 }
 
 .profile-line span {
+  line-height: 1.4;
   color: #fff4dd;
 }
 
@@ -738,8 +858,10 @@ button {
   border: 1px solid rgba(114, 212, 177, 0.18);
   background: rgba(114, 212, 177, 0.08);
   color: #e9fff8;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
   font-size: 0.78rem;
+  letter-spacing: 0.04em;
 }
 
 .detail-skeleton-grid {
@@ -800,6 +922,10 @@ button {
   border: 1px solid rgba(247, 240, 228, 0.12);
   background: rgba(255, 255, 255, 0.03);
   color: #fff4dd;
+  font-family: var(--font-body);
+  font-size: 0.93rem;
+  line-height: 1.4;
+  letter-spacing: 0.005em;
 }
 
 .drawer-field--readonly code {
@@ -809,6 +935,10 @@ button {
   border-radius: 0.8rem;
   border: 1px solid rgba(247, 240, 228, 0.12);
   background: rgba(255, 255, 255, 0.03);
+  font-family: var(--font-mono);
+  font-weight: var(--type-weight-medium);
+  font-size: 0.8rem;
+  letter-spacing: var(--type-track-mono);
   color: #fff4dd;
 }
 
@@ -822,6 +952,7 @@ button {
   align-items: center;
   gap: 0.7rem;
   color: #fff4dd;
+  line-height: 1.4;
 }
 
 .skill-picker {
@@ -853,13 +984,18 @@ button {
 
 .skill-option strong {
   display: block;
+  font-family: var(--font-display);
+  font-weight: var(--type-weight-medium);
   color: #fff4dd;
   font-size: 0.84rem;
+  line-height: 1.28;
+  letter-spacing: var(--type-track-tight);
 }
 
 .skill-option span {
   color: var(--text-muted);
   font-size: 0.78rem;
+  line-height: 1.42;
 }
 
 .drawer-actions {

@@ -2,17 +2,13 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { OperationalRuntime } from "../bootstrap.js";
 import { runPlaywrightDoctor } from "../mcp/PlaywrightDoctorRunner.js";
 import type {
-  AgentRecord,
   CreateAgentInput,
   UpdateAgentInput,
 } from "../domain/models.js";
-import {
-  evaluateAgentTelegramOperability,
-  type AgentTelegramOperability,
-} from "../agents/AgentTelegramOperability.js";
 import { resolveOperationalActiveAgent } from "../agents/OperationalAgentSelector.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import { AgentRegistryError } from "../agents/AgentRegistryErrors.js";
+import { toAgentApiRecord } from "./AgentApiPresenter.js";
 
 interface HttpServerOptions {
   host: string;
@@ -177,6 +173,7 @@ export class HttpServer {
       const replacementSelection = await resolveOperationalActiveAgent(
         this.options.runtime.agentRegistry,
         {
+          backupAgentSlug: this.options.runtime.config.backupAgentSlug,
           defaultAgentSlug: this.options.runtime.config.defaultAgentSlug,
         },
       );
@@ -354,32 +351,6 @@ function sendError(response: ServerResponse, statusCode: number, message: string
       statusCode,
     },
   });
-}
-
-interface AgentApiRecord extends AgentRecord {
-  usability: {
-    registered: true;
-    system: {
-      usable: boolean;
-      reasons: string[];
-    };
-    telegram: AgentTelegramOperability;
-  };
-}
-
-function toAgentApiRecord(agent: AgentRecord): AgentApiRecord {
-  const systemReasons = agent.status === "active" ? [] : [`agent status is "${agent.status}"`];
-  return {
-    ...agent,
-    usability: {
-      registered: true,
-      system: {
-        usable: systemReasons.length === 0,
-        reasons: systemReasons,
-      },
-      telegram: evaluateAgentTelegramOperability(agent),
-    },
-  };
 }
 
 function resolveHttpStatusCode(error: unknown): number {

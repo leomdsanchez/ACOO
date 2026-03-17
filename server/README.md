@@ -52,7 +52,8 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
-- `ACOO_DEFAULT_AGENT_SLUG`: slug do agente default do ACOO quando o canal não informar um agente explicitamente. O fallback histórico continua sendo `coo`.
+- `ACOO_DEFAULT_AGENT_SLUG`: slug do agente default do ACOO quando o canal não informar um agente explicitamente.
+- `ACOO_BACKUP_AGENT_SLUG`: slug de backup opcional quando o default estiver indisponível. Sem backup válido, o sistema retorna erro operacional explícito.
 - `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND`: comando de healthcheck usado para validar attach real do Playwright via CDP.
 - `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint fallback usado para verificar se a sessão CDP do Brave já está ativa.
 - `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: comando usado no preflight automático para subir a sessão Brave do Playwright MCP quando necessário.
