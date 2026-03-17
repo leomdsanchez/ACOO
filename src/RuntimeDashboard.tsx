@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import {
+  archiveAgent,
+  createAgent,
+  deleteAgent,
   fetchAgent,
   fetchAgentProfiles,
   fetchAgents,
@@ -7,7 +10,8 @@ import {
   fetchAgentSessions,
   fetchAgentSkills,
   fetchRuntimeStatus,
-  updateAgentOverview,
+  updateAgent,
+  type CreateAgentInput,
   type AgentMcpProfileRecord,
   type AgentRecord,
   type AgentRunRecord,
@@ -32,6 +36,16 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [agentsLoaded, setAgentsLoaded] = useState(false);
+
+  const upsertAgent = (nextAgent: AgentRecord) => {
+    setAgents((current) => sortAgents([
+      ...current.filter((agent) => agent.id !== nextAgent.id),
+      nextAgent,
+    ]));
+  };
+  const removeAgent = (agentId: string) => {
+    setAgents((current) => current.filter((agent) => agent.id !== agentId));
+  };
 
   useEffect(() => {
     const onPopState = () => {
@@ -79,11 +93,11 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
 
     const loadAgents = async () => {
       try {
-        const next = await fetchAgents();
+        const next = await fetchAgents({ includeDisabled: true });
         if (!active) {
           return;
         }
-        setAgents(next);
+        setAgents(sortAgents(next));
         setAgentsError(null);
       } catch (error) {
         if (!active) {
@@ -245,10 +259,21 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
             agents={agents}
             error={agentsError}
             loaded={agentsLoaded}
+            onAgentDelete={removeAgent}
+            onAgentUpsert={upsertAgent}
             onOpenAgent={(slug) => navigate({ path: "/agents/:slug", slug })}
+            telegramEnabled={runtimeStatus?.telegram.enabled ?? false}
           />
         ) : (
-          <AgentDetailScreen slug={route.slug} />
+          <AgentDetailScreen
+            slug={route.slug}
+            telegramEnabled={runtimeStatus?.telegram.enabled ?? false}
+            onAgentDelete={(agentId) => {
+              removeAgent(agentId);
+              navigate({ path: "/agents" });
+            }}
+            onAgentUpsert={upsertAgent}
+          />
         )}
       </div>
     </div>
@@ -270,7 +295,7 @@ function HomeScreen({
 }) {
   const issues = runtimeStatus?.issues ?? [];
   const advisories = runtimeStatus?.advisories ?? [];
-  const topAgents = agents.slice(0, 3);
+  const topAgents = agents.filter((agent) => agent.status === "active").slice(0, 3);
 
   return (
     <main className="page-body">
@@ -409,10 +434,10 @@ function HomeScreen({
               label="CLI"
               summary={
                 runtimeStatus
-                  ? `${runtimeStatus.defaults.model ?? "default"} / ${runtimeStatus.defaults.reasoningEffort}`
+                  ? formatDefaultAgentSummary(runtimeStatus)
                   : "loading"
               }
-              tone="good"
+              tone={runtimeStatus ? resolveDefaultAgentTone(runtimeStatus) : "good"}
             />
             <ChannelCard
               label="Telegram"
@@ -436,13 +461,127 @@ function AgentsScreen({
   agents,
   error,
   loaded,
+  onAgentDelete,
+  onAgentUpsert,
   onOpenAgent,
+  telegramEnabled,
 }: {
   agents: AgentRecord[];
   error: string | null;
   loaded: boolean;
+  onAgentDelete: (agentId: string) => void;
+  onAgentUpsert: (agent: AgentRecord) => void;
   onOpenAgent: (slug: string) => void;
+  telegramEnabled: boolean;
 }) {
+  const [profiles, setProfiles] = useState<AgentMcpProfileRecord[]>([]);
+  const [skills, setSkills] = useState<SkillSummaryRecord[]>([]);
+  const [createDraft, setCreateDraft] = useState<AgentEditorDraft | null>(null);
+  const [savingCreate, setSavingCreate] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [archivingSlug, setArchivingSlug] = useState<string | null>(null);
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
+  const [resourcesError, setResourcesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadResources = async () => {
+      try {
+        const [nextProfiles, nextSkills] = await Promise.all([
+          fetchAgentProfiles(),
+          fetchAgentSkills(),
+        ]);
+        if (!active) {
+          return;
+        }
+        setProfiles(nextProfiles);
+        setSkills(nextSkills);
+        setResourcesError(null);
+      } catch (resourceError) {
+        if (!active) {
+          return;
+        }
+        setResourcesError(resourceError instanceof Error ? resourceError.message : "Falha ao carregar recursos.");
+      }
+    };
+
+    void loadResources();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const openCreateDrawer = () => {
+    setCreateError(null);
+    setCreateDraft(createDefaultAgentDraft(profiles));
+  };
+
+  const saveCreate = async () => {
+    if (!createDraft) {
+      return;
+    }
+
+    if (!createDraft.mcpProfileId) {
+      setCreateError("Selecione um MCP profile para criar o agente.");
+      return;
+    }
+
+    setSavingCreate(true);
+    setCreateError(null);
+    try {
+      const created = await createAgent(toCreateAgentInput(createDraft));
+      onAgentUpsert(created);
+      setCreateDraft(null);
+      onOpenAgent(created.slug);
+    } catch (createFailure) {
+      setCreateError(createFailure instanceof Error ? createFailure.message : "Falha ao criar agente.");
+    } finally {
+      setSavingCreate(false);
+    }
+  };
+
+  const archiveFromList = async (agent: AgentRecord) => {
+    const confirmed = window.confirm(
+      `Arquivar ${agent.displayName} (${agent.slug})? Isso remove o agente da operação ativa no Telegram sem apagar o histórico do registry.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setArchivingSlug(agent.slug);
+    try {
+      const updated = await archiveAgent(agent.slug);
+      onAgentUpsert(updated);
+    } catch (archiveFailure) {
+      setResourcesError(archiveFailure instanceof Error ? archiveFailure.message : "Falha ao arquivar agente.");
+    } finally {
+      setArchivingSlug(null);
+    }
+  };
+
+  const activeCount = agents.filter((agent) => agent.status === "active").length;
+  const inactiveCount = agents.length - activeCount;
+
+  const deleteFromList = async (agent: AgentRecord) => {
+    const confirmed = window.confirm(
+      `Deletar permanentemente ${agent.displayName} (${agent.slug})? Isso remove o agente e apaga sessões/runs vinculados no banco.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingSlug(agent.slug);
+    try {
+      const deleted = await deleteAgent(agent.slug);
+      onAgentDelete(deleted.id);
+    } catch (deleteFailure) {
+      setResourcesError(deleteFailure instanceof Error ? deleteFailure.message : "Falha ao deletar agente.");
+    } finally {
+      setDeletingSlug(null);
+    }
+  };
+
   return (
     <main className="page-body">
       <section className="surface-card">
@@ -452,10 +591,18 @@ function AgentsScreen({
             <h3>Agent catalog</h3>
           </div>
           <div className="filters-inline">
-            <span className="filter-chip">all roles</span>
-            <span className="filter-chip">active first</span>
+            <span className="filter-chip">{`${activeCount} active`}</span>
+            <span className="filter-chip">{`${inactiveCount} inactive`}</span>
+            <button className="primary-button" onClick={openCreateDrawer} type="button">
+              Add agent
+            </button>
           </div>
         </div>
+        <p className="registry-hint">
+          Operability no Telegram segue o contrato do backend: apenas agentes <code className="mono">active</code> aparecem em <code className="mono">/agents</code> e aceitam troca via <code className="mono">/&lt;slug&gt;</code>. <code className="mono">archived</code> pode ser removido de forma permanente com <code className="mono">Delete</code>.
+        </p>
+
+        {resourcesError ? <InlineState message={resourcesError} tone="warn" /> : null}
 
         {error ? (
           <InlineState message={error} tone="warn" />
@@ -472,8 +619,10 @@ function AgentsScreen({
                   <th>Role</th>
                   <th>Runtime</th>
                   <th>MCP</th>
+                  <th>Telegram</th>
                   <th>Skills</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -494,12 +643,46 @@ function AgentsScreen({
                     <td>{agent.role}</td>
                     <td>{`${agent.model ?? "default"} / ${agent.reasoningEffort}`}</td>
                     <td>{agent.mcpProfileId}</td>
+                    <td>
+                      <div className="table-cell-stack">
+                        <code className="mono">{agent.usability.telegram.command}</code>
+                        <span className="table-secondary">
+                          {telegramAvailabilitySummary(agent, telegramEnabled)}
+                        </span>
+                      </div>
+                    </td>
                     <td>{agent.skillIds.length}</td>
                     <td>
                       <StatusPill
                         tone={agent.status === "active" ? "good" : "warn"}
                         value={agent.status}
                       />
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          className="ghost-button"
+                          onClick={() => onOpenAgent(agent.slug)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="ghost-button ghost-button--danger"
+                          disabled={archivingSlug === agent.slug || deletingSlug === agent.slug}
+                          onClick={() =>
+                            agent.status === "archived" ? deleteFromList(agent) : archiveFromList(agent)}
+                          type="button"
+                        >
+                          {archivingSlug === agent.slug
+                            ? "Archiving..."
+                            : deletingSlug === agent.slug
+                              ? "Deleting..."
+                              : agent.status === "archived"
+                                ? "Delete"
+                                : "Archive"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -508,11 +691,36 @@ function AgentsScreen({
           </div>
         )}
       </section>
+
+      {createDraft ? (
+        <AgentEditorDrawer
+          draft={createDraft}
+          error={createError}
+          mode="create"
+          profiles={profiles}
+          saving={savingCreate}
+          setDraft={setCreateDraft}
+          skills={skills}
+          title="Create agent"
+          onClose={() => setCreateDraft(null)}
+          onSubmit={saveCreate}
+        />
+      ) : null}
     </main>
   );
 }
 
-function AgentDetailScreen({ slug }: { slug: string }) {
+function AgentDetailScreen({
+  slug,
+  telegramEnabled,
+  onAgentDelete,
+  onAgentUpsert,
+}: {
+  slug: string;
+  telegramEnabled: boolean;
+  onAgentDelete: (agentId: string) => void;
+  onAgentUpsert: (agent: AgentRecord) => void;
+}) {
   const [agent, setAgent] = useState<AgentRecord | null>(null);
   const [profiles, setProfiles] = useState<AgentMcpProfileRecord[]>([]);
   const [skills, setSkills] = useState<SkillSummaryRecord[]>([]);
@@ -523,7 +731,9 @@ function AgentDetailScreen({ slug }: { slug: string }) {
   const [editingOverview, setEditingOverview] = useState(false);
   const [savingOverview, setSavingOverview] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<OverviewDraft | null>(null);
+  const [draft, setDraft] = useState<AgentEditorDraft | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -548,7 +758,7 @@ function AgentDetailScreen({ slug }: { slug: string }) {
         setSkills(nextSkills);
         setSessions(nextSessions);
         setRuns(nextRuns);
-        setDraft(toOverviewDraft(nextAgent));
+        setDraft(toAgentEditorDraft(nextAgent));
         setError(null);
       } catch (loadError) {
         if (!active) {
@@ -579,14 +789,66 @@ function AgentDetailScreen({ slug }: { slug: string }) {
     setSavingOverview(true);
     setSaveError(null);
     try {
-      const updated = await updateAgentOverview(agent.slug, draft);
+      const updated = await updateAgent(agent.slug, toUpdateAgentInput(draft));
       setAgent(updated);
-      setDraft(toOverviewDraft(updated));
+      setDraft(toAgentEditorDraft(updated));
+      onAgentUpsert(updated);
       setEditingOverview(false);
     } catch (updateError) {
       setSaveError(updateError instanceof Error ? updateError.message : "Falha ao salvar agente.");
     } finally {
       setSavingOverview(false);
+    }
+  };
+
+  const archiveCurrentAgent = async () => {
+    if (!agent) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Arquivar ${agent.displayName} (${agent.slug})? Isso remove o agente da operação ativa no Telegram sem apagar o histórico do registry.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setArchiving(true);
+    setSaveError(null);
+    try {
+      const updated = await archiveAgent(agent.slug);
+      setAgent(updated);
+      setDraft(toAgentEditorDraft(updated));
+      onAgentUpsert(updated);
+      setEditingOverview(false);
+    } catch (archiveError) {
+      setSaveError(archiveError instanceof Error ? archiveError.message : "Falha ao arquivar agente.");
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const deleteCurrentAgent = async () => {
+    if (!agent) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Deletar permanentemente ${agent.displayName} (${agent.slug})? Isso remove o agente do registry, apaga sessões/runs vinculados no banco e reatribui chats do Telegram para outro agente ativo quando necessário.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    setSaveError(null);
+    try {
+      const deleted = await deleteAgent(agent.slug);
+      onAgentDelete(deleted.id);
+    } catch (deleteError) {
+      setSaveError(deleteError instanceof Error ? deleteError.message : "Falha ao deletar agente.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -641,9 +903,27 @@ function AgentDetailScreen({ slug }: { slug: string }) {
               <p className="section-kicker">Sessions</p>
               <h3>Recent context</h3>
             </div>
-            <button className="ghost-button" onClick={() => setEditingOverview(true)} type="button">
-              Edit overview
-            </button>
+            <div className="button-row">
+              <button className="ghost-button" onClick={() => setEditingOverview(true)} type="button">
+                Edit agent
+              </button>
+              <button
+                className="ghost-button ghost-button--danger"
+                disabled={agent.status === "archived" || archiving}
+                onClick={archiveCurrentAgent}
+                type="button"
+              >
+                {archiving ? "Archiving..." : "Archive"}
+              </button>
+              <button
+                className="ghost-button ghost-button--danger"
+                disabled={deleting}
+                onClick={deleteCurrentAgent}
+                type="button"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
           {sessions.length === 0 ? (
             <p className="empty-copy">Nenhuma sessão vinculada a este agente ainda.</p>
@@ -723,6 +1003,40 @@ function AgentDetailScreen({ slug }: { slug: string }) {
             <p className="empty-copy">Perfil MCP não encontrado.</p>
           )}
         </article>
+
+        <article className="surface-card telegram-card">
+          <div className="section-head">
+            <div>
+              <p className="section-kicker">Telegram</p>
+              <h3>Operability</h3>
+            </div>
+            <StatusPill
+              tone={telegramEnabled && agent.usability.telegram.operable ? "good" : "warn"}
+              value={telegramEnabled && agent.usability.telegram.operable ? "operable" : "restricted"}
+            />
+          </div>
+          <div className="profile-block">
+            <div className="profile-line">
+              <strong>command</strong>
+              <span>
+                <code className="mono">{agent.usability.telegram.command}</code>
+              </span>
+            </div>
+            <div className="profile-line">
+              <strong>channel</strong>
+              <span>{telegramEnabled ? "Telegram enabled in runtime" : "Telegram disabled in runtime"}</span>
+            </div>
+            <div className="profile-line">
+              <strong>backend gate</strong>
+              <span>{telegramAvailabilitySummary(agent, telegramEnabled)}</span>
+            </div>
+            <ul className="telegram-steps">
+              <li>Use `/agents` para ver apenas agentes oficialmente ativos.</li>
+              <li>Troque para este agente enviando <code className="mono">{agent.usability.telegram.command}</code> no chat quando ele estiver `active`.</li>
+              <li>Agente `disabled` ou `archived` permanece cadastrado, mas a troca no Telegram é bloqueada pelo backend.</li>
+            </ul>
+          </div>
+        </article>
       </section>
 
       <section className="detail-grid detail-grid--wide">
@@ -776,123 +1090,18 @@ function AgentDetailScreen({ slug }: { slug: string }) {
       </section>
 
       {editingOverview && draft ? (
-        <div className="drawer-backdrop" role="presentation" onClick={() => setEditingOverview(false)}>
-          <aside className="drawer-panel" onClick={(event) => event.stopPropagation()}>
-            <div className="section-head">
-              <div>
-                <p className="section-kicker">Edit overview</p>
-                <h3>{agent.displayName}</h3>
-              </div>
-              <button className="ghost-button" onClick={() => setEditingOverview(false)} type="button">
-                Close
-              </button>
-            </div>
-
-            <div className="drawer-form">
-              <Field label="Display name">
-                <input
-                  value={draft.displayName}
-                  onChange={(event) => setDraft((current) => current ? { ...current, displayName: event.target.value } : current)}
-                />
-              </Field>
-              <Field label="Description">
-                <textarea
-                  value={draft.description}
-                  onChange={(event) => setDraft((current) => current ? { ...current, description: event.target.value } : current)}
-                />
-              </Field>
-              <Field label="Role">
-                <select
-                  value={draft.role}
-                  onChange={(event) => setDraft((current) => current ? { ...current, role: event.target.value } : current)}
-                >
-                  <option value="primary">primary</option>
-                  <option value="specialist">specialist</option>
-                  <option value="automation">automation</option>
-                </select>
-              </Field>
-              <Field label="Model">
-                <input
-                  value={draft.model}
-                  onChange={(event) => setDraft((current) => current ? { ...current, model: event.target.value } : current)}
-                />
-              </Field>
-              <Field label="Reasoning effort">
-                <select
-                  value={draft.reasoningEffort}
-                  onChange={(event) => setDraft((current) => current ? { ...current, reasoningEffort: event.target.value } : current)}
-                >
-                  <option value="low">low</option>
-                  <option value="medium">medium</option>
-                  <option value="high">high</option>
-                  <option value="xhigh">xhigh</option>
-                </select>
-              </Field>
-              <Field label="Approval policy">
-                <select
-                  value={draft.approvalPolicy}
-                  onChange={(event) => setDraft((current) => current ? { ...current, approvalPolicy: event.target.value } : current)}
-                >
-                  <option value="untrusted">untrusted</option>
-                  <option value="on-failure">on-failure</option>
-                  <option value="on-request">on-request</option>
-                  <option value="never">never</option>
-                </select>
-              </Field>
-              <Field label="Sandbox mode">
-                <select
-                  value={draft.sandboxMode}
-                  onChange={(event) => setDraft((current) => current ? { ...current, sandboxMode: event.target.value } : current)}
-                >
-                  <option value="read-only">read-only</option>
-                  <option value="workspace-write">workspace-write</option>
-                  <option value="danger-full-access">danger-full-access</option>
-                </select>
-              </Field>
-              <Field label="MCP profile">
-                <select
-                  value={draft.mcpProfileId}
-                  onChange={(event) => setDraft((current) => current ? { ...current, mcpProfileId: event.target.value } : current)}
-                >
-                  {profiles.map((profileOption) => (
-                    <option key={profileOption.id} value={profileOption.id}>
-                      {profileOption.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Status">
-                <select
-                  value={draft.status}
-                  onChange={(event) => setDraft((current) => current ? { ...current, status: event.target.value } : current)}
-                >
-                  <option value="active">active</option>
-                  <option value="disabled">disabled</option>
-                  <option value="archived">archived</option>
-                </select>
-              </Field>
-              <label className="toggle-row">
-                <input
-                  checked={draft.searchEnabled}
-                  type="checkbox"
-                  onChange={(event) => setDraft((current) => current ? { ...current, searchEnabled: event.target.checked } : current)}
-                />
-                <span>Search enabled</span>
-              </label>
-            </div>
-
-            {saveError ? <InlineState message={saveError} tone="danger" /> : null}
-
-            <div className="drawer-actions">
-              <button className="ghost-button" onClick={() => setEditingOverview(false)} type="button">
-                Cancel
-              </button>
-              <button className="primary-button" disabled={savingOverview} onClick={saveOverview} type="button">
-                {savingOverview ? "Saving..." : "Save overview"}
-              </button>
-            </div>
-          </aside>
-        </div>
+        <AgentEditorDrawer
+          draft={draft}
+          error={saveError}
+          mode="edit"
+          profiles={profiles}
+          saving={savingOverview}
+          setDraft={setDraft}
+          skills={skills}
+          title={agent.displayName}
+          onClose={() => setEditingOverview(false)}
+          onSubmit={saveOverview}
+        />
       ) : null}
     </main>
   );
@@ -1038,14 +1247,16 @@ function AgentsTableSkeleton() {
             <th>Role</th>
             <th>Runtime</th>
             <th>MCP</th>
+            <th>Telegram</th>
             <th>Skills</th>
             <th>Status</th>
+            <th />
           </tr>
         </thead>
         <tbody>
           {[1, 2, 3].map((row) => (
             <tr key={row}>
-              {[1, 2, 3, 4, 5, 6].map((cell) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((cell) => (
                 <td key={cell}>
                   <span className="table-skeleton" />
                 </td>
@@ -1099,7 +1310,7 @@ function ProfileLine({ label, values }: { label: string; values: string[] }) {
   );
 }
 
-function Field({ children, label }: { children: React.ReactNode; label: string }) {
+function Field({ children, label }: { children: ReactNode; label: string }) {
   return (
     <label className="drawer-field">
       <span>{label}</span>
@@ -1108,19 +1319,385 @@ function Field({ children, label }: { children: React.ReactNode; label: string }
   );
 }
 
-function toOverviewDraft(agent: AgentRecord): OverviewDraft {
+function AgentEditorDrawer({
+  draft,
+  error,
+  mode,
+  profiles,
+  saving,
+  setDraft,
+  skills,
+  title,
+  onClose,
+  onSubmit,
+}: {
+  draft: AgentEditorDraft;
+  error: string | null;
+  mode: "create" | "edit";
+  profiles: AgentMcpProfileRecord[];
+  saving: boolean;
+  setDraft: Dispatch<SetStateAction<AgentEditorDraft | null>>;
+  skills: SkillSummaryRecord[];
+  title: string;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  const toggleSkill = (skillId: string) => {
+    setDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const hasSkill = current.skillIds.includes(skillId);
+      return {
+        ...current,
+        skillIds: hasSkill
+          ? current.skillIds.filter((entry) => entry !== skillId)
+          : [...current.skillIds, skillId].sort(),
+      };
+    });
+  };
+
+  return (
+    <div className="drawer-backdrop" role="presentation" onClick={onClose}>
+      <aside className="drawer-panel" onClick={(event) => event.stopPropagation()}>
+        <div className="section-head">
+          <div>
+            <p className="section-kicker">{mode === "create" ? "Create agent" : "Edit agent"}</p>
+            <h3>{title}</h3>
+          </div>
+          <button className="ghost-button" onClick={onClose} type="button">
+            Close
+          </button>
+        </div>
+
+        <div className="drawer-form">
+          {mode === "create" ? (
+            <Field label="Slug">
+              <input
+                value={draft.slug}
+                onChange={(event) =>
+                  setDraft((current) => (current ? { ...current, slug: event.target.value } : current))}
+                placeholder="ops-assistant"
+              />
+            </Field>
+          ) : (
+            <label className="drawer-field drawer-field--readonly">
+              <span>Slug</span>
+              <code className="mono">{draft.slug}</code>
+            </label>
+          )}
+
+          <Field label="Display name">
+            <input
+              value={draft.displayName}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, displayName: event.target.value } : current))}
+            />
+          </Field>
+
+          <Field label="Description">
+            <textarea
+              value={draft.description}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, description: event.target.value } : current))}
+            />
+          </Field>
+
+          <Field label="Role">
+            <select
+              value={draft.role}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, role: event.target.value } : current))}
+            >
+              <option value="primary">primary</option>
+              <option value="specialist">specialist</option>
+              <option value="automation">automation</option>
+            </select>
+          </Field>
+
+          <Field label="Model">
+            <input
+              value={draft.model}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, model: event.target.value } : current))}
+              placeholder="gpt-5.4"
+            />
+          </Field>
+
+          <Field label="Reasoning effort">
+            <select
+              value={draft.reasoningEffort}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, reasoningEffort: event.target.value } : current))}
+            >
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+              <option value="xhigh">xhigh</option>
+            </select>
+          </Field>
+
+          <Field label="Approval policy">
+            <select
+              value={draft.approvalPolicy}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, approvalPolicy: event.target.value } : current))}
+            >
+              <option value="untrusted">untrusted</option>
+              <option value="on-failure">on-failure</option>
+              <option value="on-request">on-request</option>
+              <option value="never">never</option>
+            </select>
+          </Field>
+
+          <Field label="Sandbox mode">
+            <select
+              value={draft.sandboxMode}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, sandboxMode: event.target.value } : current))}
+            >
+              <option value="read-only">read-only</option>
+              <option value="workspace-write">workspace-write</option>
+              <option value="danger-full-access">danger-full-access</option>
+            </select>
+          </Field>
+
+          <Field label="MCP profile">
+            <select
+              value={draft.mcpProfileId}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, mcpProfileId: event.target.value } : current))}
+            >
+              <option value="">Select a profile</option>
+              {profiles.map((profileOption) => (
+                <option key={profileOption.id} value={profileOption.id}>
+                  {profileOption.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Prompt template path">
+            <input
+              value={draft.promptTemplatePath}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, promptTemplatePath: event.target.value } : current))}
+              placeholder="agents/ops/prompt.md"
+            />
+          </Field>
+
+          <Field label="Prompt inline">
+            <textarea
+              value={draft.promptInline}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, promptInline: event.target.value } : current))}
+              placeholder="You are an operations specialist..."
+            />
+          </Field>
+
+          <Field label="Status">
+            <select
+              value={draft.status}
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, status: event.target.value } : current))}
+            >
+              <option value="active">active</option>
+              <option value="disabled">disabled</option>
+              <option value="archived">archived</option>
+            </select>
+          </Field>
+
+          <Field label="Skills">
+            <div className="skill-picker">
+              {skills.length === 0 ? (
+                <p className="empty-copy">Nenhuma skill detectada.</p>
+              ) : (
+                skills.map((skill) => {
+                  const checked = draft.skillIds.includes(skill.id);
+                  return (
+                    <label
+                      className={`skill-option${checked ? " skill-option--checked" : ""}`}
+                      key={skill.id}
+                    >
+                      <input
+                        checked={checked}
+                        type="checkbox"
+                        onChange={() => toggleSkill(skill.id)}
+                      />
+                      <div>
+                        <strong>{skill.id}</strong>
+                        <span>{skill.name}</span>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </Field>
+
+          <label className="toggle-row">
+            <input
+              checked={draft.searchEnabled}
+              type="checkbox"
+              onChange={(event) =>
+                setDraft((current) => (current ? { ...current, searchEnabled: event.target.checked } : current))}
+            />
+            <span>Search enabled</span>
+          </label>
+        </div>
+
+        {error ? <InlineState message={error} tone="danger" /> : null}
+
+        <div className="drawer-actions">
+          <button className="ghost-button" onClick={onClose} type="button">
+            Cancel
+          </button>
+          <button className="primary-button" disabled={saving} onClick={onSubmit} type="button">
+            {saving ? "Saving..." : mode === "create" ? "Create agent" : "Save agent"}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function toAgentEditorDraft(agent: AgentRecord): AgentEditorDraft {
   return {
+    slug: agent.slug,
     approvalPolicy: agent.approvalPolicy,
     description: agent.description,
     displayName: agent.displayName,
     mcpProfileId: agent.mcpProfileId,
     model: agent.model ?? "",
+    promptInline: agent.promptInline ?? "",
+    promptTemplatePath: agent.promptTemplatePath ?? "",
     reasoningEffort: agent.reasoningEffort,
     role: agent.role,
     sandboxMode: agent.sandboxMode,
     searchEnabled: agent.searchEnabled,
+    skillIds: [...agent.skillIds].sort(),
     status: agent.status,
   };
+}
+
+function createDefaultAgentDraft(profiles: AgentMcpProfileRecord[]): AgentEditorDraft {
+  return {
+    slug: "",
+    approvalPolicy: "never",
+    description: "",
+    displayName: "",
+    mcpProfileId: profiles[0]?.id ?? "",
+    model: "",
+    promptInline: "",
+    promptTemplatePath: "",
+    reasoningEffort: "medium",
+    role: "specialist",
+    sandboxMode: "danger-full-access",
+    searchEnabled: true,
+    skillIds: [],
+    status: "active",
+  };
+}
+
+function toCreateAgentInput(draft: AgentEditorDraft): CreateAgentInput {
+  return {
+    slug: draft.slug.trim().toLowerCase(),
+    approvalPolicy: draft.approvalPolicy,
+    description: draft.description.trim(),
+    displayName: draft.displayName.trim(),
+    mcpProfileId: draft.mcpProfileId.trim(),
+    model: normalizeNullable(draft.model),
+    promptInline: normalizeNullable(draft.promptInline),
+    promptTemplatePath: normalizeNullable(draft.promptTemplatePath),
+    reasoningEffort: draft.reasoningEffort,
+    role: draft.role,
+    sandboxMode: draft.sandboxMode,
+    searchEnabled: draft.searchEnabled,
+    skillIds: normalizeSkills(draft.skillIds),
+    status: draft.status,
+  };
+}
+
+function toUpdateAgentInput(draft: AgentEditorDraft) {
+  return {
+    approvalPolicy: draft.approvalPolicy,
+    description: draft.description.trim(),
+    displayName: draft.displayName.trim(),
+    mcpProfileId: draft.mcpProfileId.trim(),
+    model: normalizeNullable(draft.model),
+    promptInline: normalizeNullable(draft.promptInline),
+    promptTemplatePath: normalizeNullable(draft.promptTemplatePath),
+    reasoningEffort: draft.reasoningEffort,
+    role: draft.role,
+    sandboxMode: draft.sandboxMode,
+    searchEnabled: draft.searchEnabled,
+    skillIds: normalizeSkills(draft.skillIds),
+    status: draft.status,
+  };
+}
+
+function normalizeSkills(skillIds: string[]): string[] {
+  return [...new Set(skillIds.map((skillId) => skillId.trim()).filter(Boolean))].sort();
+}
+
+function normalizeNullable(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function telegramAvailabilitySummary(agent: AgentRecord, telegramEnabled: boolean): string {
+  if (!telegramEnabled) {
+    return "channel disabled in runtime";
+  }
+  if (agent.usability.telegram.operable) {
+    return "operable now (/agents and /slug)";
+  }
+  if (agent.usability.telegram.reasons.length > 0) {
+    return `blocked: ${agent.usability.telegram.reasons.join("; ")}`;
+  }
+  return "not operable";
+}
+
+function formatDefaultAgentSummary(runtimeStatus: RuntimeStatusSnapshot): string {
+  const runtimeLabel = `${runtimeStatus.defaults.model ?? "default"} / ${runtimeStatus.defaults.reasoningEffort}`;
+  const source = runtimeStatus.defaults.agentSlugSource;
+  const effective = runtimeStatus.defaults.agentSlugEffective;
+  const configured = runtimeStatus.defaults.agentSlugConfigured;
+
+  if (source === "configured") {
+    return `/${configured} · ${runtimeLabel}`;
+  }
+
+  if (source === "fallback" && effective) {
+    return `/${effective} fallback (configured /${configured}) · ${runtimeLabel}`;
+  }
+
+  return `no active default (configured /${configured}) · ${runtimeLabel}`;
+}
+
+function resolveDefaultAgentTone(
+  runtimeStatus: RuntimeStatusSnapshot,
+): "good" | "warn" | "danger" {
+  switch (runtimeStatus.defaults.agentSlugSource) {
+    case "configured":
+      return "good";
+    case "fallback":
+      return "warn";
+    case "unresolved":
+    default:
+      return "danger";
+  }
+}
+
+function sortAgents(agents: AgentRecord[]): AgentRecord[] {
+  return [...agents].sort((left, right) => {
+    const leftRank = left.status === "active" ? 0 : left.status === "disabled" ? 1 : 2;
+    const rightRank = right.status === "active" ? 0 : right.status === "disabled" ? 1 : 2;
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+    return left.displayName.localeCompare(right.displayName);
+  });
 }
 
 function formatDate(value: string): string {
@@ -1158,15 +1735,19 @@ function routeToPath(route: AppRoute): string {
   }
 }
 
-interface OverviewDraft {
+interface AgentEditorDraft {
+  slug: string;
   approvalPolicy: string;
   description: string;
   displayName: string;
   mcpProfileId: string;
   model: string;
+  promptInline: string;
+  promptTemplatePath: string;
   reasoningEffort: string;
   role: string;
   sandboxMode: string;
   searchEnabled: boolean;
+  skillIds: string[];
   status: string;
 }

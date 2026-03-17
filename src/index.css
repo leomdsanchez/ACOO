@@ -242,6 +242,17 @@ button {
   color: #fff4dd;
 }
 
+.ghost-button--danger {
+  border-color: rgba(242, 132, 130, 0.22);
+  color: #ffb4b2;
+}
+
+.ghost-button:disabled,
+.primary-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .page-body {
   display: grid;
   gap: 1rem;
@@ -457,6 +468,12 @@ button {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.registry-hint {
+  margin: 0 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
 .status-pill {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.72rem;
@@ -525,6 +542,29 @@ button {
   color: var(--accent);
 }
 
+.table-cell-stack {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.table-secondary {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.table-actions {
+  display: flex;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+}
+
 .table-skeleton {
   display: inline-flex;
   width: min(100%, 8rem);
@@ -572,6 +612,11 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   margin-top: 1rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .metric-card,
@@ -658,6 +703,23 @@ button {
   color: var(--text-muted);
 }
 
+.telegram-card .profile-line span {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.telegram-steps {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+  color: #fff4dd;
+}
+
+.telegram-steps li::marker {
+  color: var(--mint);
+}
+
 .profile-line {
   display: grid;
   gap: 0.32rem;
@@ -740,6 +802,16 @@ button {
   color: #fff4dd;
 }
 
+.drawer-field--readonly code {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.62rem 0.8rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(247, 240, 228, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff4dd;
+}
+
 .drawer-field textarea {
   min-height: 7rem;
   resize: vertical;
@@ -750,6 +822,44 @@ button {
   align-items: center;
   gap: 0.7rem;
   color: #fff4dd;
+}
+
+.skill-picker {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 15rem;
+  overflow: auto;
+  padding: 0.3rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(247, 240, 228, 0.08);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.skill-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  padding: 0.62rem 0.7rem;
+  border-radius: 0.8rem;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.skill-option--checked {
+  border-color: rgba(114, 212, 177, 0.24);
+  background: rgba(114, 212, 177, 0.09);
+}
+
+.skill-option strong {
+  display: block;
+  color: #fff4dd;
+  font-size: 0.84rem;
+}
+
+.skill-option span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .drawer-actions {

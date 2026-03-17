@@ -2,6 +2,8 @@ export * from "./bootstrap.js";
 export * from "./api/HttpServer.js";
 export * from "./agents/AgentRegistryRepository.js";
 export * from "./agents/AgentRegistryService.js";
+export * from "./agents/AgentRegistryErrors.js";
+export * from "./agents/AgentTelegramOperability.js";
 export * from "./agents/AgentPromptLoader.js";
 export * from "./agents/AgentRuntimeProfile.js";
 export * from "./agents/AgentSessionStarter.js";

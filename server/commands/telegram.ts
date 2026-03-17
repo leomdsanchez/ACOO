@@ -19,8 +19,12 @@ async function main() {
     agentRegistry: runtime.agentRegistry,
     bot: runtime.bot,
     config: telegramConfig,
+    defaultAgentSlug: runtime.config.defaultAgentSlug,
     transcription: runtime.transcription,
-    sessionStore: new TelegramSessionStore(runtime.config.repoRoot),
+    sessionStore: new TelegramSessionStore(
+      runtime.config.repoRoot,
+      runtime.config.defaultAgentSlug,
+    ),
   });
 
   if (args.flags.has("--status")) {

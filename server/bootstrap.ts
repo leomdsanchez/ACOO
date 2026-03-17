@@ -83,6 +83,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     skillLoader,
     skillRouter,
     skillExecutor,
+    config.defaultAgentSlug,
   );
   const bot = new OperationalBot(controller);
   const mcpRegistry = new McpRegistryService();

@@ -2,9 +2,17 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { OperationalRuntime } from "../bootstrap.js";
 import { runPlaywrightDoctor } from "../mcp/PlaywrightDoctorRunner.js";
 import type {
+  AgentRecord,
   CreateAgentInput,
   UpdateAgentInput,
 } from "../domain/models.js";
+import {
+  evaluateAgentTelegramOperability,
+  type AgentTelegramOperability,
+} from "../agents/AgentTelegramOperability.js";
+import { resolveOperationalActiveAgent } from "../agents/OperationalAgentSelector.js";
+import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
+import { AgentRegistryError } from "../agents/AgentRegistryErrors.js";
 
 interface HttpServerOptions {
   host: string;
@@ -25,7 +33,8 @@ export class HttpServer {
   public constructor(private readonly options: HttpServerOptions) {
     this.server = createServer((request, response) => {
       void this.handleRequest(request, response).catch((error) => {
-        sendError(response, 500, error instanceof Error ? error.message : "Internal server error.");
+        const message = error instanceof Error ? error.message : "Internal server error.";
+        sendError(response, resolveHttpStatusCode(error), message);
       });
     });
   }
@@ -106,7 +115,7 @@ export class HttpServer {
         includeDisabled,
         role: isAgentRole(role) ? role : undefined,
       });
-      sendJson(response, 200, { data: agents });
+      sendJson(response, 200, { data: agents.map(toAgentApiRecord) });
       return;
     }
 
@@ -114,7 +123,7 @@ export class HttpServer {
       const body = await readJsonBody<CreateAgentInput>(request);
       await validateSkillIds(this.options.runtime, body.skillIds ?? []);
       const created = await this.options.runtime.agentRegistry.createAgent(body);
-      sendJson(response, 201, { data: created });
+      sendJson(response, 201, { data: toAgentApiRecord(created) });
       return;
     }
 
@@ -146,7 +155,7 @@ export class HttpServer {
         sendError(response, 404, `Agent "${agentSlug}" not found.`);
         return;
       }
-      sendJson(response, 200, { data: agent });
+      sendJson(response, 200, { data: toAgentApiRecord(agent) });
       return;
     }
 
@@ -159,7 +168,48 @@ export class HttpServer {
         ...body,
         slug: agentSlug,
       });
-      sendJson(response, 200, { data: updated });
+      sendJson(response, 200, { data: toAgentApiRecord(updated) });
+      return;
+    }
+
+    if (agentSlug && request.method === "DELETE") {
+      const deleted = await this.options.runtime.agentRegistry.deleteAgent(agentSlug);
+      const replacementSelection = await resolveOperationalActiveAgent(
+        this.options.runtime.agentRegistry,
+        {
+          defaultAgentSlug: this.options.runtime.config.defaultAgentSlug,
+        },
+      );
+      const replacementAgent = replacementSelection.agent;
+      const sessionStore = new TelegramSessionStore(
+        this.options.runtime.config.repoRoot,
+        this.options.runtime.config.defaultAgentSlug,
+      );
+      let reassignedChats = 0;
+      let reassignmentWarning: string | null = null;
+      try {
+        reassignedChats = await sessionStore.replaceAgentSlug(deleted.slug, replacementAgent.slug);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        reassignmentWarning =
+          `Agent deleted, but Telegram session reassignment from /${deleted.slug} to /${replacementAgent.slug} failed (${detail}). ` +
+          "Sessions will be corrected lazily on next Telegram interaction.";
+      }
+
+      sendJson(response, 200, {
+        data: toAgentApiRecord(deleted),
+        meta: {
+          operationalAgentResolution: {
+            replacementSlug: replacementAgent.slug,
+            source: replacementSelection.source,
+          },
+          telegramSessionReassignment: {
+            reassignedChats,
+            status: reassignmentWarning ? "failed" : "applied",
+            warning: reassignmentWarning,
+          },
+        },
+      });
       return;
     }
 
@@ -199,7 +249,7 @@ async function validateSkillIds(runtime: OperationalRuntime, skillIds: string[])
   const available = new Set(loaded.map((skill) => skill.id));
   const unknown = skillIds.filter((skillId) => !available.has(skillId));
   if (unknown.length > 0) {
-    throw new Error(`Unknown skillIds: ${unknown.join(", ")}.`);
+    throw new HttpRequestError(400, `Unknown skillIds: ${unknown.join(", ")}.`);
   }
 }
 
@@ -230,18 +280,18 @@ async function readJsonBody<T>(request: IncomingMessage): Promise<T> {
   }
 
   if (chunks.length === 0) {
-    throw new Error("JSON body is required.");
+    throw new HttpRequestError(400, "JSON body is required.");
   }
 
   const raw = Buffer.concat(chunks).toString("utf8").trim();
   if (!raw) {
-    throw new Error("JSON body is required.");
+    throw new HttpRequestError(400, "JSON body is required.");
   }
 
   try {
     return JSON.parse(raw) as T;
   } catch {
-    throw new Error("Invalid JSON body.");
+    throw new HttpRequestError(400, "Invalid JSON body.");
   }
 }
 
@@ -287,7 +337,7 @@ function isSessionStatus(value: string | null): value is "active" | "ended" {
 function setCommonHeaders(response: ServerResponse): void {
   response.setHeader("access-control-allow-origin", "*");
   response.setHeader("access-control-allow-headers", "content-type");
-  response.setHeader("access-control-allow-methods", "GET,POST,PATCH,OPTIONS");
+  response.setHeader("access-control-allow-methods", "GET,POST,PATCH,DELETE,OPTIONS");
   response.setHeader("cache-control", "no-store");
   response.setHeader("content-type", "application/json; charset=utf-8");
 }
@@ -304,4 +354,52 @@ function sendError(response: ServerResponse, statusCode: number, message: string
       statusCode,
     },
   });
+}
+
+interface AgentApiRecord extends AgentRecord {
+  usability: {
+    registered: true;
+    system: {
+      usable: boolean;
+      reasons: string[];
+    };
+    telegram: AgentTelegramOperability;
+  };
+}
+
+function toAgentApiRecord(agent: AgentRecord): AgentApiRecord {
+  const systemReasons = agent.status === "active" ? [] : [`agent status is "${agent.status}"`];
+  return {
+    ...agent,
+    usability: {
+      registered: true,
+      system: {
+        usable: systemReasons.length === 0,
+        reasons: systemReasons,
+      },
+      telegram: evaluateAgentTelegramOperability(agent),
+    },
+  };
+}
+
+function resolveHttpStatusCode(error: unknown): number {
+  if (error instanceof AgentRegistryError) {
+    return error.statusCode;
+  }
+
+  if (error instanceof HttpRequestError) {
+    return error.statusCode;
+  }
+
+  return 500;
+}
+
+class HttpRequestError extends Error {
+  public constructor(
+    public readonly statusCode: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "HttpRequestError";
+  }
 }

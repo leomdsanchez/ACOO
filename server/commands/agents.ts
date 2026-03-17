@@ -68,6 +68,12 @@ async function main() {
       writeOutput(args, disabled, (item) => [`disabled ${item.slug} (${item.displayName})`]);
       return;
     }
+    case "delete": {
+      const slug = readRequiredValue(args.values, "--slug");
+      const deleted = await registry.deleteAgent(slug);
+      writeOutput(args, deleted, (item) => [`deleted ${item.slug} (${item.displayName})`]);
+      return;
+    }
     case "profiles": {
       const profiles = await registry.listMcpProfiles();
       writeOutput(args, profiles, (items) => items.map((profile) =>
@@ -83,7 +89,7 @@ async function main() {
     }
     default:
       throw new Error(
-        "Usage: npm run server:agents -- <list|get|create|update|disable|profiles|skills> [options]",
+        "Usage: npm run server:agents -- <list|get|create|update|disable|delete|profiles|skills> [options]",
       );
   }
 }

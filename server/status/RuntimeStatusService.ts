@@ -1,9 +1,14 @@
 import type { AppConfig } from "../config/AppConfig.js";
 import type { CodexCliService } from "../codex/CodexCliService.js";
 import type { OperationalWorkspace } from "../application/services/OperationalWorkspace.js";
+import type { AgentRecord } from "../domain/models.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
+import {
+  selectOperationalActiveAgentFromList,
+  type ActiveAgentSelectionSource,
+} from "../agents/OperationalAgentSelector.js";
 import type { McpSessionBootstrapper } from "../mcp/McpSessionBootstrapper.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
@@ -23,6 +28,10 @@ export interface RuntimeStatus {
   };
   cli: Awaited<ReturnType<CodexCliService["getStatus"]>>;
   defaults: {
+    agentSlug: string;
+    agentSlugConfigured: string;
+    agentSlugEffective: string | null;
+    agentSlugSource: "configured" | "fallback" | "unresolved";
     approvalPolicy: AppConfig["codexApprovalPolicy"];
     model: string | null;
     reasoningEffort: AppConfig["codexReasoningEffort"];
@@ -98,8 +107,11 @@ export class RuntimeStatusService {
   ) {}
 
   public async getStatus(): Promise<RuntimeStatus> {
-    const telegramSessionStore = new TelegramSessionStore(this.config.repoRoot);
-    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription, agents, mcpProfiles, sessions, agentIntegrity, managedMcpRuntime] = await Promise.all([
+    const telegramSessionStore = new TelegramSessionStore(
+      this.config.repoRoot,
+      this.config.defaultAgentSlug,
+    );
+    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription, agents, mcpProfiles, sessions, agentIntegrity, managedMcpRuntime, defaultAgent] = await Promise.all([
       this.codex.getStatus(),
       this.skills.loadAll(),
       this.workspace.projects.listProjects(),
@@ -113,8 +125,10 @@ export class RuntimeStatusService {
       this.agentRegistry.listSessions(),
       this.agentRegistry.getIntegrityReport(),
       this.mcpSessionBootstrapper.getManagedRuntimeHealth(),
+      this.agentRegistry.getAgentBySlug(this.config.defaultAgentSlug),
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
+    const defaultAgentResolution = resolveDefaultAgentResolution(agents, this.config.defaultAgentSlug);
 
     const issues = [
       cli.installed ? null : "Codex CLI binary não encontrada no PATH.",
@@ -132,6 +146,9 @@ export class RuntimeStatusService {
         : null,
       agentIntegrity.duplicateMcpProfileIds.length > 0
         ? `Registry de MCP profiles contém IDs duplicados: ${agentIntegrity.duplicateMcpProfileIds.join(", ")}.`
+        : null,
+      defaultAgentResolution.source === "unresolved"
+        ? "Nenhum agente ativo disponível no registry para resolver o agente operacional padrão."
         : null,
     ].filter((issue): issue is string => issue !== null);
     const advisories = [
@@ -158,6 +175,12 @@ export class RuntimeStatusService {
         : null,
       this.config.transcription.enabled && !transcription.modelAvailable
         ? `Modelo local de transcrição ainda não encontrado em ${transcription.modelPath}; será baixado na primeira transcrição.`
+        : null,
+      !defaultAgent
+        ? `Agente default configurado "${this.config.defaultAgentSlug}" não existe no registry; fallback atual: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
+        : null,
+      defaultAgent && defaultAgent.status !== "active"
+        ? `Agente default configurado "${this.config.defaultAgentSlug}" está ${defaultAgent.status}; fallback atual: ${defaultAgentResolution.effectiveSlug ?? "nenhum"}.`
         : null,
       agentIntegrity.missingMcpProfileIds.length > 0
         ? `Alguns agentes apontam para MCP profiles inexistentes: ${agentIntegrity.missingMcpProfileIds.join(", ")}.`
@@ -186,6 +209,10 @@ export class RuntimeStatusService {
       },
       cli,
       defaults: {
+        agentSlug: this.config.defaultAgentSlug,
+        agentSlugConfigured: this.config.defaultAgentSlug,
+        agentSlugEffective: defaultAgentResolution.effectiveSlug,
+        agentSlugSource: defaultAgentResolution.source,
         approvalPolicy: this.config.codexApprovalPolicy,
         model: this.config.codexModel,
         reasoningEffort: this.config.codexReasoningEffort,
@@ -252,4 +279,31 @@ export class RuntimeStatusService {
 
 function hasTelegramSecrets(config: AppConfig): boolean {
   return Boolean(config.telegram.botToken) && config.telegram.allowedUserIds.length > 0;
+}
+
+function resolveDefaultAgentResolution(
+  activeAgents: AgentRecord[],
+  configuredSlug: string,
+): {
+  effectiveSlug: string | null;
+  source: "configured" | "fallback" | "unresolved";
+} {
+  try {
+    const selection = selectOperationalActiveAgentFromList(activeAgents, {
+      defaultAgentSlug: configuredSlug,
+    });
+    return {
+      effectiveSlug: selection.agent.slug,
+      source: mapSelectionSourceToStatusSource(selection.source),
+    };
+  } catch {
+    return {
+      effectiveSlug: null,
+      source: "unresolved",
+    };
+  }
+}
+
+function mapSelectionSourceToStatusSource(source: ActiveAgentSelectionSource): "configured" | "fallback" {
+  return source === "configured-default" ? "configured" : "fallback";
 }

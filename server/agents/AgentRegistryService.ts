@@ -11,6 +11,12 @@ import type {
   UpdateAgentInput,
 } from "../domain/models.js";
 import { AgentRegistryRepository } from "./AgentRegistryRepository.js";
+import { isTelegramReservedRouteTarget } from "./AgentTelegramOperability.js";
+import {
+  AgentRegistryConflictError,
+  AgentRegistryNotFoundError,
+  AgentRegistryValidationError,
+} from "./AgentRegistryErrors.js";
 
 export interface CreateAgentSessionInput {
   agentId: string;
@@ -62,14 +68,26 @@ export class AgentRegistryService {
   }
 
   public async getAgentBySlug(slug: string): Promise<AgentRecord | null> {
-    return this.repository.findAgentBySlug(slug);
+    const normalizedSlug = slug.trim().toLowerCase();
+    if (!normalizedSlug) {
+      return null;
+    }
+    return this.repository.findAgentBySlug(normalizedSlug);
+  }
+
+  public async getActiveAgentBySlug(slug: string): Promise<AgentRecord | null> {
+    const agent = await this.getAgentBySlug(slug);
+    if (!agent || agent.status !== "active") {
+      return null;
+    }
+    return agent;
   }
 
   public async createAgent(input: CreateAgentInput): Promise<AgentRecord> {
     const slug = normalizeAgentSlug(input.slug);
     const existing = await this.repository.findAgentBySlug(slug);
     if (existing) {
-      throw new Error(`Agent slug "${slug}" already exists.`);
+      throw new AgentRegistryConflictError(`Agent slug "${slug}" already exists.`);
     }
 
     const record = await this.buildAgentRecord({ ...input, slug });
@@ -80,7 +98,12 @@ export class AgentRegistryService {
     const slug = normalizeAgentSlug(input.slug);
     const current = await this.repository.findAgentBySlug(slug);
     if (!current) {
-      throw new Error(`Agent slug "${slug}" is not registered.`);
+      throw new AgentRegistryNotFoundError(`Agent slug "${slug}" is not registered.`);
+    }
+
+    const nextStatus = input.status ?? current.status;
+    if (current.status === "active" && nextStatus !== "active") {
+      await this.ensureCanDeactivateActiveAgent(current.id);
     }
 
     const record = await this.buildAgentRecord(
@@ -96,6 +119,28 @@ export class AgentRegistryService {
 
   public async disableAgent(slug: string): Promise<AgentRecord> {
     return this.updateAgent({ slug, status: "disabled" });
+  }
+
+  public async deleteAgent(slug: string): Promise<AgentRecord> {
+    const normalizedSlug = normalizeAgentSlug(slug);
+    const current = await this.repository.findAgentBySlug(normalizedSlug);
+    if (!current) {
+      throw new AgentRegistryNotFoundError(`Agent slug "${normalizedSlug}" is not registered.`);
+    }
+
+    const agents = await this.repository.listAgents();
+    const activeCount = agents.filter((agent) => agent.status === "active").length;
+    if (activeCount === 0) {
+      throw new AgentRegistryConflictError(
+        "No active agents are available in the registry. Activate one before deleting agents.",
+      );
+    }
+
+    if (current.status === "active") {
+      await this.ensureCanDeactivateActiveAgent(current.id);
+    }
+
+    return this.repository.deleteAgentById(current.id);
   }
 
   public async listMcpProfiles(): Promise<AgentMcpProfileRecord[]> {
@@ -149,7 +194,7 @@ export class AgentRegistryService {
     });
     const matches = sessions.filter((session) => session.id.toLowerCase().startsWith(normalized));
     if (matches.length > 1) {
-      throw new Error(`Short session id "${input.shortId}" is ambiguous.`);
+      throw new AgentRegistryConflictError(`Short session id "${input.shortId}" is ambiguous.`);
     }
     return matches[0] ?? null;
   }
@@ -273,15 +318,19 @@ export class AgentRegistryService {
     current?: AgentRecord,
   ): Promise<AgentRecord> {
     const now = new Date().toISOString();
+    const slug = normalizeAgentSlug(input.slug);
+    if (isTelegramReservedRouteTarget(slug)) {
+      throw new AgentRegistryValidationError(`Agent slug "${slug}" conflicts with a reserved Telegram command.`);
+    }
     const mcpProfileId = normalizeRequiredText(input.mcpProfileId, "mcpProfileId");
     const mcpProfile = await this.repository.findMcpProfileById(mcpProfileId);
     if (!mcpProfile) {
-      throw new Error(`MCP profile "${mcpProfileId}" is not registered.`);
+      throw new AgentRegistryValidationError(`MCP profile "${mcpProfileId}" is not registered.`);
     }
 
     return {
       id: current?.id ?? crypto.randomUUID(),
-      slug: normalizeAgentSlug(input.slug),
+      slug,
       displayName: normalizeRequiredText(input.displayName, "displayName"),
       role: normalizeEnumValue(
         input.role,
@@ -319,6 +368,14 @@ export class AgentRegistryService {
       updatedAt: now,
     };
   }
+
+  private async ensureCanDeactivateActiveAgent(agentId: string): Promise<void> {
+    const agents = await this.repository.listAgents();
+    const activeCount = agents.filter((agent) => agent.status === "active").length;
+    if (activeCount <= 1 && agents.some((agent) => agent.id === agentId && agent.status === "active")) {
+      throw new AgentRegistryConflictError("Cannot remove or deactivate the last active agent in the registry.");
+    }
+  }
 }
 
 function createDigest(value: string): string {
@@ -342,13 +399,13 @@ function findDuplicates(items: string[]): string[] {
 
 function ensureAgentExists(agents: AgentRecord[], agentId: string): void {
   if (!agents.some((agent) => agent.id === agentId)) {
-    throw new Error(`Agent "${agentId}" does not exist in the registry.`);
+    throw new AgentRegistryNotFoundError(`Agent "${agentId}" does not exist in the registry.`);
   }
 }
 
 function ensureSessionExists(sessions: AgentSessionRecord[], sessionId: string): void {
   if (!sessions.some((session) => session.id === sessionId)) {
-    throw new Error(`Agent session "${sessionId}" does not exist in the registry.`);
+    throw new AgentRegistryNotFoundError(`Agent session "${sessionId}" does not exist in the registry.`);
   }
 }
 
@@ -359,7 +416,9 @@ function uniqueValue<T>(value: T, index: number, items: T[]): boolean {
 function normalizeAgentSlug(value: string): string {
   const slug = value.trim().toLowerCase();
   if (!/^[a-z0-9-]+$/.test(slug)) {
-    throw new Error(`Agent slug "${value}" is invalid. Use lowercase letters, numbers and hyphens.`);
+    throw new AgentRegistryValidationError(
+      `Agent slug "${value}" is invalid. Use lowercase letters, numbers and hyphens.`,
+    );
   }
   return slug;
 }
@@ -367,7 +426,7 @@ function normalizeAgentSlug(value: string): string {
 function normalizeRequiredText(value: string | null | undefined, fieldName: string): string {
   const normalized = value?.trim() ?? "";
   if (!normalized) {
-    throw new Error(`Field "${fieldName}" is required.`);
+    throw new AgentRegistryValidationError(`Field "${fieldName}" is required.`);
   }
   return normalized;
 }
@@ -387,7 +446,7 @@ function normalizeEnumValue<T extends string>(
   fieldName: string,
 ): T {
   if (!allowed.has(value)) {
-    throw new Error(`Field "${fieldName}" has invalid value "${value}".`);
+    throw new AgentRegistryValidationError(`Field "${fieldName}" has invalid value "${value}".`);
   }
   return value as T;
 }

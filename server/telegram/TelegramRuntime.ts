@@ -4,6 +4,7 @@ import path from "node:path";
 import type { AgentSessionRecord } from "../domain/models.js";
 import type { TelegramConfig } from "../config/AppConfig.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
+import { resolveOperationalActiveAgent } from "../agents/OperationalAgentSelector.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
 import type { AgentRequest } from "../controller/AgentController.js";
 import { CodexCliAbortedError, CodexCliResumeError } from "../codex/CodexCliService.js";
@@ -21,6 +22,7 @@ export interface TelegramRuntimeOptions {
   agentRegistry: AgentRegistryService;
   bot: OperationalBot;
   config: TelegramConfig;
+  defaultAgentSlug: string;
   logger?: Pick<Console, "error" | "info" | "warn">;
   pollTimeoutSeconds?: number;
   sessionStore: TelegramSessionStore;
@@ -304,8 +306,15 @@ export class TelegramRuntime {
     senderId: string;
   }): Promise<TelegramBotResponse> {
     const session = await this.options.sessionStore.load(input.chatId);
-    const agentId = await this.resolveAgentId(input.activeAgentSlug);
-    const request = this.buildAgentRequest(input, session.sessionId);
+    const activeAgentSlug = await this.resolveOperationalAgentSlug(input.chatId, input.activeAgentSlug);
+    const agentId = await this.resolveAgentId(activeAgentSlug);
+    const request = this.buildAgentRequest(
+      {
+        ...input,
+        activeAgentSlug,
+      },
+      session.sessionId,
+    );
 
     try {
       const response = await this.options.bot.handleMessage(request);
@@ -389,7 +398,7 @@ export class TelegramRuntime {
     }
 
     if (command.kind === "route-target") {
-      const selected = await this.options.agentRegistry.getAgentBySlug(command.target);
+      const selected = await this.options.agentRegistry.getActiveAgentBySlug(command.target);
       if (selected) {
         const current = await this.options.sessionStore.load(chatId);
         if (current.sessionId) {
@@ -405,6 +414,16 @@ export class TelegramRuntime {
         }
         await this.api.sendMessage(chatId, answer);
         this.log("info", `agente ativo alterado em chat=${chatId} slug=${selected.slug}`);
+        return;
+      }
+
+      const registeredAgent = await this.options.agentRegistry.getAgentBySlug(command.target);
+      if (registeredAgent && registeredAgent.status !== "active") {
+        await this.api.sendMessage(
+          chatId,
+          `O agente /${registeredAgent.slug} existe, mas está ${registeredAgent.status}. Ative o agente no registry para usar no Telegram.`,
+        );
+        this.log("warn", `agente nao ativo selecionado em chat=${chatId} slug=${registeredAgent.slug}`);
         return;
       }
 
@@ -432,6 +451,22 @@ export class TelegramRuntime {
         await this.endRegistrySession(current.activeAgentSlug, chatId);
       }
       const selectedAgent = await this.resolveAgentRecordById(session.agentId);
+      if (!selectedAgent) {
+        await this.api.sendMessage(
+          chatId,
+          "A sessao selecionada pertence a um agente que nao existe mais no registry. Escolha um agente ativo com /agents.",
+        );
+        this.log("warn", `sessao vinculada a agente removido em chat=${chatId} session=${session.id}`);
+        return;
+      }
+      if (selectedAgent.status !== "active") {
+        await this.api.sendMessage(
+          chatId,
+          `A sessao selecionada pertence ao agente /${selectedAgent.slug}, que esta ${selectedAgent.status}. Reative o agente ou escolha outro com /agents.`,
+        );
+        this.log("warn", `sessao vinculada a agente inativo em chat=${chatId} session=${session.id} slug=${selectedAgent.slug}`);
+        return;
+      }
       await this.options.sessionStore.resumeSession(chatId, selectedAgent.slug, session.codexThreadId);
       await this.activateRegistrySession(selectedAgent.slug, chatId, session.codexThreadId, "exec-resume", session.title);
       await this.api.sendMessage(
@@ -448,11 +483,12 @@ export class TelegramRuntime {
 
     if (command.kind === "status") {
       const session = await this.options.sessionStore.load(chatId);
-      const activeAgent = await this.options.agentRegistry.getAgentBySlug(session.activeAgentSlug);
+      const activeAgentSlug = await this.resolveOperationalAgentSlug(chatId, session.activeAgentSlug);
+      const activeAgent = await this.options.agentRegistry.getActiveAgentBySlug(activeAgentSlug);
       const statusText = formatStatusMessage({
         active: session.active,
         agentDisplayName: activeAgent?.displayName ?? null,
-        agentSlug: session.activeAgentSlug,
+        agentSlug: activeAgentSlug,
         sessionId: session.sessionId,
       });
       await this.api.sendMessage(chatId, statusText);
@@ -462,6 +498,7 @@ export class TelegramRuntime {
 
     if (command.kind === "start") {
       const session = await this.options.sessionStore.start(chatId);
+      const activeAgentSlug = await this.resolveOperationalAgentSlug(chatId, session.activeAgentSlug);
       let answer = "Sessão da Codex reativada. Pode continuar deste ponto.";
       if (!session.sessionId) {
         try {
@@ -473,7 +510,7 @@ export class TelegramRuntime {
           throw error;
         }
       } else {
-        await this.activateRegistrySession(session.activeAgentSlug, chatId, session.sessionId, "exec-resume");
+        await this.activateRegistrySession(activeAgentSlug, chatId, session.sessionId, "exec-resume");
       }
       await this.api.sendMessage(chatId, answer);
       this.log("info", `sessao iniciada em chat=${chatId} existing=${session.sessionId ?? "none"}`);
@@ -671,10 +708,7 @@ export class TelegramRuntime {
   private async resolveAgentRecordById(agentId: string) {
     const agents = await this.options.agentRegistry.listAgents({ includeDisabled: true });
     const agent = agents.find((item) => item.id === agentId);
-    if (!agent) {
-      throw new Error(`Agent id "${agentId}" is not registered.`);
-    }
-    return agent;
+    return agent ?? null;
   }
 
   private async listRecentChatSessions(chatId: number): Promise<AgentSessionRecord[]> {
@@ -720,13 +754,35 @@ export class TelegramRuntime {
   }
 
   private async endRegistrySession(agentSlug: string, chatId: number): Promise<void> {
-    const agentId = await this.resolveAgentId(agentSlug);
+    const agent = await this.options.agentRegistry.getAgentBySlug(agentSlug);
+    if (!agent) {
+      this.log("warn", `sessao de registry sem agente correspondente: slug=${agentSlug} chat=${chatId}`);
+      return;
+    }
+
     await this.options.agentRegistry.setSessionStatus({
-      agentId,
+      agentId: agent.id,
       channel: "telegram",
       channelThreadId: String(chatId),
       status: "ended",
     });
+  }
+
+  private async resolveOperationalAgentSlug(chatId: number, preferredSlug: string): Promise<string> {
+    const selection = await resolveOperationalActiveAgent(this.options.agentRegistry, {
+      defaultAgentSlug: this.options.defaultAgentSlug,
+      preferredSlug,
+    });
+    const resolvedSlug = selection.agent.slug;
+    if (resolvedSlug !== preferredSlug) {
+      const current = await this.options.sessionStore.load(chatId);
+      await this.options.sessionStore.switchAgent(chatId, resolvedSlug, { preserveActive: current.active });
+      this.log(
+        "warn",
+        `agente do chat estava indisponivel: chat=${chatId} from=${preferredSlug} to=${resolvedSlug} source=${selection.source}`,
+      );
+    }
+    return resolvedSlug;
   }
 
   private buildAgentRequest(

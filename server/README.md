@@ -52,6 +52,7 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
+- `ACOO_DEFAULT_AGENT_SLUG`: slug do agente default do ACOO quando o canal não informar um agente explicitamente. O fallback histórico continua sendo `coo`.
 - `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND`: comando de healthcheck usado para validar attach real do Playwright via CDP.
 - `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint fallback usado para verificar se a sessão CDP do Brave já está ativa.
 - `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: comando usado no preflight automático para subir a sessão Brave do Playwright MCP quando necessário.
@@ -127,10 +128,22 @@ Endpoints iniciais:
 - `POST /api/agents`
 - `GET /api/agents/:slug`
 - `PATCH /api/agents/:slug`
+- `DELETE /api/agents/:slug`
 - `GET /api/agents/profiles`
 - `GET /api/agents/skills`
 - `GET /api/sessions`
 - `GET /api/runs`
+
+Nos endpoints de agente (`GET/POST/PATCH/DELETE`), o payload inclui `usability` para separar:
+
+- agente cadastrado (`registered`);
+- agente utilizavel no sistema (`system.usable`, `system.reasons`);
+- agente roteavel no Telegram (`telegram.operable`, `telegram.command`, `telegram.reasons`).
+
+Regras de integridade do registry:
+
+- o sistema nao permite remover/desativar o ultimo agente ativo;
+- `disabled`/`archived` continuam cadastrados, mas nao sao utilizaveis em execucao nem roteaveis por `/slug` no Telegram.
 
 Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 

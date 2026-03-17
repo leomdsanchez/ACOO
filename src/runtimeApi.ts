@@ -14,6 +14,18 @@ export interface AgentRecord {
   skillIds: string[];
   slug: string;
   status: string;
+  usability: {
+    registered: true;
+    system: {
+      reasons: string[];
+      usable: boolean;
+    };
+    telegram: {
+      command: string;
+      operable: boolean;
+      reasons: string[];
+    };
+  };
 }
 
 export interface AgentMcpProfileRecord {
@@ -77,6 +89,10 @@ export interface RuntimeStatusSnapshot {
     loginStatus: string;
   };
   defaults: {
+    agentSlug: string;
+    agentSlugConfigured: string;
+    agentSlugEffective: string | null;
+    agentSlugSource: "configured" | "fallback" | "unresolved";
     approvalPolicy: string;
     model: string | null;
     reasoningEffort: string;
@@ -98,14 +114,56 @@ export interface RuntimeStatusSnapshot {
 
 interface ApiEnvelope<T> {
   data: T;
+  error?: {
+    message?: string;
+    statusCode?: number;
+  };
+}
+
+export interface CreateAgentInput {
+  approvalPolicy?: string;
+  description: string;
+  displayName: string;
+  mcpProfileId: string;
+  model?: string | null;
+  promptInline?: string | null;
+  promptTemplatePath?: string | null;
+  reasoningEffort?: string;
+  role: string;
+  sandboxMode?: string;
+  searchEnabled?: boolean;
+  skillIds?: string[];
+  slug: string;
+  status?: string;
+}
+
+export interface UpdateAgentInput {
+  approvalPolicy?: string;
+  description?: string;
+  displayName?: string;
+  mcpProfileId?: string;
+  model?: string | null;
+  promptInline?: string | null;
+  promptTemplatePath?: string | null;
+  reasoningEffort?: string;
+  role?: string;
+  sandboxMode?: string;
+  searchEnabled?: boolean;
+  skillIds?: string[];
+  status?: string;
 }
 
 export async function fetchRuntimeStatus(): Promise<RuntimeStatusSnapshot> {
   return fetchJson<RuntimeStatusSnapshot>("/api/status");
 }
 
-export async function fetchAgents(): Promise<AgentRecord[]> {
-  return fetchJson<AgentRecord[]>("/api/agents");
+export async function fetchAgents(options?: { includeDisabled?: boolean }): Promise<AgentRecord[]> {
+  const search = new URLSearchParams();
+  if (options?.includeDisabled) {
+    search.set("includeDisabled", "true");
+  }
+  const suffix = search.size > 0 ? `?${search.toString()}` : "";
+  return fetchJson<AgentRecord[]>(`/api/agents${suffix}`);
 }
 
 export async function fetchAgent(slug: string): Promise<AgentRecord> {
@@ -130,23 +188,19 @@ export async function fetchAgentRuns(agentId: string): Promise<AgentRunRecord[]>
   return fetchJson<AgentRunRecord[]>(`/api/runs?${search.toString()}`);
 }
 
-export async function updateAgentOverview(
+export async function createAgent(input: CreateAgentInput): Promise<AgentRecord> {
+  return fetchJson<AgentRecord>("/api/agents", {
+    body: JSON.stringify(input),
+    headers: {
+      "content-type": "application/json",
+    },
+    method: "POST",
+  });
+}
+
+export async function updateAgent(
   slug: string,
-  input: Partial<
-    Pick<
-      AgentRecord,
-      | "approvalPolicy"
-      | "description"
-      | "displayName"
-      | "mcpProfileId"
-      | "model"
-      | "reasoningEffort"
-      | "role"
-      | "sandboxMode"
-      | "searchEnabled"
-      | "status"
-    >
-  >,
+  input: UpdateAgentInput,
 ): Promise<AgentRecord> {
   return fetchJson<AgentRecord>(`/api/agents/${encodeURIComponent(slug)}`, {
     body: JSON.stringify(input),
@@ -157,12 +211,33 @@ export async function updateAgentOverview(
   });
 }
 
+export async function archiveAgent(slug: string): Promise<AgentRecord> {
+  return updateAgent(slug, { status: "archived" });
+}
+
+export async function deleteAgent(slug: string): Promise<AgentRecord> {
+  return fetchJson<AgentRecord>(`/api/agents/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+  });
+}
+
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
-  if (!response.ok) {
-    throw new Error(`Request ${input} failed with HTTP ${response.status}.`);
+  let payload: ApiEnvelope<T> | null = null;
+  try {
+    payload = (await response.json()) as ApiEnvelope<T>;
+  } catch {
+    payload = null;
   }
 
-  const payload = (await response.json()) as ApiEnvelope<T>;
+  if (!response.ok) {
+    const message = payload?.error?.message?.trim();
+    throw new Error(message || `Request ${input} failed with HTTP ${response.status}.`);
+  }
+
+  if (!payload || !("data" in payload)) {
+    throw new Error(`Request ${input} returned an invalid payload.`);
+  }
+
   return payload.data;
 }

@@ -52,7 +52,8 @@ test("injects a structured runtime error and keeps agent loop running", async ()
 
   const runnableController = new AgentController(
     {
-      getAgentBySlug: async () => AGENT,
+      getActiveAgentBySlug: async () => AGENT,
+      listAgents: async () => [AGENT],
     } as never,
     {
       load: async () => null,
@@ -94,6 +95,7 @@ test("injects a structured runtime error and keeps agent loop running", async ()
     {
       buildSkillContext: () => "skill context",
     } as never,
+    "coo",
   );
 
   const response = await runnableController.handle({
@@ -119,7 +121,8 @@ test("injects a structured runtime error and keeps agent loop running", async ()
 test("rethrows non-user-facing preparation errors", async () => {
   const controller = new AgentController(
     {
-      getAgentBySlug: async () => AGENT,
+      getActiveAgentBySlug: async () => AGENT,
+      listAgents: async () => [AGENT],
     } as never,
     {
       load: async () => null,
@@ -149,6 +152,7 @@ test("rethrows non-user-facing preparation errors", async () => {
     {
       buildSkillContext: () => "skill context",
     } as never,
+    "coo",
   );
 
   await assert.rejects(

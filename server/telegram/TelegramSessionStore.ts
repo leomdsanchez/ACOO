@@ -17,8 +17,15 @@ const LEGACY_CHAT_KEY = "__legacy__";
 
 export class TelegramSessionStore {
   private readonly filePath: string;
+  private readonly defaultAgentSlug: string;
 
-  public constructor(repoRoot: string) {
+  public constructor(repoRoot: string, defaultAgentSlug: string) {
+    const normalizedDefaultAgentSlug = defaultAgentSlug.trim();
+    if (!normalizedDefaultAgentSlug) {
+      throw new Error("TelegramSessionStore requires a non-empty defaultAgentSlug.");
+    }
+
+    this.defaultAgentSlug = normalizedDefaultAgentSlug;
     this.filePath = path.join(repoRoot, ".acoo", "telegram", "session.json");
   }
 
@@ -26,11 +33,11 @@ export class TelegramSessionStore {
     const key = String(chatId);
     const file = await this.loadFile();
     if (!file.chats[key] && file.chats[LEGACY_CHAT_KEY]) {
-      file.chats[key] = normalizeChatState(file.chats[LEGACY_CHAT_KEY]);
+      file.chats[key] = normalizeChatState(file.chats[LEGACY_CHAT_KEY], this.defaultAgentSlug);
       delete file.chats[LEGACY_CHAT_KEY];
       await this.saveFile(file);
     }
-    return normalizeChatState(file.chats[key]);
+    return normalizeChatState(file.chats[key], this.defaultAgentSlug);
   }
 
   public async loadAll(): Promise<Record<string, TelegramChatSessionState>> {
@@ -38,7 +45,7 @@ export class TelegramSessionStore {
     return Object.fromEntries(
       Object.entries(file.chats)
         .filter(([chatId]) => chatId !== LEGACY_CHAT_KEY)
-        .map(([chatId, state]) => [chatId, normalizeChatState(state)]),
+        .map(([chatId, state]) => [chatId, normalizeChatState(state, this.defaultAgentSlug)]),
     );
   }
 
@@ -122,6 +129,39 @@ export class TelegramSessionStore {
     };
   }
 
+  public async replaceAgentSlug(currentSlug: string, nextSlug: string): Promise<number> {
+    const normalizedCurrent = currentSlug.trim();
+    const normalizedNext = nextSlug.trim();
+    if (!normalizedCurrent || !normalizedNext || normalizedCurrent === normalizedNext) {
+      return 0;
+    }
+
+    const file = await this.loadFile();
+    let replaced = 0;
+    for (const [chatId, state] of Object.entries(file.chats)) {
+      if (chatId === LEGACY_CHAT_KEY) {
+        continue;
+      }
+      const normalized = normalizeChatState(state, this.defaultAgentSlug);
+      if (normalized.activeAgentSlug !== normalizedCurrent) {
+        continue;
+      }
+      file.chats[chatId] = {
+        ...normalized,
+        activeAgentSlug: normalizedNext,
+        sessionId: null,
+        updatedAt: new Date().toISOString(),
+      };
+      replaced += 1;
+    }
+
+    if (replaced > 0) {
+      await this.saveFile(file);
+    }
+
+    return replaced;
+  }
+
   private async update(
     chatId: number,
     updater: (current: TelegramChatSessionState) => TelegramChatSessionState,
@@ -129,10 +169,13 @@ export class TelegramSessionStore {
     const file = await this.loadFile();
     const key = String(chatId);
     if (!file.chats[key] && file.chats[LEGACY_CHAT_KEY]) {
-      file.chats[key] = normalizeChatState(file.chats[LEGACY_CHAT_KEY]);
+      file.chats[key] = normalizeChatState(file.chats[LEGACY_CHAT_KEY], this.defaultAgentSlug);
       delete file.chats[LEGACY_CHAT_KEY];
     }
-    const next = normalizeChatState(updater(normalizeChatState(file.chats[key])));
+    const next = normalizeChatState(
+      updater(normalizeChatState(file.chats[key], this.defaultAgentSlug)),
+      this.defaultAgentSlug,
+    );
     file.chats[key] = next;
     await this.saveFile(file);
     return next;
@@ -153,7 +196,7 @@ export class TelegramSessionStore {
         return {
           version: 2,
           chats: {
-            [LEGACY_CHAT_KEY]: normalizeChatState(parsed),
+            [LEGACY_CHAT_KEY]: normalizeChatState(parsed, this.defaultAgentSlug),
           },
         };
       }
@@ -176,13 +219,16 @@ export class TelegramSessionStore {
   }
 }
 
-function normalizeChatState(input: Partial<TelegramChatSessionState> | undefined): TelegramChatSessionState {
+function normalizeChatState(
+  input: Partial<TelegramChatSessionState> | undefined,
+  defaultAgentSlug: string,
+): TelegramChatSessionState {
   return {
     active: input?.active === true,
     activeAgentSlug:
       typeof input?.activeAgentSlug === "string" && input.activeAgentSlug.trim()
         ? input.activeAgentSlug.trim()
-        : "coo",
+        : defaultAgentSlug,
     sessionId: typeof input?.sessionId === "string" && input.sessionId.trim() ? input.sessionId : null,
     updatedAt:
       typeof input?.updatedAt === "string" && input.updatedAt.trim()

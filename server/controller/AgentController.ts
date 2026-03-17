@@ -1,6 +1,7 @@
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { AgentPromptLoader } from "../agents/AgentPromptLoader.js";
 import type { AgentSessionStarter } from "../agents/AgentSessionStarter.js";
+import { resolveOperationalActiveAgent } from "../agents/OperationalAgentSelector.js";
 import {
   applyMcpPolicyToExecutionProfile,
   buildAgentExecutionProfile,
@@ -69,6 +70,7 @@ export class AgentController {
     private readonly skillLoader: SkillLoader,
     private readonly skillRouter: SkillRouter,
     private readonly skillExecutor: SkillExecutor,
+    private readonly defaultAgentSlug: string,
   ) {}
 
   public async handle(request: AgentRequest): Promise<AgentResponse> {
@@ -123,8 +125,8 @@ export class AgentController {
     });
 
     return {
-      activeAgentName: activeAgent?.displayName ?? null,
-      activeAgentSlug: activeAgent?.slug ?? null,
+      activeAgentName: activeAgent.displayName,
+      activeAgentSlug: activeAgent.slug,
       answer: result.lastMessage || result.stdout || "Codex CLI executada sem mensagem final capturada.",
       activeSkill: activeSkill?.name ?? null,
       command: result.command,
@@ -139,24 +141,27 @@ export class AgentController {
     };
   }
 
-  private async resolveActiveAgent(agentSlug: string | undefined): Promise<AgentRecord | null> {
-    const slug = agentSlug?.trim() || "coo";
-    const agent = await this.agentRegistry.getAgentBySlug(slug);
-    if (!agent) {
-      throw new Error(`Agent slug "${slug}" is not registered.`);
+  private async resolveActiveAgent(agentSlug: string | undefined): Promise<AgentRecord> {
+    const explicitSlug = agentSlug?.trim();
+    if (explicitSlug) {
+      const explicitAgent = await this.agentRegistry.getActiveAgentBySlug(explicitSlug);
+      if (!explicitAgent) {
+        throw new Error(`Agent slug "${explicitSlug}" is not active in the registry.`);
+      }
+      return explicitAgent;
     }
+
+    const { agent } = await resolveOperationalActiveAgent(this.agentRegistry, {
+      defaultAgentSlug: this.defaultAgentSlug,
+    });
     return agent;
   }
 
   private async buildAgentPromptOverlay(
-    agent: AgentRecord | null,
+    agent: AgentRecord,
     mcpPolicy: McpPolicyEvaluation,
     cwd: string,
   ): Promise<string | null> {
-    if (!agent) {
-      return null;
-    }
-
     const promptTemplate = await this.agentPromptLoader.load(agent, cwd);
     const sections = [
       `Agente ativo: ${agent.displayName} (${agent.slug})`,
@@ -201,8 +206,8 @@ function resolveInteractionContext(
   };
 }
 
-function filterSkillsForAgent<T extends { id: string }>(skills: T[], agent: AgentRecord | null): T[] {
-  if (!agent || agent.skillIds.length === 0) {
+function filterSkillsForAgent<T extends { id: string }>(skills: T[], agent: AgentRecord): T[] {
+  if (agent.skillIds.length === 0) {
     return skills;
   }
 

@@ -54,6 +54,7 @@ export interface AppConfig {
   codexModel: string | null;
   codexReasoningEffort: CodexReasoningEffort;
   codexSandboxMode: CodexSandboxMode;
+  defaultAgentSlug: string;
   playwrightMcp: PlaywrightMcpRuntimeConfig;
   repoRoot: string;
   skillRoots: string[];
@@ -79,6 +80,7 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexModel: readOptionalString("ACOO_CODEX_MODEL"),
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
     codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
+    defaultAgentSlug: readAgentSlug("ACOO_DEFAULT_AGENT_SLUG", "coo"),
     playwrightMcp: {
       autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", false),
       healthcheckCommand:
@@ -175,6 +177,21 @@ function readReasoningEffort(
 function readSandboxMode(name: string, fallback: CodexSandboxMode): CodexSandboxMode {
   const value = process.env[name]?.trim() as CodexSandboxMode | undefined;
   return value && sandboxModes.includes(value) ? value : fallback;
+}
+
+function readAgentSlug(name: string, fallback: string): string {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return fallback;
+  }
+
+  if (!/^[a-z0-9-]+$/.test(value)) {
+    throw new Error(
+      `Environment variable ${name} is invalid. Use lowercase letters, numbers and hyphens.`,
+    );
+  }
+
+  return value;
 }
 
 function expandHome(value: string): string {

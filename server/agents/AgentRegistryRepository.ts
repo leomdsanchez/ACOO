@@ -62,6 +62,13 @@ export class AgentRegistryRepository {
     return mapAgentRecord(stored);
   }
 
+  public async deleteAgentById(id: string): Promise<AgentRecord> {
+    const stored = await this.prisma.agent.delete({
+      where: { id },
+    });
+    return mapAgentRecord(stored);
+  }
+
   public async listMcpProfiles(): Promise<AgentMcpProfileRecord[]> {
     const records = await this.prisma.agentMcpProfile.findMany({ orderBy: { name: "asc" } });
     return records.map(mapMcpProfileRecord);
