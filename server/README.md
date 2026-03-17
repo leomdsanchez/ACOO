@@ -48,10 +48,12 @@ Variáveis relevantes em `.env`:
 - `ACOO_API_PORT`: porta do servidor HTTP local do ACOO.
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
+- `ACOO_CODEX_EXEC_TIMEOUT_MS`: tempo limite de uma execução do `codex exec` antes de abortar para não travar o ciclo.
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
-- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint usado para verificar se a sessão CDP do Brave já está ativa.
+- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND`: comando de healthcheck usado para validar attach real do Playwright via CDP.
+- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint fallback usado para verificar se a sessão CDP do Brave já está ativa.
 - `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: comando usado no preflight automático para subir a sessão Brave do Playwright MCP quando necessário.
 - `ACOO_TELEGRAM_ENABLED`: habilita a prontidão de configuração do canal Telegram.
 - `ACOO_TELEGRAM_BOT_TOKEN`: token do bot Telegram.
@@ -76,6 +78,18 @@ Status consolidado do runtime:
 
 ```bash
 npm run server:status -- --pretty
+```
+
+Diagnóstico oficial do runtime Playwright:
+
+```bash
+npm run server:mcp -- doctor playwright --pretty
+```
+
+Diagnóstico do mesmo runtime via API local:
+
+```bash
+curl -X POST "http://${ACOO_API_HOST:-127.0.0.1}:${ACOO_API_PORT:-4317}/api/mcp/doctor/playwright"
 ```
 
 CRUD mínimo do registry de agentes:
@@ -108,6 +122,7 @@ Endpoints iniciais:
 - `GET /healthz`
 - `GET /api/status`
 - `GET /api/mcp`
+- `POST /api/mcp/doctor/playwright`
 - `GET /api/agents`
 - `POST /api/agents`
 - `GET /api/agents/:slug`
@@ -132,15 +147,18 @@ Sessão persistente oficial do browser para MCP:
 - endpoint CDP persistente: `http://127.0.0.1:9222`
 - browser oficial para fluxos MCP: `Brave Browser`
 
+No modo visivel, o launcher usa `open -na ... --args --new-window about:blank` para manter a sessao dedicada viva fora do shell no macOS.
+
 Fluxo operacional:
 
 1. subir manualmente o `Brave` quando o fluxo realmente precisar de browser: `~/.local/bin/playwright-mcp-brave-open`;
 2. o ACOO só verifica a saúde do runtime quando uma skill exigir `playwright`;
-3. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
-3. manter o profile `brave-profile` como profile operacional do MCP;
-4. concluir os logins manuais uma vez nesse profile;
-5. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
-6. quando a janela precisar ser encerrada de verdade, fechar o `Brave` sem medo de auto-reabertura do wrapper.
+3. se o runtime aparecer como `unhealthy`, diagnosticar primeiro com `npm run server:mcp -- doctor playwright --pretty`;
+4. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
+5. manter o profile `brave-profile` como profile operacional do MCP;
+6. concluir os logins manuais uma vez nesse profile;
+7. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
+8. quando a janela precisar ser encerrada de verdade, fechar o `Brave` sem medo de auto-reabertura do wrapper.
 
 Com esse modelo, a janela do `Brave` deixa de depender do ciclo de vida do turno do Codex e não deve mais fechar ao final de cada resposta.
 

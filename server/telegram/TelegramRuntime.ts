@@ -7,6 +7,7 @@ import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { OperationalBot } from "../bot/OperationalBot.js";
 import type { AgentRequest } from "../controller/AgentController.js";
 import { CodexCliAbortedError, CodexCliResumeError } from "../codex/CodexCliService.js";
+import { getUserFacingErrorMessage } from "../errors/UserFacingError.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 import {
   TelegramBotApi,
@@ -165,7 +166,7 @@ export class TelegramRuntime {
             "error",
             `falha ao processar update ${update.update_id}: ${error instanceof Error ? error.message : String(error)}`,
           );
-          await this.replyWithGenericFailure(update);
+          await this.replyWithFailure(update, error);
         } finally {
           if (this.chatAbortControllers.get(chatId) === abortController) {
             this.chatAbortControllers.delete(chatId);
@@ -510,13 +511,18 @@ export class TelegramRuntime {
     this.log("warn", `nova sessao preparada em chat=${chatId}`);
   }
 
-  private async replyWithGenericFailure(update: TelegramUpdate): Promise<void> {
+  private async replyWithFailure(update: TelegramUpdate, error: unknown): Promise<void> {
     const chatId = update.message?.chat.id;
     if (!chatId) {
       return;
     }
 
     try {
+      const publicMessage = getUserFacingErrorMessage(error);
+      if (publicMessage) {
+        await this.api.sendMessage(chatId, publicMessage);
+        return;
+      }
       await this.api.sendMessage(
         chatId,
         "Falhei ao processar esta mensagem. Tente de novo, ou use /new para abrir uma sessão nova.",

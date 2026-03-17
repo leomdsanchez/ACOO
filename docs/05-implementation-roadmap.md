@@ -104,6 +104,8 @@ Entregas:
 - warnings no status da UI;
 - playbooks para login/repair.
 - preflight de runtime gerenciado para MCPs que exigem bootstrap local.
+- `doctor` oficial para runtimes locais críticos, começando por `playwright`;
+- contrato único de saúde entre launcher, healthcheck, status e skills.
 
 Saída esperada:
 

@@ -11,6 +11,7 @@ export interface CodexCliOptions {
   binary: string;
   configPath: string;
   cwd: string;
+  execTimeoutMs: number;
   model?: string | null;
   reasoningEffort?: string | null;
   sandboxMode: string;
@@ -66,6 +67,16 @@ export class CodexCliResumeError extends Error {
     super(message);
     this.name = "CodexCliResumeError";
     this.causeMessage = causeMessage;
+  }
+}
+
+export class CodexCliTimeoutError extends Error {
+  public readonly timeoutMs: number;
+
+  public constructor(timeoutMs: number) {
+    super(`Codex CLI execution timed out after ${timeoutMs}ms.`);
+    this.name = "CodexCliTimeoutError";
+    this.timeoutMs = timeoutMs;
   }
 }
 
@@ -126,6 +137,12 @@ export class CodexCliService {
     const outputDir = await mkdtemp(path.join(os.tmpdir(), "acoo-codex-"));
     const outputFile = path.join(outputDir, "last-message.txt");
     const cwd = request.cwd ?? this.options.cwd;
+    const timeoutController = new AbortController();
+    const timeoutMs = Math.max(1_000, this.options.execTimeoutMs);
+    const timeoutHandle = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const signal = request.abortSignal
+      ? AbortSignal.any([request.abortSignal, timeoutController.signal])
+      : timeoutController.signal;
 
     try {
       const args = this.buildExecArgs(request, outputFile, cwd);
@@ -136,11 +153,20 @@ export class CodexCliService {
           cwd,
           env: process.env,
           maxBuffer: 10 * 1024 * 1024,
-          signal: request.abortSignal,
+          signal,
         });
         stdout = result.stdout;
         stderr = result.stderr;
       } catch (error) {
+        if (timeoutController.signal.aborted && !request.abortSignal?.aborted) {
+          if (request.sessionId || request.resumeLast) {
+            throw new CodexCliResumeError(
+              "Codex CLI timed out while resuming the requested session.",
+              `Tempo limite excedido apos ${timeoutMs}ms.`,
+            );
+          }
+          throw new CodexCliTimeoutError(timeoutMs);
+        }
         if (isAbortError(error)) {
           throw new CodexCliAbortedError();
         }
@@ -170,6 +196,7 @@ export class CodexCliService {
         threadId: parsed.threadId,
       };
     } finally {
+      clearTimeout(timeoutHandle);
       await rm(outputDir, { force: true, recursive: true });
     }
   }

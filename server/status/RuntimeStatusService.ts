@@ -33,6 +33,15 @@ export interface RuntimeStatus {
   integrations: {
     configured: number;
     customConfigured: number;
+    managedRuntimes: Array<{
+      autostart: boolean;
+      doctorCommand: string | null;
+      healthcheckCommand: string | null;
+      healthcheckUrl: string;
+      healthy: boolean;
+      name: string;
+      startupCommand: string;
+    }>;
     managedRuntimeHealthy: string[];
     managedRuntimeUnhealthy: string[];
     recommendedMissing: string[];
@@ -131,11 +140,13 @@ export class RuntimeStatusService {
         : "Nenhuma integração MCP está configurada na Codex CLI para o ACOO usar.",
       ...managedMcpRuntime
         .filter((runtime) => !runtime.healthy)
-        .map((runtime) =>
-          runtime.autostart
-            ? `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}).`
-            : `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}). Inicie manualmente com: ${runtime.startupCommand}.`,
-        ),
+        .map((runtime) => {
+          const doctorStep = runtime.doctorCommand ? ` Diagnostique com: ${runtime.doctorCommand}.` : "";
+          const startupStep = runtime.autostart
+            ? ""
+            : ` Depois, se a sessão operacional realmente estiver ausente, inicie manualmente com: ${runtime.startupCommand}.`;
+          return `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}).${doctorStep}${startupStep}`;
+        }),
       mcp.recommendedMissing.length > 0
         ? `Integrações MCP recomendadas ausentes: ${mcp.recommendedMissing.join(", ")}.`
         : null,
@@ -185,6 +196,15 @@ export class RuntimeStatusService {
       integrations: {
         configured: mcp.configured.length,
         customConfigured: mcp.configuredUnknown.length,
+        managedRuntimes: managedMcpRuntime.map((runtime) => ({
+          autostart: runtime.autostart,
+          doctorCommand: runtime.doctorCommand,
+          healthcheckCommand: runtime.healthcheckCommand,
+          healthcheckUrl: runtime.healthcheckUrl,
+          healthy: runtime.healthy,
+          name: runtime.name,
+          startupCommand: runtime.startupCommand,
+        })),
         managedRuntimeHealthy: managedMcpRuntime.filter((runtime) => runtime.healthy).map((runtime) => runtime.name),
         managedRuntimeUnhealthy: managedMcpRuntime.filter((runtime) => !runtime.healthy).map((runtime) => runtime.name),
         recommendedMissing: mcp.recommendedMissing,

@@ -19,7 +19,9 @@ Este diretório define como o ACOO deve ser construído em cima da Codex CLI rea
 - [05-implementation-roadmap.md](/Users/leosanchez/Documents/DEV/ACOO/docs/05-implementation-roadmap.md): sequência de implementação no backend.
 - [06-codex-cli-delegation.md](/Users/leosanchez/Documents/DEV/ACOO/docs/06-codex-cli-delegation.md): como implementar delegação real entre agentes sem confundir troca de agente com handoff.
 - [07-architect-review-reconciliation.md](/Users/leosanchez/Documents/DEV/ACOO/docs/07-architect-review-reconciliation.md): reconciliação entre a análise externa, o código atual e a direção oficial do projeto.
+- [08-playwright-mcp-brave-runbook.md](/Users/leosanchez/Documents/DEV/ACOO/docs/08-playwright-mcp-brave-runbook.md): uso operacional do browser MCP com Brave em sessão persistente.
 - [09-ui-control-plane-screens.md](/Users/leosanchez/Documents/DEV/ACOO/docs/09-ui-control-plane-screens.md): escopo das telas da UI para manter densidade operacional sem cair em formulário excessivo.
+- [10-playwright-runtime-architecture.md](/Users/leosanchez/Documents/DEV/ACOO/docs/10-playwright-runtime-architecture.md): arquitetura do runtime `playwright`, com contrato único de saúde, `doctor`, perfis isolados e separação entre operação e diagnóstico.
 
 ## Diagnóstico do repo atual
 

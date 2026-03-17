@@ -1,8 +1,14 @@
 import { createOperationalRuntime } from "../bootstrap.js";
+import { runPlaywrightDoctor as executePlaywrightDoctor } from "../mcp/PlaywrightDoctorRunner.js";
 import { parseFlagArgs } from "./shared.js";
 
 async function main() {
   const args = parseFlagArgs(process.argv.slice(2));
+  if (args.positionals[0] === "doctor" && args.positionals[1] === "playwright") {
+    await runPlaywrightDoctor(args.flags.has("--pretty"));
+    return;
+  }
+
   const runtime = createOperationalRuntime();
   const cliStatus = await runtime.codex.getStatus();
   const snapshot = runtime.mcpRegistry.getSnapshot(cliStatus);
@@ -34,6 +40,15 @@ async function main() {
   }
 
   process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+async function runPlaywrightDoctor(pretty: boolean) {
+  const result = await executePlaywrightDoctor(process.cwd());
+  process.stdout.write(`${JSON.stringify(result.payload, null, pretty ? 2 : 0)}\n`);
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  process.exitCode = result.exitCode;
 }
 
 void main().catch((error) => {

@@ -4,6 +4,7 @@ import type { AgentSessionStarter } from "../agents/AgentSessionStarter.js";
 import {
   applyMcpPolicyToExecutionProfile,
   buildAgentExecutionProfile,
+  disableMcpServersForRun,
   ensureAgentCanRun,
   renderAgentRuntimeSummary,
 } from "../agents/AgentRuntimeProfile.js";
@@ -11,6 +12,7 @@ import type { McpPolicyEvaluation, McpPolicyEvaluator } from "../mcp/McpPolicyEv
 import type { AgentRecord } from "../domain/models.js";
 import type { OperationalContextService } from "../context/OperationalContextService.js";
 import type { AgentEngine } from "../engine/AgentEngine.js";
+import { ManagedRuntimeUnavailableError } from "../mcp/ManagedRuntimeUnavailableError.js";
 import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { SkillRouter } from "../skills/SkillRouter.js";
 import type { SkillExecutor } from "../skills/SkillExecutor.js";
@@ -87,17 +89,35 @@ export class AgentController {
     const availableSkills = filterSkillsForAgent(skills, activeAgent);
     const activeSkill = await this.skillRouter.chooseSkill(request.prompt, availableSkills);
     const skillContext = this.skillExecutor.buildSkillContext(activeSkill);
-    await this.agentSessionStarter.prepare(activeSkill, mcpPolicy, request.prompt);
-    const executionProfile = applyMcpPolicyToExecutionProfile(
+    let executionProfile = applyMcpPolicyToExecutionProfile(
       buildAgentExecutionProfile(activeAgent),
       mcpPolicy,
     );
+    let runtimeRecoveryContext: string | null = null;
+    try {
+      await this.agentSessionStarter.prepare(activeSkill, mcpPolicy, request.prompt);
+    } catch (error) {
+      if (error instanceof ManagedRuntimeUnavailableError) {
+        executionProfile = disableMcpServersForRun(executionProfile, error.runtimeNames);
+        runtimeRecoveryContext = buildRuntimeRecoveryContext(error);
+      } else {
+        throw error;
+      }
+    }
     const result = await this.engine.run({
       abortSignal: request.abortSignal,
       cwd: request.cwd ?? process.cwd(),
       ephemeral: request.ephemeral,
       executionProfile,
-      prompt: [promptOverlay, skillContext, operationalContext, request.prompt].filter(Boolean).join("\n\n"),
+      prompt: [
+        promptOverlay,
+        skillContext,
+        runtimeRecoveryContext,
+        operationalContext,
+        request.prompt,
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
       resumeLast: request.resumeLast,
       sessionId: request.sessionId,
     });
@@ -148,6 +168,26 @@ export class AgentController {
 
     return sections.length > 0 ? sections.join("\n\n") : null;
   }
+}
+
+function buildRuntimeRecoveryContext(error: ManagedRuntimeUnavailableError): string {
+  const payload = {
+    code: "managed_runtime_unavailable",
+    public_message: error.publicMessage,
+    recoverable: true,
+    runtime_names: error.runtimeNames,
+    technical_message: error.message,
+  };
+
+  return [
+    "SYSTEM EVENT: managed runtime unavailable before tool execution.",
+    "Use the structured event below and continue this turn without using unavailable MCP runtimes.",
+    "Unavailable MCP runtimes are already disabled for this run.",
+    "```json",
+    JSON.stringify(payload, null, 2),
+    "```",
+    "Required behavior: provide a practical fallback path, and only ask the user for action if there is no viable non-browser alternative.",
+  ].join("\n");
 }
 
 function resolveInteractionContext(

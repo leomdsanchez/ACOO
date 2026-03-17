@@ -1,7 +1,10 @@
 import type { McpPolicyEvaluation } from "../mcp/McpPolicyEvaluator.js";
 import type { McpSessionBootstrapper } from "../mcp/McpSessionBootstrapper.js";
+import { getManagedRuntimeDoctorCommand } from "../mcp/ManagedRuntimeDoctor.js";
+import { ManagedRuntimeUnavailableError } from "../mcp/ManagedRuntimeUnavailableError.js";
 import type { LoadedSkill } from "../skills/Skill.js";
 import type { SkillDependencyResolver } from "../skills/SkillDependencyResolver.js";
+import type { McpBootstrapResult } from "../mcp/McpSessionBootstrapper.js";
 
 export interface AgentSessionPreparation {
   bootstrapResults: Awaited<ReturnType<McpSessionBootstrapper["ensureReady"]>>;
@@ -42,15 +45,31 @@ export class AgentSessionStarter {
     const manualStartRequired = bootstrapResults.filter((result) => result.managed && result.manualStartRequired);
     if (manualStartRequired.length > 0) {
       const instructions = manualStartRequired
-        .map((item) => `${item.name}: ${item.startupCommand}`)
+        .map((item) => {
+          const doctorCommand = getManagedRuntimeDoctorCommand(item.name);
+          const doctorStep = doctorCommand ? `diagnostique com "${doctorCommand}"` : "diagnostique o runtime";
+          return `${item.name}: ${doctorStep}; se a sessão operacional realmente estiver ausente, inicie com "${item.startupCommand}"`;
+        })
         .join("; ");
-      throw new Error(`Managed MCP runtimes require manual startup before this skill can run: ${instructions}.`);
+      throw new ManagedRuntimeUnavailableError(
+        `Managed MCP runtimes require manual startup before this skill can run: ${instructions}.`,
+        buildPublicMessage(manualStartRequired, { includeStartup: true }),
+        manualStartRequired.map((item) => item.name),
+      );
     }
 
     const failed = bootstrapResults.filter((result) => result.managed && !result.healthy && !result.manualStartRequired);
     if (failed.length > 0) {
-      throw new Error(
-        `Failed to prepare managed MCP runtimes: ${failed.map((item) => item.name).join(", ")}.`,
+      const instructions = failed
+        .map((item) => {
+          const doctorCommand = getManagedRuntimeDoctorCommand(item.name);
+          return doctorCommand ? `${item.name}: ${doctorCommand}` : item.name;
+        })
+        .join("; ");
+      throw new ManagedRuntimeUnavailableError(
+        `Failed to prepare managed MCP runtimes: ${instructions}.`,
+        buildPublicMessage(failed, { includeStartup: false }),
+        failed.map((item) => item.name),
       );
     }
 
@@ -59,4 +78,23 @@ export class AgentSessionStarter {
       requiredMcpServers,
     };
   }
+}
+
+function buildPublicMessage(
+  results: McpBootstrapResult[],
+  options: { includeStartup: boolean },
+): string {
+  const lines = results.map((item) => {
+    const doctorCommand = getManagedRuntimeDoctorCommand(item.name);
+    const parts = [`Runtime MCP indisponível: ${item.name}.`];
+    if (doctorCommand) {
+      parts.push(`Diagnostique com: ${doctorCommand}.`);
+    }
+    if (options.includeStartup && item.startupCommand) {
+      parts.push(`Se a sessão operacional realmente estiver ausente, inicie com: ${item.startupCommand}.`);
+    }
+    return parts.join(" ");
+  });
+
+  return lines.join("\n");
 }

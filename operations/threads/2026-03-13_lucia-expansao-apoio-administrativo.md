@@ -24,3 +24,10 @@
 - Leonardo confirmou que o canal operacional deste assunto é `WhatsApp`.
 - Nome do contato: `Lucía Rodriguez`.
 - Estado mantido como `Aguardando execução`.
+
+### 2026-03-16 12:12 | Validação em origem no WhatsApp
+- Conversa com `Lucía Rodriguez` revisada diretamente no `WhatsApp`.
+- A última evidência no canal é de `13/03/2026 14:36`, quando `Lucía` encaminhou o PDF `TURIL_A393_RECIBO NEURAL.pdf` após o alinhamento do mesmo dia para melhorar o apoio operacional e fazer uma `meet`.
+- Não há evidência em origem de proposta financeira enviada nem de escopo delegável já compilado após esse alinhamento.
+- Estado mantido em `Aguardando execução`.
+- Próxima trava real mantida como `execução`: `Leonardo Sánchez` precisa compilar o escopo delegável e preparar a proposta financeira após `19/03/2026`.

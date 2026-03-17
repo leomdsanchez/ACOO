@@ -19,6 +19,7 @@
     "server:run": "tsx server/commands/run.ts",
     "server:status": "tsx server/commands/status.ts",
     "server:telegram": "tsx server/commands/telegram.ts",
+    "test:server": "node --import tsx --test server/**/*.test.ts",
     "typecheck": "tsc -b",
     "typecheck:server": "tsc -p tsconfig.server.json",
     "clockify:summary-debug": "node scripts/clockify-summary-debug.mjs",

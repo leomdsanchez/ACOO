@@ -54,6 +54,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     binary: config.codexCliBinary,
     configPath: config.codexConfigPath,
     cwd: repoRoot,
+    execTimeoutMs: config.codexExecTimeoutMs,
     model: config.codexModel,
     reasoningEffort: config.codexReasoningEffort,
     sandboxMode: config.codexSandboxMode,

@@ -1,4 +1,5 @@
 import { createOperationalRuntime } from "../bootstrap.js";
+import { getUserFacingErrorMessage } from "../errors/UserFacingError.js";
 import { parseFlagArgs } from "./shared.js";
 
 async function main() {
@@ -37,6 +38,12 @@ async function main() {
 }
 
 void main().catch((error) => {
+  const publicMessage = getUserFacingErrorMessage(error);
+  if (publicMessage) {
+    process.stderr.write(`${publicMessage}\n`);
+    process.exitCode = 1;
+    return;
+  }
   process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
   process.exitCode = 1;
 });

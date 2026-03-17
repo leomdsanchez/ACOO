@@ -20,13 +20,26 @@ export function applyMcpPolicyToExecutionProfile(
   profile: AgentExecutionProfile | undefined,
   mcpPolicy: McpPolicyEvaluation,
 ): AgentExecutionProfile | undefined {
-  if (!profile && mcpPolicy.disabledForRun.length === 0) {
+  return disableMcpServersForRun(profile, mcpPolicy.disabledForRun);
+}
+
+export function disableMcpServersForRun(
+  profile: AgentExecutionProfile | undefined,
+  names: string[],
+): AgentExecutionProfile | undefined {
+  const disabledNames = [...new Set(names)].sort();
+  if (!profile && disabledNames.length === 0) {
     return profile;
   }
 
+  const configOverrides = [
+    ...(profile?.configOverrides ?? []),
+    ...disabledNames.map((name) => `mcp_servers.${name}.enabled=false`),
+  ];
+
   return {
     ...profile,
-    configOverrides: mcpPolicy.disabledForRun.map((name) => `mcp_servers.${name}.enabled=false`),
+    configOverrides: [...new Set(configOverrides)],
   };
 }
 

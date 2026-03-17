@@ -68,12 +68,13 @@
 - ID: `task-turil-documentar-carnet-estudante-notion-2026-03-13`
 - Nome: `Turil - documentar caso de carnet de estudante no Notion`
 - Descrição: Documentar no Notion da Turil o caso em que o assistente insistiu na venda de passagem diante de uma demanda fora do escopo sobre carnet de estudante.
-- Status: `Aguardando execução`
+- Status: `Concluído`
 - Thread associada: [2026-03-13_turil-assistente-carnet-estudante-escopo.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-13_turil-assistente-carnet-estudante-escopo.md)
 - Responsável: `Alfredo`
 - Prazo: `2026-03-16`
 - Prioridade: `Média`
 - Criada em: `2026-03-13`
-- Último contexto relevante: A direção já foi definida; falta apenas registrar o caso no doc correto de ajustes no Notion da Turil.
+- Último contexto relevante: Em `16/03/2026 12:51`, o caso foi registrado na página `Entregáveis Fase 4 - Assistente de Vendas` no Notion da Turil.
 ### Histórico
 - `2026-03-13 13:50: Leonardo esclareceu que a task é só documentar o caso no Notion.`
+- `2026-03-16 12:51: caso registrado na página Entregáveis Fase 4 - Assistente de Vendas; task concluída.`

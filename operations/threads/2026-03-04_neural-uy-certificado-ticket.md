@@ -151,3 +151,14 @@
 ### 2026-03-13 20:39 | Status atual
 - Estado mantido em `Aguardando terceiro`.
 - Próxima trava real: retorno do `Ronel Obando` com o novo arquivo `.pfx` exportado e a senha simples usada na prova para teste com a `Facturando`.
+
+### 2026-03-16 12:09 | Validação de origem e novo follow-up ao Ronel
+- Conversa com `Ronel Obando` revisada diretamente no WhatsApp.
+- Não houve resposta nova do Ronel após a última mensagem enviada em `13/03/2026 22:13`.
+- Novo follow-up enviado às `12:09` perguntando se eles conseguiram testar novamente o processo reexportando o certificado/firma pelo link anterior e se há alguma novidade dos `Correios`.
+- No mesmo follow-up, foi reforçado o pedido para envio do novo arquivo `.pfx` e da senha usada na prova caso o teste já tenha sido executado.
+- Envio confirmado visualmente no WhatsApp com estado `Entregue`.
+
+### 2026-03-16 12:09 | Status atual
+- Estado mantido em `Aguardando terceiro`.
+- Próxima trava real permanece: retorno do `Ronel Obando` com confirmação do teste, novo `.pfx` exportado e a senha simples usada para validação com a `Facturando`.

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -49,6 +50,7 @@ export interface AppConfig {
   codexApprovalPolicy: CodexApprovalPolicy;
   codexCliBinary: string;
   codexConfigPath: string;
+  codexExecTimeoutMs: number;
   codexModel: string | null;
   codexReasoningEffort: CodexReasoningEffort;
   codexSandboxMode: CodexSandboxMode;
@@ -62,6 +64,7 @@ export interface AppConfig {
 export function loadAppConfig(repoRoot: string): AppConfig {
   ensureEnvironmentLoaded(repoRoot);
   const transcriptionModel = readString("ACOO_STT_MODEL", "base");
+  const defaultPlaywrightHealthcheckCommand = resolveDefaultPlaywrightHealthcheckCommand(repoRoot);
 
   return {
     api: {
@@ -72,12 +75,15 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexApprovalPolicy: readApprovalPolicy("ACOO_CODEX_APPROVAL_POLICY", "never"),
     codexCliBinary: readString("ACOO_CODEX_CLI_BIN", "codex"),
     codexConfigPath: expandHome(readString("ACOO_CODEX_CONFIG_PATH", "~/.codex/config.toml")),
+    codexExecTimeoutMs: readNumber("ACOO_CODEX_EXEC_TIMEOUT_MS", 120_000),
     codexModel: readOptionalString("ACOO_CODEX_MODEL"),
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
     codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
     playwrightMcp: {
       autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", false),
-      healthcheckCommand: readOptionalString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND"),
+      healthcheckCommand:
+        readOptionalString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND") ??
+        defaultPlaywrightHealthcheckCommand,
       healthcheckUrl: readString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL", "http://127.0.0.1:9222/json/version"),
       startupCommand: expandHome(
         readString("ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND", "~/.local/bin/playwright-mcp-brave-open"),
@@ -177,4 +183,9 @@ function expandHome(value: string): string {
   }
 
   return path.join(os.homedir(), value.slice(2));
+}
+
+function resolveDefaultPlaywrightHealthcheckCommand(repoRoot: string): string | null {
+  const healthcheckScriptPath = path.join(repoRoot, "scripts", "playwright-mcp-healthcheck.mjs");
+  return existsSync(healthcheckScriptPath) ? "node scripts/playwright-mcp-healthcheck.mjs" : null;
 }

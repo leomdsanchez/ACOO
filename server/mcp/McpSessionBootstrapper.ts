@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 
 export interface ManagedMcpRuntimeHealth {
   autostart: boolean;
+  doctorCommand: string | null;
   healthy: boolean;
   healthcheckCommand: string | null;
   healthcheckUrl: string;
@@ -26,6 +27,10 @@ export interface McpBootstrapResult {
 }
 
 export class McpSessionBootstrapper {
+  private static readonly HEALTH_STABILITY_CHECKS = 2;
+  private static readonly HEALTH_WAIT_INTERVAL_MS = 500;
+  private static readonly STARTUP_HEALTH_TIMEOUT_MS = 15_000;
+
   public constructor(
     private readonly runtimeCatalog: McpRuntimeCatalog,
     private readonly cwd: string,
@@ -80,7 +85,10 @@ export class McpSessionBootstrapper {
         maxBuffer: 1024 * 1024,
       });
 
-      const healthyAfter = await this.checkHealth(runtime);
+      const healthyAfter = await this.waitForHealthy(
+        runtime,
+        McpSessionBootstrapper.STARTUP_HEALTH_TIMEOUT_MS,
+      );
       results.push({
         healthy: healthyAfter,
         manualStartRequired: !healthyAfter,
@@ -99,6 +107,7 @@ export class McpSessionBootstrapper {
     return Promise.all(
       runtimes.map(async (runtime) => ({
         autostart: runtime.autostart,
+        doctorCommand: runtime.doctorCommand,
         healthy: await this.checkHealth(runtime),
         healthcheckCommand: runtime.healthcheckCommand,
         healthcheckUrl: runtime.healthcheckUrl,
@@ -140,5 +149,30 @@ export class McpSessionBootstrapper {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  private async waitForHealthy(
+    runtime: ManagedMcpRuntimeDefinition,
+    timeoutMs: number,
+  ): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    let consecutiveSuccesses = 0;
+
+    while (Date.now() < deadline) {
+      if (await this.checkHealth(runtime)) {
+        consecutiveSuccesses += 1;
+        if (consecutiveSuccesses >= McpSessionBootstrapper.HEALTH_STABILITY_CHECKS) {
+          return true;
+        }
+      } else {
+        consecutiveSuccesses = 0;
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, McpSessionBootstrapper.HEALTH_WAIT_INTERVAL_MS),
+      );
+    }
+
+    return false;
   }
 }

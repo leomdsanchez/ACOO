@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { OperationalRuntime } from "../bootstrap.js";
+import { runPlaywrightDoctor } from "../mcp/PlaywrightDoctorRunner.js";
 import type {
   CreateAgentInput,
   UpdateAgentInput,
@@ -82,6 +83,18 @@ export class HttpServer {
       const cli = await this.options.runtime.codex.getStatus();
       sendJson(response, 200, {
         data: this.options.runtime.mcpRegistry.getSnapshot(cli),
+      });
+      return;
+    }
+
+    if (request.method === "POST" && context.pathname === "/api/mcp/doctor/playwright") {
+      const result = await runPlaywrightDoctor(this.options.runtime.config.repoRoot);
+      sendJson(response, result.exitCode === 0 ? 200 : 503, {
+        data: result.payload,
+        meta: {
+          exitCode: result.exitCode,
+          stderr: result.stderr || null,
+        },
       });
       return;
     }
