@@ -51,6 +51,7 @@ test("manual startup error points to doctor before operational startup", async (
       assert.match(String(error), /doctor playwright --pretty/);
       assert.match(String(error), /playwright-mcp-brave-open/);
       assert.match(error.publicMessage, /Runtime MCP indisponível: playwright/);
+      assert.match(error.publicMessage, /Severidade: low/);
       assert.deepEqual(error.runtimeNames, ["playwright"]);
       return true;
     },
@@ -81,6 +82,39 @@ test("failed managed runtime after startup also points to the doctor command", a
       assert.ok(error instanceof ManagedRuntimeUnavailableError);
       assert.match(String(error), /doctor playwright --pretty/);
       assert.match(error.publicMessage, /Diagnostique com:/);
+      assert.match(error.publicMessage, /Severidade: high/);
+      assert.deepEqual(error.runtimeNames, ["playwright"]);
+      return true;
+    },
+  );
+});
+
+test("startup command failures stay in the managed runtime path", async () => {
+  const bootstrapper = {
+    ensureReady: async () => [
+      {
+        errorMessage: "Command failed: /bin/false",
+        failureStage: "startup_command",
+        healthy: false,
+        manualStartRequired: false,
+        managed: true,
+        name: "playwright",
+        state: "broken",
+        startupAttempted: true,
+        startupCommand: "/Users/leosanchez/.local/bin/playwright-mcp-brave-open",
+      },
+    ],
+  } as unknown as McpSessionBootstrapper;
+  const starter = new AgentSessionStarter(
+    bootstrapper,
+    new SkillDependencyResolver(),
+  );
+
+  await assert.rejects(
+    () => starter.prepare(PLAYWRIGHT_SKILL, MCP_POLICY),
+    (error: unknown) => {
+      assert.ok(error instanceof ManagedRuntimeUnavailableError);
+      assert.match(error.publicMessage, /Severidade: high/);
       assert.deepEqual(error.runtimeNames, ["playwright"]);
       return true;
     },

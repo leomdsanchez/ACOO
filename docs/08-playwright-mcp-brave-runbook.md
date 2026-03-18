@@ -34,7 +34,7 @@ Ele apenas faz `attach` no endpoint CDP ja exposto pelo `Brave`.
 - o ACOO enxerga o MCP `playwright` corretamente na Codex CLI;
 - o runtime gerenciado agora valida `attach` real via CDP, nao apenas `GET /json/version`;
 - o launcher da sessao nao anuncia mais "started" com CDP efemero; ele espera prontidao sustentada;
-- o preflight atual exige subida manual por padrao;
+- o preflight atual pode subir a sessao automaticamente no primeiro uso ou na recuperacao;
 - a sessao abre com janela visivel por padrao, mas agora aceita modo `headless` quando isso for pedido explicitamente;
 - o profile do MCP e separado do browser pessoal e tem preferencias proprias.
 
@@ -43,8 +43,8 @@ Ele apenas faz `attach` no endpoint CDP ja exposto pelo `Brave`.
 Antes de usar uma skill que depende de browser:
 
 1. rodar `npm run server:status -- --pretty`
-2. confirmar se o advisory do Playwright desapareceu
-3. se o runtime estiver indisponivel, subir `~/.local/bin/playwright-mcp-brave-open`
+2. se quiser forcar o bootstrap ou validar a recuperacao, rodar `npm run server:mcp -- ensure playwright --pretty`
+3. confirmar se o advisory do Playwright desapareceu
 4. so depois operar a skill
 
 Se precisar subir sem janela visivel:
@@ -113,7 +113,7 @@ Errado:
 Correto:
 
 1. `server:status`
-2. `playwright-mcp-brave-open`
+2. `server:mcp -- ensure playwright --pretty`
 3. tabs
 4. snapshot
 

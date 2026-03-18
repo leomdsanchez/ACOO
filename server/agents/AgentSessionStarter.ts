@@ -2,6 +2,7 @@ import type { McpPolicyEvaluation } from "../mcp/McpPolicyEvaluator.js";
 import type { McpSessionBootstrapper } from "../mcp/McpSessionBootstrapper.js";
 import { getManagedRuntimeDoctorCommand } from "../mcp/ManagedRuntimeDoctor.js";
 import { ManagedRuntimeUnavailableError } from "../mcp/ManagedRuntimeUnavailableError.js";
+import { assessManagedRuntimeBootstrap } from "../mcp/ManagedRuntimeAssessment.js";
 import type { LoadedSkill } from "../skills/Skill.js";
 import type { SkillDependencyResolver } from "../skills/SkillDependencyResolver.js";
 import type { McpBootstrapResult } from "../mcp/McpSessionBootstrapper.js";
@@ -85,8 +86,13 @@ function buildPublicMessage(
   options: { includeStartup: boolean },
 ): string {
   const lines = results.map((item) => {
+    const assessment = assessManagedRuntimeBootstrap(item);
     const doctorCommand = getManagedRuntimeDoctorCommand(item.name);
     const parts = [`Runtime MCP indisponível: ${item.name}.`];
+    if (assessment.severity) {
+      parts.push(`Severidade: ${assessment.severity}.`);
+    }
+    parts.push(assessment.summary);
     if (doctorCommand) {
       parts.push(`Diagnostique com: ${doctorCommand}.`);
     }

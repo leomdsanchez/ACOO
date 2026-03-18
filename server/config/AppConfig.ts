@@ -78,13 +78,13 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     codexApprovalPolicy: readApprovalPolicy("ACOO_CODEX_APPROVAL_POLICY", "never"),
     codexCliBinary: readString("ACOO_CODEX_CLI_BIN", "codex"),
     codexConfigPath: expandHome(readString("ACOO_CODEX_CONFIG_PATH", "~/.codex/config.toml")),
-    codexExecTimeoutMs: readNumber("ACOO_CODEX_EXEC_TIMEOUT_MS", 120_000),
+    codexExecTimeoutMs: readNumber("ACOO_CODEX_EXEC_TIMEOUT_MS", 2_700_000),
     codexModel: readOptionalString("ACOO_CODEX_MODEL"),
     codexReasoningEffort: readReasoningEffort("ACOO_CODEX_REASONING_EFFORT", "high"),
     codexSandboxMode: readSandboxMode("ACOO_CODEX_SANDBOX_MODE", "danger-full-access"),
     defaultAgentSlug: readAgentSlug("ACOO_DEFAULT_AGENT_SLUG", "coo"),
     playwrightMcp: {
-      autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", false),
+      autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", true),
       healthcheckCommand:
         readOptionalString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND") ??
         defaultPlaywrightHealthcheckCommand,

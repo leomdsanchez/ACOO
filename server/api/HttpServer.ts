@@ -104,6 +104,16 @@ export class HttpServer {
       return;
     }
 
+    if (request.method === "POST" && context.pathname === "/api/mcp/ensure/playwright") {
+      const result = await this.options.runtime.mcpSessionBootstrapper.ensureReadyWithOptions(["playwright"], {
+        forceStartup: true,
+      });
+      sendJson(response, result.every((item) => item.healthy) ? 200 : 503, {
+        data: result,
+      });
+      return;
+    }
+
     if (request.method === "GET" && context.pathname === "/api/agents") {
       const includeDisabled = context.query.get("includeDisabled") === "true";
       const role = context.query.get("role");

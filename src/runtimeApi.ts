@@ -100,6 +100,14 @@ export interface RuntimeStatusSnapshot {
   integrations: {
     configured: number;
     managedRuntimeHealthy: string[];
+    managedRuntimes: Array<{
+      healthy: boolean;
+      name: string;
+      nextAction: string;
+      severity: "low" | "medium" | "high" | null;
+      state: "off" | "ready" | "broken";
+      summary: string;
+    }>;
   };
   issues: string[];
   telegram: {

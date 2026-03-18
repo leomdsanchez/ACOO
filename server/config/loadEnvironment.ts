@@ -11,7 +11,7 @@ export function ensureEnvironmentLoaded(repoRoot: string): void {
   loadDotEnv({
     path: path.join(repoRoot, ".env"),
     quiet: true,
-    override: false,
+    override: true,
   });
   loaded = true;
 }

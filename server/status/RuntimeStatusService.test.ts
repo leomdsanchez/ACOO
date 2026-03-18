@@ -92,6 +92,106 @@ test("status exposes backup as the effective default agent source when configure
   }
 });
 
+test("status classifies unhealthy playwright runtime with severity and next action", async () => {
+  const repoRoot = await mkdtemp(path.join(os.tmpdir(), "acoo-status-"));
+  try {
+    const service = new RuntimeStatusService(
+      makeConfig(repoRoot),
+      {
+        getStatus: async () => ({
+          authenticated: true,
+          configExists: true,
+          configPath: path.join(os.homedir(), ".codex", "config.toml"),
+          installed: true,
+          loginStatus: "Logged in",
+          mcpServers: [],
+        }),
+      } as never,
+      {
+        getSnapshot: () => ({
+          catalog: [],
+          configured: [],
+          configuredUnknown: [],
+          recommendedMissing: [],
+        }),
+      } as never,
+      {
+        getAgentBySlug: async () => ({ slug: "coo", status: "active" }),
+        getIntegrityReport: async () => ({
+          duplicateMcpProfileIds: [],
+          duplicateSessionThreadBindings: [],
+          duplicateSlugs: [],
+          missingAgentIdsInSessions: [],
+          missingMcpProfileIds: [],
+        }),
+        listAgents: async () => [{ slug: "coo", status: "active" }],
+        listMcpProfiles: async () => [],
+        listSessions: async () => [],
+      } as never,
+      {
+        getManagedRuntimeHealth: async () => [
+          {
+            autostart: true,
+            doctorCommand: "npm run server:mcp -- doctor playwright --pretty",
+            healthy: false,
+            healthcheckCommand: null,
+            healthcheckUrl: "http://127.0.0.1:9222/json/version",
+            name: "playwright",
+            state: "off",
+            startupCommand: "/Users/leosanchez/.local/bin/playwright-mcp-brave-open",
+          },
+        ],
+      } as never,
+      {
+        loadAll: async () => [
+          {
+            content: "",
+            description: "test",
+            id: "skill-1",
+            keywords: [],
+            name: "Skill",
+            sourcePath: "/tmp/skill.md",
+          },
+        ],
+      } as never,
+      {
+        contacts: {
+          listContacts: async () => [],
+        },
+        projects: {
+          listProjects: async () => [],
+        },
+        tasks: {
+          listTasks: async () => [],
+        },
+        threads: {
+          listThreads: async () => [],
+        },
+      } as never,
+      {
+        getHealth: async () => ({
+          enabled: false,
+          ffmpegAvailable: true,
+          modelAvailable: true,
+          modelPath: path.join(repoRoot, ".acoo", "models", "ggml-base.bin"),
+          whisperBinaryAvailable: true,
+        }),
+      } as never,
+    );
+
+    const status = await service.getStatus();
+    const playwright = status.integrations.managedRuntimes.find((runtime) => runtime.name === "playwright");
+
+    assert.ok(playwright);
+    assert.equal(playwright.severity, "medium");
+    assert.equal(playwright.state, "off");
+    assert.match(playwright.nextAction, /ensure playwright --pretty/);
+    assert.match(playwright.summary, /tentará recuperar no próximo uso/);
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
 function makeConfig(repoRoot: string): AppConfig {
   return {
     api: {

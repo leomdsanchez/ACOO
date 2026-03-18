@@ -10,6 +10,7 @@ import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
 import os from "node:os";
 import path from "node:path";
+import { assessManagedRuntimeHealth } from "../mcp/ManagedRuntimeAssessment.js";
 
 export interface RuntimeStatus {
   agents: {
@@ -44,7 +45,11 @@ export interface RuntimeStatus {
       healthcheckUrl: string;
       healthy: boolean;
       name: string;
+      nextAction: string;
+      severity: "low" | "medium" | "high" | null;
+      state: "off" | "ready" | "broken";
       startupCommand: string;
+      summary: string;
     }>;
     managedRuntimeHealthy: string[];
     managedRuntimeUnhealthy: string[];
@@ -157,11 +162,8 @@ export class RuntimeStatusService {
       ...managedMcpRuntime
         .filter((runtime) => !runtime.healthy)
         .map((runtime) => {
-          const doctorStep = runtime.doctorCommand ? ` Diagnostique com: ${runtime.doctorCommand}.` : "";
-          const startupStep = runtime.autostart
-            ? ""
-            : ` Depois, se a sessão operacional realmente estiver ausente, inicie manualmente com: ${runtime.startupCommand}.`;
-          return `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}).${doctorStep}${startupStep}`;
+          const assessment = assessManagedRuntimeHealth(runtime);
+          return `MCP runtime gerenciado indisponível: ${runtime.name} (${runtime.healthcheckUrl}) [${assessment.severity ?? "ok"}]. ${assessment.summary} ${assessment.nextAction}`.trim();
         }),
       mcp.recommendedMissing.length > 0
         ? `Integrações MCP recomendadas ausentes: ${mcp.recommendedMissing.join(", ")}.`
@@ -222,6 +224,7 @@ export class RuntimeStatusService {
         configured: mcp.configured.length,
         customConfigured: mcp.configuredUnknown.length,
         managedRuntimes: managedMcpRuntime.map((runtime) => ({
+          ...assessManagedRuntimeHealth(runtime),
           autostart: runtime.autostart,
           doctorCommand: runtime.doctorCommand,
           healthcheckCommand: runtime.healthcheckCommand,
@@ -229,6 +232,7 @@ export class RuntimeStatusService {
           healthy: runtime.healthy,
           name: runtime.name,
           startupCommand: runtime.startupCommand,
+          state: runtime.state,
         })),
         managedRuntimeHealthy: managedMcpRuntime.filter((runtime) => runtime.healthy).map((runtime) => runtime.name),
         managedRuntimeUnhealthy: managedMcpRuntime.filter((runtime) => !runtime.healthy).map((runtime) => runtime.name),

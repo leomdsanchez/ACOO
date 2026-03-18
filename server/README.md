@@ -48,7 +48,7 @@ Variáveis relevantes em `.env`:
 - `ACOO_API_PORT`: porta do servidor HTTP local do ACOO.
 - `ACOO_CODEX_CONFIG_PATH`: caminho esperado do `config.toml` usado para healthcheck e alinhamento operacional.
 - `ACOO_CODEX_MODEL`: modelo opcional a forçar na execução.
-- `ACOO_CODEX_EXEC_TIMEOUT_MS`: tempo limite de uma execução do `codex exec` antes de abortar para não travar o ciclo.
+- `ACOO_CODEX_EXEC_TIMEOUT_MS`: tempo limite de uma execução do `codex exec` antes de abortar para não travar o ciclo. Default operacional atual: `2700000` ms (`45min`), para não matar sessões longas de Playwright/Telegram.
 - `ACOO_CODEX_REASONING_EFFORT`: esforço de raciocínio padrão para a Codex CLI (`low`, `medium`, `high`, `xhigh`).
 - `ACOO_CODEX_SANDBOX_MODE`: sandbox usado nos comandos `codex exec`.
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
@@ -165,10 +165,11 @@ No modo visivel, o launcher usa `open -na ... --args --new-window about:blank` p
 
 Fluxo operacional:
 
-1. subir manualmente o `Brave` quando o fluxo realmente precisar de browser: `~/.local/bin/playwright-mcp-brave-open`;
-2. o ACOO só verifica a saúde do runtime quando uma skill exigir `playwright`;
-3. se o runtime aparecer como `unhealthy`, diagnosticar primeiro com `npm run server:mcp -- doctor playwright --pretty`;
-4. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
+1. o ACOO pode garantir automaticamente a sessão do `Brave` quando uma skill exigir `playwright`, desde que `ACOO_PLAYWRIGHT_MCP_AUTOSTART=true`;
+2. para forçar bootstrap/recovery fora do fluxo do agente, use `npm run server:mcp -- ensure playwright --pretty`;
+3. se houver processo velho/quebrado para o mesmo profile e voce quiser substituir a sessao dedicada, use `npm run server:mcp -- ensure playwright --force-restart --pretty`;
+4. se o runtime aparecer como `broken`, diagnosticar com `npm run server:mcp -- doctor playwright --pretty`;
+5. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
 5. manter o profile `brave-profile` como profile operacional do MCP;
 6. concluir os logins manuais uma vez nesse profile;
 7. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
@@ -191,7 +192,7 @@ Notas práticas:
 - A profile operacional do MCP é exclusiva do fluxo automatizado.
 - O attach via `CDP` melhora bastante a estabilidade da janela entre turnos.
 - O wrapper da Codex só faz `attach`; ele não deve abrir o browser sozinho.
-- O autostart do runtime gerenciado deve permanecer desabilitado por padrão.
+- O autostart do runtime gerenciado do `playwright` é o default operacional atual para reduzir dependência de ritual manual no agente.
 - Em fluxos Bubble, a rota direta pode voltar para o dashboard; quando isso acontecer, preferir a navegação interna da própria UI.
 
 Execução do agente via Codex CLI usando o contexto operacional do repo:

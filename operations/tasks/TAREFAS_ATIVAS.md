@@ -78,3 +78,49 @@
 ### Histórico
 - `2026-03-13 13:50: Leonardo esclareceu que a task é só documentar o caso no Notion.`
 - `2026-03-16 12:51: caso registrado na página Entregáveis Fase 4 - Assistente de Vendas; task concluída.`
+
+## 2026-03-18_task-utec-curso-incubados-adaptar-enviar
+- ID: `task-utec-curso-incubados-adaptar-enviar-2026-03-18`
+- Nome: `UTEC - adaptar proposta de curso para incubados e enviar ao Leonel`
+- Descrição: Adaptar a página/material atual da proposta de curso para incubados da UTEC e enviar a versão atualizada ao `Leonel` até `19/03/2026`.
+- Status: `Aguardando execução`
+- Thread associada: [2026-03-18_utec-curso-incubados-proposta.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-18_utec-curso-incubados-proposta.md)
+- Responsável: `Leonardo Sánchez`
+- Prazo: `2026-03-19`
+- Prioridade: `Alta`
+- Criada em: `2026-03-18 18:05`
+- Último contexto relevante: em `18/03/2026 14:13`, foi confirmado no grupo `Curso Incubados UTEC` que a página seria adaptada e enviada no dia seguinte; a execução agora depende de validar o material base, adaptar e enviar.
+### Histórico
+- `2026-03-18 14:13: resposta enviada ao Leonel no grupo Curso Incubados UTEC comprometendo envio até 19/03/2026.`
+- `2026-03-18 18:05: task registrada como item ativo da fila via planejamento goal-to-slices.`
+
+## 2026-03-18_task-geaseg-agendar-reuniao-fernanda
+- ID: `task-geaseg-agendar-reuniao-fernanda-2026-03-18`
+- Nome: `Geaseg - agendar reunião com a Fernanda correta`
+- Descrição: Criar o evento da reunião de Geaseg no Calendar com a `Fernanda` correta adicionada no convite, sem risco de convidar a pessoa errada.
+- Status: `Aguardando decisão`
+- Thread associada: [2026-03-04_geaseg-projeto-status.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-04_geaseg-projeto-status.md)
+- Responsável: `Leonardo Sánchez`
+- Prazo: `não definido`
+- Prioridade: `Alta`
+- Criada em: `2026-03-18 18:05`
+- Último contexto relevante: a ação foi pedida por Leonardo, mas faltam a desambiguação de qual `Fernanda` é, o e-mail correto e os dados absolutos da reunião para executar sem erro.
+### Histórico
+- `2026-03-18 17:49: task solicitada no chat para agendar reunião com a Fernanda correta e adicionar o e-mail dela no convite.`
+- `2026-03-18 18:05: task registrada com trava de decisão por falta de identificação inequívoca da Fernanda e dados da reunião.`
+
+## 2026-03-18_task-acoo-revisar-vercel-chat-ui
+- ID: `task-acoo-revisar-vercel-chat-ui-2026-03-18`
+- Nome: `ACOO - revisar se Vercel Chat UI funciona no repo`
+- Descrição: Avaliar se a Vercel Chat UI pode ser instalada no repo do ACOO e funcionar com o sistema atual, com evidência suficiente para classificar o resultado como `funciona`, `não funciona` ou `bloqueado`.
+- Status: `Aguardando execução`
+- Thread associada: `não aplicável`
+- Responsável: `Alfredo`
+- Prazo: `2026-03-19`
+- Prioridade: `Média`
+- Criada em: `2026-03-18 18:05`
+- Último contexto relevante: a frente foi incluída explicitamente por Leonardo na fila junto com UTEC e Geaseg, e precisa de validação técnica com base no repo atual do ACOO.
+### Histórico
+- `2026-03-18 18:05: task registrada na fila via planejamento goal-to-slices.`
+- `2026-03-18 18:12: item passou a foco ativo por override do Leonardo.`
+- `2026-03-18 18:12: parecer tecnico fechado: fit com adaptacao relevante para bibliotecas AI SDK UI; replatform/incompativel para agora para o template/app Vercel Chat UI como encaixe direto.`

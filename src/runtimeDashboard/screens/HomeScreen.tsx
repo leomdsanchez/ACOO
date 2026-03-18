@@ -27,6 +27,7 @@ export function HomeScreen({
   const issues = runtimeStatus?.issues ?? [];
   const advisories = runtimeStatus?.advisories ?? [];
   const topAgents = agents.filter((agent) => agent.status === "active").slice(0, 3);
+  const playwrightRuntime = runtimeStatus?.integrations.managedRuntimes.find((runtime) => runtime.name === "playwright") ?? null;
 
   return (
     <main className="page-body">
@@ -80,6 +81,25 @@ export function HomeScreen({
               runtimeStatus
                 ? `${runtimeStatus.integrations.configured} configuradas`
                 : "carregando"
+            }
+          />
+          <SnapshotCard
+            label="Playwright"
+            tone={
+              !playwrightRuntime
+                ? "warn"
+                : playwrightRuntime.healthy
+                  ? "good"
+                  : playwrightRuntime.severity === "high"
+                    ? "danger"
+                    : "warn"
+            }
+            value={
+              !playwrightRuntime
+                ? "sem runtime"
+                : playwrightRuntime.healthy
+                  ? "ready"
+                  : `${playwrightRuntime.state} ${playwrightRuntime.severity ?? "warn"}`
             }
           />
           <SnapshotCard

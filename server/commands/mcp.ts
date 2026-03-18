@@ -10,6 +10,16 @@ async function main() {
   }
 
   const runtime = createOperationalRuntime();
+  if (args.positionals[0] === "ensure" && args.positionals[1] === "playwright") {
+    const result = await runtime.mcpSessionBootstrapper.ensureReadyWithOptions(["playwright"], {
+      forceRestart: args.flags.has("--force-restart"),
+      forceStartup: true,
+    });
+    process.stdout.write(`${JSON.stringify(result, null, args.flags.has("--pretty") ? 2 : 0)}\n`);
+    process.exitCode = result.every((item) => item.healthy) ? 0 : 1;
+    return;
+  }
+
   const cliStatus = await runtime.codex.getStatus();
   const snapshot = runtime.mcpRegistry.getSnapshot(cliStatus);
 

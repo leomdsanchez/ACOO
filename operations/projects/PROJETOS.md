@@ -18,6 +18,8 @@ Cada projeto deve conter:
 - [geaseg.md](/Users/leosanchez/Documents/DEV/ACOO/operations/projects/geaseg.md)
 - [neural-certificado-efactura.md](/Users/leosanchez/Documents/DEV/ACOO/operations/projects/neural-certificado-efactura.md)
 - [console-turil.md](/Users/leosanchez/Documents/DEV/ACOO/operations/projects/console-turil.md)
+- [utec-assistente-salas.md](/Users/leosanchez/Documents/DEV/ACOO/operations/projects/utec-assistente-salas.md)
+- [utec-formacao-incubados.md](/Users/leosanchez/Documents/DEV/ACOO/operations/projects/utec-formacao-incubados.md)
 
 ## Fora de Projetos
 
@@ -25,4 +27,4 @@ Estas frentes existem na operação, mas nao devem ser tratadas como projeto:
 
 - `Lucia - apoio administrativo e suporte`
 - `Fabiano Rossy - acompanhamento operacional na Nomades`
-- `Sala UTEC - frente contratual/comercial`
+- `Sala UTEC - frente contratual/comercial da sala da Neural`
