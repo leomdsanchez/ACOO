@@ -8,6 +8,11 @@
     "promptTemplatePath": "agents/coo/prompt.md",
     "promptInline": null,
     "skillIds": [
+      "alfredo-thread-writer",
+      "bubble-neural-run-as",
+      "goal-to-slices-delivery",
+      "nomades-team-member-onboarding",
+      "operational-registry-tool",
       "revisao-operacional-coo",
       "playwright-mcp-brave-session"
     ],
@@ -19,7 +24,7 @@
     "searchEnabled": true,
     "status": "active",
     "createdAt": "2026-03-13T00:00:00.000Z",
-    "updatedAt": "2026-03-13T00:00:00.000Z"
+    "updatedAt": "2026-03-20T18:58:48.119Z"
   },
   {
     "id": "agent-ops",

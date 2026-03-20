@@ -47,7 +47,10 @@ export class SkillLoader {
       id: baseName,
       name,
       description,
-      keywords: deriveKeywords(baseName, name, description),
+      keywords: mergeKeywords(
+        deriveKeywords(baseName, name, description),
+        frontmatter.keywords ?? [],
+      ),
       sourcePath: filePath,
       content,
     };
@@ -106,23 +109,52 @@ function deriveKeywords(baseName: string, name: string, description: string): st
   return [...new Set(normalized.split(/\s+/).filter((token) => token.length > 4))].slice(0, 12);
 }
 
-function parseFrontmatter(content: string): { description?: string; name?: string } {
+function mergeKeywords(derived: string[], declared: string[]): string[] {
+  return [...new Set([...declared.map((item) => item.trim()).filter(Boolean), ...derived])];
+}
+
+function parseFrontmatter(content: string): { description?: string; keywords?: string[]; name?: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!match) {
     return {};
   }
 
-  const values: { description?: string; name?: string } = {};
-  for (const line of match[1].split("\n")) {
+  const values: { description?: string; keywords?: string[]; name?: string } = {};
+  const lines = match[1].split("\n");
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const field = line.match(/^(name|description)\s*:\s*(.+)$/);
-    if (!field) {
+    if (field) {
+      const [, key, rawValue] = field;
+      const normalizedValue = rawValue.trim().replace(/^['"]|['"]$/g, "");
+      if (normalizedValue) {
+        values[key as "description" | "name"] = normalizedValue;
+      }
       continue;
     }
 
-    const [, key, rawValue] = field;
-    const normalizedValue = rawValue.trim().replace(/^['"]|['"]$/g, "");
-    if (normalizedValue) {
-      values[key as "description" | "name"] = normalizedValue;
+    if (line.trim() === "keywords:") {
+      const keywords: string[] = [];
+      for (let nestedIndex = index + 1; nestedIndex < lines.length; nestedIndex += 1) {
+        const nestedLine = lines[nestedIndex];
+        const keywordMatch = nestedLine.match(/^\s*-\s+(.+)$/);
+        if (!keywordMatch) {
+          index = nestedIndex - 1;
+          break;
+        }
+
+        const normalizedKeyword = keywordMatch[1].trim().replace(/^['"]|['"]$/g, "");
+        if (normalizedKeyword) {
+          keywords.push(normalizedKeyword);
+        }
+
+        if (nestedIndex === lines.length - 1) {
+          index = nestedIndex;
+        }
+      }
+
+      values.keywords = keywords;
     }
   }
 

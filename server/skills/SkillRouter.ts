@@ -29,11 +29,14 @@ export class SkillRouter {
       }
 
       const strongMatches = matchedKeywords.filter((keyword) => !LOW_SIGNAL_KEYWORDS.has(normalize(keyword)));
-      if (strongMatches.length === 0) {
+      const inferredStrongMatches = strongMatches.length === 0
+        ? inferStrongMatches(normalizedPrompt, skill, matchedKeywords)
+        : strongMatches;
+      if (inferredStrongMatches.length === 0) {
         continue;
       }
 
-      const score = (strongMatches.length * 10) + matchedKeywords.length;
+      const score = (inferredStrongMatches.length * 10) + matchedKeywords.length;
       if (!bestMatch || score > bestMatch.score) {
         bestMatch = { score, skill };
       }
@@ -68,6 +71,48 @@ const LOW_SIGNAL_KEYWORDS = new Set([
   "thread",
   "threads",
 ]);
+
+const REGISTRY_ACTION_KEYWORDS = [
+  "listar",
+  "lista",
+  "mostrar",
+  "mostra",
+  "consultar",
+  "consulta",
+  "inspecionar",
+  "inspeciona",
+  "resumo",
+  "summary",
+];
+
+const REGISTRY_ENTITY_KEYWORDS = [
+  "projeto",
+  "projetos",
+  "pessoa",
+  "pessoas",
+  "thread",
+  "threads",
+  "task",
+  "tasks",
+];
+
+function inferStrongMatches(
+  normalizedPrompt: string,
+  skill: LoadedSkill,
+  matchedKeywords: string[],
+): string[] {
+  if (skill.id !== "operational-registry-tool") {
+    return [];
+  }
+
+  const hasRegistryIntent = REGISTRY_ACTION_KEYWORDS.some((keyword) => normalizedPrompt.includes(keyword));
+  const hasRegistryEntity = REGISTRY_ENTITY_KEYWORDS.some((keyword) => normalizedPrompt.includes(keyword));
+  if (!hasRegistryIntent || !hasRegistryEntity) {
+    return [];
+  }
+
+  return matchedKeywords.length > 0 ? ["operational-registry-intent"] : [];
+}
 
 function normalize(value: string): string {
   return value

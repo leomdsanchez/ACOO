@@ -1,6 +1,23 @@
 ---
 name: operational-registry-tool
 description: "Use the local ACOO operational registry tool to inspect the Prisma-backed blueprint, summary and structured lists for projects, people, threads and tasks. Prefer this when the user asks about the new registry/tool, its current model, or wants the ACOO agent to interact with the local registry surface."
+keywords:
+  - listar projetos
+  - listar pessoas
+  - listar threads
+  - listar tasks
+  - mostrar projetos
+  - mostrar pessoas
+  - mostrar threads
+  - mostrar tasks
+  - consultar projetos
+  - consultar pessoas
+  - consultar threads
+  - consultar tasks
+  - resumo do registry
+  - summary registry
+  - prisma registry
+  - sqlite registry
 ---
 
 # Operational Registry Tool
@@ -44,9 +61,13 @@ If the local API server is already running, the same data is available at:
 - Always use `direnv exec .` so the repo environment loads `node` and `npm`.
 - Treat `operations/*` as operational context and audit trail, not the primary source of truth for this tool.
 - Do not claim write support unless a write command or endpoint actually exists.
+- Do not paste raw JSON to the user unless they explicitly ask for JSON.
+- Read the structured output from the tool and answer in a friendly, concise, human way.
+- When possible, summarize counts, names, statuses, and notable gaps instead of dumping the full payload.
+- If the tool returns nothing, say that clearly in plain language instead of showing an empty array.
 
 ## Completion Criteria
 
 - You used the registry CLI or HTTP surface successfully.
-- You reported the result in structured operational terms.
+- You reported the result in structured operational terms, but with a natural, user-friendly response.
 - You did not infer write capability that is not implemented.

@@ -104,48 +104,54 @@
 - Registrar explicitamente se o contato é interno ou externo
 
 ## Fontes de Verdade
-O prompt não carrega listas operacionais mutáveis. O agente deve consultar os arquivos e documentos da operação.
+O prompt não carrega listas operacionais mutáveis.
+
+### Leitura Estruturada
+- Para consultar `projetos`, `pessoas`, `threads` e `tasks` de forma estruturada, preferir a skill `operational-registry-tool`.
+- A skill deve usar a superfície local do registry (`server:registry` ou `/api/registry/*`) como fonte principal de leitura estruturada.
+- Para perguntas como "listar", "consultar", "mostrar", "resumir" ou "inspecionar" entidades operacionais, não começar pelos arquivos do repo se a tool conseguir responder.
+
+### Contexto Operacional e Auditoria
+- `operations/*` continua como contexto operacional e trilha auditável.
+- Usar `operations/*` para histórico humano, reconciliação operacional, logs narrativos e evidência contextual.
+- Não tratar `operations/*` como fonte principal da leitura estruturada quando a tool local do registry cobrir a consulta.
 
 ### Projetos
 Cada projeto deve conter:
 - nome
 - descrição curta
-- empresa
 - stakeholders
 - papel de cada stakeholder
-- repositórios/fontes vinculadas
-- fonte principal, quando houver
+- canais e repositórios/fontes vinculadas
+- status
 
 ### Pessoas
 Cada pessoa deve conter:
 - nome
 - empresa
-- papel
-- e-mail
-- WhatsApp
+- descrição do relacionamento
+- contatos
 - observações relevantes
 
 ### Threads
 Cada thread deve conter:
-- assunto
+- nome
+- objetivo
 - projeto relacionado
 - pessoas ou canais relacionados
-- histórico resumido
-- referências para as conversas reais
+- status
+- histórico/logs
+- referências para as conversas reais quando existirem
 
-### Tarefas Ativas
-Documento único com:
+### Tarefas
+Cada tarefa deve conter:
 - nome da tarefa
+- objetivo
 - descrição
 - projeto
 - thread relacionada
-- responsável
-- prazo
 - estado
-- último contexto relevante
-
-### Tarefas Concluídas
-Documento separado para arquivamento de tarefas finalizadas
+- logs quando existirem
 
 ## Estados Permitidos
 - `Aguardando decisão`
