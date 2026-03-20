@@ -96,6 +96,47 @@ export class HttpServer {
       return;
     }
 
+    if (request.method === "GET" && context.pathname === "/api/registry/blueprint") {
+      const { operationalRegistryBlueprint } = await import("../domain/OperationalRegistryBlueprint.js");
+      sendJson(response, 200, { data: operationalRegistryBlueprint });
+      return;
+    }
+
+    if (request.method === "GET" && context.pathname === "/api/registry/summary") {
+      sendJson(response, 200, {
+        data: await this.options.runtime.operationalRegistry.getSummary(),
+      });
+      return;
+    }
+
+    if (request.method === "GET" && context.pathname === "/api/registry/projects") {
+      sendJson(response, 200, {
+        data: await this.options.runtime.operationalRegistry.listProjects(),
+      });
+      return;
+    }
+
+    if (request.method === "GET" && context.pathname === "/api/registry/people") {
+      sendJson(response, 200, {
+        data: await this.options.runtime.operationalRegistry.listPeople(),
+      });
+      return;
+    }
+
+    if (request.method === "GET" && context.pathname === "/api/registry/threads") {
+      sendJson(response, 200, {
+        data: await this.options.runtime.operationalRegistry.listThreads(),
+      });
+      return;
+    }
+
+    if (request.method === "GET" && context.pathname === "/api/registry/tasks") {
+      sendJson(response, 200, {
+        data: await this.options.runtime.operationalRegistry.listTasks(),
+      });
+      return;
+    }
+
     if (request.method === "GET" && context.pathname === "/api/chat") {
       const channelThreadId = emptyToUndefined(context.query.get("channelThreadId"));
       if (!channelThreadId) {

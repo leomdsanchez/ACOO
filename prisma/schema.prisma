@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProjectLifecycleStatus {
+  ativo
+  inativo
+  arquivado
+}
+
+enum ThreadLifecycleStatus {
+  ativo
+  inativo
+  arquivado
+}
+
+enum TaskWorkflowStatus {
+  inbox
+  backlog
+  this_week
+  today
+  done
+  archived
+}
+
 model Agent {
   id                 String         @id
   slug               String         @unique
@@ -86,4 +107,144 @@ model AgentRun {
   createdAt     DateTime
   agent         Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
   session       AgentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+model Project {
+  id           String                @id @default(uuid())
+  slug         String                @unique
+  name         String
+  description  String
+  status       ProjectLifecycleStatus @default(ativo)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  channels     ProjectChannel[]
+  stakeholders ProjectStakeholder[]
+  threads      Thread[]
+  tasks        Task[]
+}
+
+model Person {
+  id                      String               @id @default(uuid())
+  name                    String
+  company                 String?
+  relationshipDescription String?
+  notes                   String?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  contacts                PersonContact[]
+  stakeholderProjects     ProjectStakeholder[]
+  threads                 ThreadPerson[]
+}
+
+model PersonContact {
+  id        String   @id @default(uuid())
+  personId  String
+  name      String
+  value     String
+  createdAt DateTime @default(now())
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId, createdAt])
+}
+
+model ProjectChannel {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  value     String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model ProjectStakeholder {
+  projectId String
+  personId  String
+  role      String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, personId, role])
+  @@index([personId, createdAt])
+}
+
+model Thread {
+  id         String                 @id @default(uuid())
+  slug       String                 @unique
+  name       String
+  objective  String
+  status     ThreadLifecycleStatus  @default(ativo)
+  projectId  String?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  archivedAt DateTime?
+  channels   ThreadChannel[]
+  logs       ThreadLog[]
+  people     ThreadPerson[]
+  project    Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  tasks      Task[]
+}
+
+model ThreadChannel {
+  id        String   @id @default(uuid())
+  threadId  String
+  name      String
+  value     String
+  createdAt DateTime @default(now())
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
+model ThreadPerson {
+  threadId   String
+  personId   String
+  createdAt  DateTime @default(now())
+  thread     Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, personId])
+  @@index([personId, createdAt])
+}
+
+model ThreadLog {
+  id         String   @id @default(uuid())
+  threadId    String
+  content    String
+  authorName String?
+  createdAt  DateTime @default(now())
+  thread     Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
+model Task {
+  id          String             @id @default(uuid())
+  slug        String             @unique
+  name        String
+  objective   String
+  description String
+  status      TaskWorkflowStatus @default(inbox)
+  threadId    String?
+  projectId   String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  doneAt      DateTime?
+  archivedAt  DateTime?
+  logs        TaskLog[]
+  project     Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  thread      Thread?            @relation(fields: [threadId], references: [id], onDelete: SetNull)
+}
+
+model TaskLog {
+  id         String   @id @default(uuid())
+  taskId     String
+  content    String
+  authorName String?
+  createdAt  DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
 }

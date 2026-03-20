@@ -16,6 +16,7 @@
     "server:api": "tsx server/commands/api.ts",
     "server:agents": "tsx server/commands/agents.ts",
     "server:mcp": "tsx server/commands/mcp.ts",
+    "server:registry": "tsx server/commands/registry.ts",
     "server:run": "tsx server/commands/run.ts",
     "server:status": "tsx server/commands/status.ts",
     "server:telegram": "tsx server/commands/telegram.ts",

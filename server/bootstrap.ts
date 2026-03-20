@@ -7,12 +7,14 @@ import { AgentSessionStarter } from "./agents/AgentSessionStarter.js";
 import { OperationalBot } from "./bot/OperationalBot.js";
 import { AgentController } from "./controller/AgentController.js";
 import { OperationalWorkspace } from "./application/services/OperationalWorkspace.js";
+import { OperationalRegistryService } from "./application/services/OperationalRegistryService.js";
 import { WebChatService } from "./application/services/WebChatService.js";
 import { loadAppConfig } from "./config/AppConfig.js";
 import { CodexCliService } from "./codex/CodexCliService.js";
 import { OperationalContextService } from "./context/OperationalContextService.js";
 import { AgentEngine } from "./engine/AgentEngine.js";
 import { FileSystemOperationalRepository } from "./infrastructure/repositories/FileSystemOperationalRepository.js";
+import { PrismaOperationalRegistryRepository } from "./infrastructure/repositories/PrismaOperationalRegistryRepository.js";
 import { McpPolicyEvaluator } from "./mcp/McpPolicyEvaluator.js";
 import { McpRuntimeCatalog } from "./mcp/McpRuntimeCatalog.js";
 import { McpRegistryService } from "./mcp/McpRegistryService.js";
@@ -34,6 +36,7 @@ export interface OperationalRuntime {
   engine: AgentEngine;
   mcpRegistry: McpRegistryService;
   mcpSessionBootstrapper: McpSessionBootstrapper;
+  operationalRegistry: OperationalRegistryService;
   skills: {
     dependencyResolver: SkillDependencyResolver;
     executor: SkillExecutor;
@@ -51,6 +54,9 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const agentRegistry = new AgentRegistryService(new AgentRegistryRepository(repoRoot));
   const repository = new FileSystemOperationalRepository({ repoRoot });
   const workspace = new OperationalWorkspace(repository);
+  const operationalRegistry = new OperationalRegistryService(
+    new PrismaOperationalRegistryRepository(repoRoot),
+  );
   const codex = new CodexCliService({
     approvalPolicy: config.codexApprovalPolicy,
     binary: config.codexCliBinary,
@@ -117,6 +123,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     engine,
     mcpRegistry,
     mcpSessionBootstrapper,
+    operationalRegistry,
     skills: {
       dependencyResolver: skillDependencyResolver,
       executor: skillExecutor,

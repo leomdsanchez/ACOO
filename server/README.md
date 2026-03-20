@@ -105,6 +105,17 @@ npm run server:agents -- update --slug ops-qa --search true --skills revisao-ope
 npm run server:agents -- disable --slug ops-qa
 ```
 
+Registry operacional novo:
+
+```bash
+npm run server:registry -- blueprint --json
+npm run server:registry -- summary --json
+npm run server:registry -- projects --json
+npm run server:registry -- people --json
+npm run server:registry -- threads --json
+npm run server:registry -- tasks --json
+```
+
 Desenvolvimento local completo:
 
 ```bash
@@ -132,6 +143,12 @@ Endpoints iniciais:
 - `DELETE /api/agents/:slug`
 - `GET /api/agents/profiles`
 - `GET /api/agents/skills`
+- `GET /api/registry/blueprint`
+- `GET /api/registry/summary`
+- `GET /api/registry/projects`
+- `GET /api/registry/people`
+- `GET /api/registry/threads`
+- `GET /api/registry/tasks`
 - `GET /api/sessions`
 - `GET /api/runs`
 
@@ -145,6 +162,13 @@ Regras de integridade do registry:
 
 - o sistema nao permite remover/desativar o ultimo agente ativo;
 - `disabled`/`archived` continuam cadastrados, mas nao sao utilizaveis em execucao nem roteaveis por `/slug` no Telegram.
+
+Tool operacional para o ACOO principal:
+
+- a skill de projeto `operational-registry-tool` ensina o agente a usar a superficie local do registry;
+- preferir a CLI com `direnv exec . bash -lc 'npm run server:registry -- <comando> --json'`;
+- usar a API `/api/registry/*` quando o servidor HTTP local ja estiver ativo;
+- nesta fase a superficie nova e `read-only`; escrita real do registry operacional fica para a proxima passada.
 
 Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 
