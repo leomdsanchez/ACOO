@@ -55,10 +55,23 @@ model AgentSession {
   startedAt       DateTime
   lastUsedAt      DateTime
   agent           Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  messages        AgentMessage[]
   runs            AgentRun[]
 
   @@index([channel, channelThreadId, lastUsedAt])
   @@index([agentId, channel, channelThreadId, status])
+}
+
+model AgentMessage {
+  id        String   @id
+  sessionId String
+  role      String
+  content   String
+  attachmentsJson String?
+  createdAt DateTime
+  session   AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
 }
 
 model AgentRun {

@@ -15,6 +15,9 @@ export function getUserFacingErrorMessage(error: unknown): string | null {
   }
 
   if (error instanceof CodexCliResumeError) {
+    if (!error.retryable) {
+      return error.causeMessage;
+    }
     return "A sessão anterior do agente falhou ao retomar e foi descartada. Tente novamente.";
   }
 

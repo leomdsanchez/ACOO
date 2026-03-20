@@ -22,3 +22,17 @@
 - Canal validado: WhatsApp Web na sessao persistente.
 - Estado atual classificado como `Aguardando execução`.
 - Proxima trava real: `Leonardo Sánchez` adaptar a pagina/material e enviar para o `Leonel` ate `19/03/2026`.
+
+### 2026-03-18 19:11 | Pagina adaptada enviada
+- Fonte real validada no Notion: pagina `Propuesta Ejecutiva - Formación para Incubados y Preincubados UTEC`.
+- URL validada: `https://www.notion.so/32738c9506cb81f3afa9c8d71ffd45b3`.
+- Mensagem enviada no grupo `Curso Incubados UTEC`: `Leonel, te comparto la versión adaptada para incubados y preincubados de UTEC: https://www.notion.so/32738c9506cb81f3afa9c8d71ffd45b3 Si te parece bien, esta puede ser la base para elevar a aprobación. Si quieres, ajustamos algo puntual antes.`
+- Evidencia em origem: mensagem aparece no histórico do grupo com timestamp `19:11`.
+
+### 2026-03-18 19:14 | PDF com logo enviado
+- PDF local gerado: `tmp/utec-incubados-propuesta-2026-03-19.pdf`.
+- Referência de marca validada a partir do asset oficial carregado em `go.neuralthink.io`.
+- PDF enviado no grupo `Curso Incubados UTEC` com a legenda `Te comparto también el PDF con logo de Neural para elevar a aprobación.`
+- Evidencia em origem: documento `utec-incubados-propuesta-2026-03-19.pdf` aparece no histórico do grupo com timestamp `19:14`.
+- Estado atual classificado como `Concluído`.
+- Proxima trava real: `Leonel` ou outro owner da UTEC retornar sobre aprovação ou ajustes.

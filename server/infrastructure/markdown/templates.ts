@@ -6,6 +6,7 @@ import type {
   OperationalStatus,
   TaskRecord,
   ThreadRecord,
+  ThreadSourceReference,
 } from "../../domain/models.js";
 
 export function renderThreadMarkdown(input: CreateThreadInput): string {
@@ -13,6 +14,7 @@ export function renderThreadMarkdown(input: CreateThreadInput): string {
   const groups = renderListValue(input.groups);
   const emails = renderListValue(input.emails);
   const otherChannels = renderListValue(input.otherChannels);
+  const sourceReferences = renderSourceReferences(input.sourceReferences);
 
   return [
     `# Thread: ${input.title}`,
@@ -25,6 +27,9 @@ export function renderThreadMarkdown(input: CreateThreadInput): string {
     `- WhatsApp (contato/nome): ${input.whatsapp ?? "não aplicável."}`,
     `- E-mail(s): ${emails}`,
     `- Outros canais: ${otherChannels}`,
+    "",
+    "## Referências de Origem",
+    ...sourceReferences,
     "",
     "## Logs",
     renderThreadLogBlockSection({
@@ -171,4 +176,25 @@ function renderListValue(values: string[] | undefined): string {
   }
 
   return values.join(", ");
+}
+
+function renderSourceReferences(
+  references: ThreadSourceReference[] | undefined,
+): string[] {
+  if (!references || references.length === 0) {
+    return ["- Não vinculada a um canal de origem específico ainda."];
+  }
+
+  return references.map((reference) => {
+    const parts = [
+      `Canal: \`${reference.channel}\``,
+      reference.chatId ? `Chat: \`${reference.chatId}\`` : null,
+      reference.messageId ? `Mensagem: \`${reference.messageId}\`` : null,
+      reference.account ? `Conta: \`${reference.account}\`` : null,
+      reference.threadRef ? `Referência: \`${reference.threadRef}\`` : null,
+      reference.note ? `Observação: \`${reference.note}\`` : null,
+    ].filter((part): part is string => part !== null);
+
+    return `- ${parts.join("; ")}`;
+  });
 }

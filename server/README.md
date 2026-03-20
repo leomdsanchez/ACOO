@@ -220,6 +220,7 @@ npm run server:telegram -- --drop-pending
 ```
 
 O canal Telegram usa sessões persistidas da Codex por chat, com um agente ativo selecionável em cada chat.
+Essas sessões não substituem `operations/threads/`: chat é canal/sessão; thread operacional é o registro canônico do assunto e deve carregar a referência da origem real quando o assunto nascer no Telegram.
 Mensagens de voz passam por transcrição local com `whisper.cpp` antes de entrar no fluxo do agente.
 O polling aceita apenas um consumer por bot; se `npm run dev` já estiver com Telegram ativo, não suba outro `server:telegram` em paralelo no mesmo workspace.
 

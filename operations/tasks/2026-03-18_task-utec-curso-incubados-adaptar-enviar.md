@@ -32,7 +32,7 @@ Adaptar a pagina/material atual da proposta de curso para incubados da UTEC e en
 4. Enviar ao `Leonel` e confirmar.
 
 ## Current Slice
-Slice 1 ativo: validar qual e a pagina/material base e o canal final de envio ao `Leonel`.
+Nenhum slice ativo. Material adaptado e envio concluido.
 
 ## Findings
 - Thread associada: [2026-03-18_utec-curso-incubados-proposta.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-18_utec-curso-incubados-proposta.md)
@@ -42,13 +42,20 @@ Slice 1 ativo: validar qual e a pagina/material base e o canal final de envio ao
 - Objetivo do subagente: pressionar a ordem da fila e validar se este deveria ser o item ativo.
 - Razao da delegacao: challenge obrigatorio de prioridade e sequencia.
 - Estado do thread do subagente: reutilizado como reviewer da fila, com delta limitado para confirmar o item ativo.
+- Validacao em origem concluida:
+  - pagina adaptada localizada no Notion como `Propuesta Ejecutiva - Formación para Incubados y Preincubados UTEC`
+  - URL validada: `https://www.notion.so/32738c9506cb81f3afa9c8d71ffd45b3`
+  - canal final validado em origem: grupo de WhatsApp `Curso Incubados UTEC`
+- Execucao concluida:
+  - PDF local gerado com logo oficial da Neural em `tmp/utec-incubados-propuesta-2026-03-19.pdf`
+  - mensagem com link da proposta enviada no grupo `Curso Incubados UTEC` em `19:11`
+  - PDF enviado no mesmo grupo com a legenda `Te comparto también el PDF con logo de Neural para elevar a aprobación.` em `19:14`
 
 ## Remaining Failures
-- `medium`: a pagina/material base ainda nao foi validada em origem neste item.
-- `medium`: o criterio exato da adaptacao ainda nao foi travado.
+- `low`: o PDF enviado foi gerado localmente a partir do conteudo executivo validado, e nao exportado diretamente do Notion.
 
 ## Decision
-Manter este item como unico item ativo ate remover as falhas `medium`.
+Encerrar. O material adaptado foi validado em origem e o envio ao `Leonel` foi executado no canal correto.
 
 ## Closure
-- Em aberto.
+- Item concluido em `19/03/2026` com pagina adaptada, link enviado e PDF com logo da Neural anexado no grupo `Curso Incubados UTEC`.

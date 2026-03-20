@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import type {
   CreateAgentInput,
+  AgentMessageAttachmentRecord,
+  AgentMessageRecord,
   AgentMcpProfileRecord,
   AgentRecord,
   AgentRunRecord,
@@ -8,6 +10,7 @@ import type {
   AgentSessionMode,
   AgentSessionRecord,
   AgentSessionStatus,
+  AgentMessageRole,
   UpdateAgentInput,
 } from "../domain/models.js";
 import { AgentRegistryRepository } from "./AgentRegistryRepository.js";
@@ -37,6 +40,13 @@ export interface RecordAgentRunInput {
   resultSummary: string;
   sessionId?: string | null;
   status: AgentRunRecord["status"];
+}
+
+export interface RecordAgentMessageInput {
+  attachments?: AgentMessageAttachmentRecord[];
+  content: string;
+  role: AgentMessageRole;
+  sessionId: string;
 }
 
 export interface AgentRegistryIntegrityReport {
@@ -199,6 +209,20 @@ export class AgentRegistryService {
     return matches[0] ?? null;
   }
 
+  public async findLatestChannelSession(input: {
+    agentId: string;
+    channel: AgentSessionChannel;
+    channelThreadId: string;
+  }): Promise<AgentSessionRecord | null> {
+    const sessions = await this.listSessions({
+      agentId: input.agentId,
+      channel: input.channel,
+      channelThreadId: input.channelThreadId,
+      status: "active",
+    });
+    return sessions[0] ?? null;
+  }
+
   public async upsertSession(input: CreateAgentSessionInput): Promise<AgentSessionRecord> {
     const agents = await this.repository.listAgents();
     ensureAgentExists(agents, input.agentId);
@@ -255,6 +279,20 @@ export class AgentRegistryService {
     );
   }
 
+  public async deleteChannelSessions(input: {
+    agentId: string;
+    channel: AgentSessionChannel;
+    channelThreadId: string;
+  }): Promise<number> {
+    const agents = await this.repository.listAgents();
+    ensureAgentExists(agents, input.agentId);
+    return this.repository.deleteSessionsByChannelThread(
+      input.agentId,
+      input.channel,
+      input.channelThreadId,
+    );
+  }
+
   public async listRuns(options?: { agentId?: string; limit?: number }): Promise<AgentRunRecord[]> {
     const runs = await this.repository.listRuns();
     const filtered = runs
@@ -287,6 +325,29 @@ export class AgentRegistryService {
     };
 
     return this.repository.createRun(record);
+  }
+
+  public async listMessages(sessionId: string): Promise<AgentMessageRecord[]> {
+    return this.repository.listMessages(sessionId);
+  }
+
+  public async recordMessage(input: RecordAgentMessageInput): Promise<AgentMessageRecord> {
+    const sessions = await this.repository.listSessions();
+    ensureSessionExists(sessions, input.sessionId);
+    const content = input.content.trim();
+    const attachments = input.attachments ?? [];
+    if (!content && attachments.length === 0) {
+      throw new AgentRegistryValidationError("Agent messages require content or attachments.");
+    }
+    const record: AgentMessageRecord = {
+      attachments,
+      id: crypto.randomUUID(),
+      sessionId: input.sessionId,
+      role: input.role,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    return this.repository.createMessage(record);
   }
 
   public async getIntegrityReport(): Promise<AgentRegistryIntegrityReport> {

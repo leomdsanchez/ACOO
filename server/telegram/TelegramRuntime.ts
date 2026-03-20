@@ -1059,7 +1059,7 @@ function isInterruptedError(error: unknown): boolean {
 }
 
 function isRetryableResumeError(error: unknown): error is CodexCliResumeError {
-  return error instanceof CodexCliResumeError;
+  return error instanceof CodexCliResumeError && error.retryable;
 }
 
 function isReadOnlyCommand(command: TelegramCommand): boolean {

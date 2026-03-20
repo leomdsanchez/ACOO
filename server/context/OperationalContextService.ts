@@ -6,7 +6,6 @@ export class OperationalContextService {
   public constructor(private readonly workspace: OperationalWorkspace) {}
 
   public async build(
-    prompt: string,
     preferredThreadSlugs: string[] = [],
     interaction?: AgentInteractionContext,
   ): Promise<string> {
@@ -24,9 +23,6 @@ export class OperationalContextService {
       "",
       "## Relevant Threads",
       formatThreads(threads),
-      "",
-      "## Current Prompt",
-      prompt,
     ].join("\n");
   }
 
@@ -88,7 +84,28 @@ function formatThreads(threads: ThreadRecord[]): string {
         `- Slug: ${thread.slug}`,
         `- Status: ${thread.status ?? "sem status"}`,
         `- Próxima trava: ${thread.nextBlocker ?? "sem trava"}`,
+        `- Origem: ${formatThreadSourceReferences(thread)}`,
       ].join("\n"),
     )
     .join("\n\n");
+}
+
+function formatThreadSourceReferences(thread: ThreadRecord): string {
+  if (thread.sourceReferences.length === 0) {
+    return "sem vínculo explícito com canal de origem.";
+  }
+
+  return thread.sourceReferences
+    .map((reference) => {
+      const parts = [
+        reference.channel,
+        reference.account ? `conta ${reference.account}` : null,
+        reference.chatId ? `chat ${reference.chatId}` : null,
+        reference.messageId ? `mensagem ${reference.messageId}` : null,
+        reference.threadRef ? `ref ${reference.threadRef}` : null,
+        reference.note ? `nota ${reference.note}` : null,
+      ].filter((part): part is string => part !== null);
+      return parts.join(" | ");
+    })
+    .join("; ");
 }

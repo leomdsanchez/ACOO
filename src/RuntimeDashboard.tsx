@@ -13,6 +13,7 @@ import {
 import { sortAgents } from "./runtimeDashboard/formatters";
 import { AgentDetailScreen } from "./runtimeDashboard/screens/AgentDetailScreen";
 import { AgentsScreen } from "./runtimeDashboard/screens/AgentsScreen";
+import { ChatScreen } from "./runtimeDashboard/screens/ChatScreen";
 import { HomeScreen } from "./runtimeDashboard/screens/HomeScreen";
 
 interface RuntimeDashboardProps {
@@ -21,6 +22,7 @@ interface RuntimeDashboardProps {
 
 type AppRoute =
   | { path: "/" }
+  | { path: "/chat" }
   | { path: "/agents" }
   | { path: "/agents/:slug"; slug: string };
 
@@ -119,6 +121,14 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
 
   const pageMeta = useMemo(() => {
     switch (route.path) {
+      case "/chat":
+        return {
+          ctaLabel: undefined,
+          ctaMuted: false,
+          eyebrow: "Canal Web",
+          subtitle: "Sessões de chat do canal web. As threads operacionais seguem canônicas em operations/threads.",
+          title: "Sessões Web",
+        };
       case "/agents":
         return {
           ctaLabel: undefined,
@@ -171,6 +181,15 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
     }
   };
 
+  if (route.path === "/chat") {
+    return (
+      <ChatScreen
+        appName={appName}
+        onBack={() => navigate({ path: "/" })}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
@@ -188,6 +207,12 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
             label="Início"
             note={runtimeStatus ? `${runtimeStatus.agents.active} agentes ativos` : "Carregando pulso"}
             onClick={() => navigate({ path: "/" })}
+          />
+          <SidebarLink
+            active={false}
+            label="Chat"
+            note="web v1"
+            onClick={() => navigate({ path: "/chat" })}
           />
           <SidebarLink
             active={route.path === "/agents" || route.path === "/agents/:slug"}
@@ -276,6 +301,9 @@ export function RuntimeDashboard({ appName }: RuntimeDashboardProps) {
 }
 
 function readRoute(pathname: string): AppRoute {
+  if (pathname === "/chat") {
+    return { path: "/chat" };
+  }
   const agentMatch = pathname.match(/^\/agents\/([^/]+)$/);
   if (agentMatch) {
     return {
@@ -289,6 +317,8 @@ function readRoute(pathname: string): AppRoute {
 
 function routeToPath(route: AppRoute): string {
   switch (route.path) {
+    case "/chat":
+      return "/chat";
     case "/agents":
       return "/agents";
     case "/agents/:slug":

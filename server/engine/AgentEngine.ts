@@ -14,6 +14,7 @@ export interface AgentEngineRequest {
   cwd: string;
   executionProfile?: AgentExecutionProfile;
   ephemeral?: boolean;
+  onTextChunk?: (chunk: string) => void;
   prompt: string;
   resumeLast?: boolean;
   sessionId?: string;
@@ -27,6 +28,7 @@ export class AgentEngine {
       abortSignal: request.abortSignal,
       cwd: request.cwd,
       ephemeral: request.ephemeral,
+      onTextChunk: request.onTextChunk,
       overrides: request.executionProfile,
       prompt: request.prompt,
       resumeLast: request.resumeLast,

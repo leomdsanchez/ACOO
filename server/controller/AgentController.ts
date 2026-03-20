@@ -20,7 +20,7 @@ import type { SkillExecutor } from "../skills/SkillExecutor.js";
 
 export type AgentInputMode = "text" | "voice" | "document";
 export type AgentOutputMode = "auto" | "text" | "audio" | "file";
-export type AgentChannel = "cli" | "telegram";
+export type AgentChannel = "cli" | "telegram" | "web";
 
 export interface AgentInteractionContext {
   channel: AgentChannel;
@@ -35,6 +35,7 @@ export interface AgentRequest {
   cwd?: string;
   ephemeral?: boolean;
   interaction?: Partial<AgentInteractionContext>;
+  onTextChunk?: (chunk: string) => void;
   prompt: string;
   preferredThreadSlugs?: string[];
   resumeLast?: boolean;
@@ -79,7 +80,7 @@ export class AgentController {
     const activeAgent = await this.resolveActiveAgent(request.agentSlug);
     const [skills, operationalContext, mcpPolicy] = await Promise.all([
       this.skillLoader.loadAll(),
-      this.contextService.build(request.prompt, request.preferredThreadSlugs, interaction),
+      this.contextService.build(request.preferredThreadSlugs, interaction),
       this.mcpPolicyEvaluator.evaluate(activeAgent),
     ]);
     ensureAgentCanRun(activeAgent, mcpPolicy);
@@ -112,6 +113,7 @@ export class AgentController {
       cwd: request.cwd ?? process.cwd(),
       ephemeral: request.ephemeral,
       executionProfile,
+      onTextChunk: request.onTextChunk,
       prompt: [
         promptOverlay,
         skillContext,

@@ -12,10 +12,11 @@ Repositório operacional de apoio ao COO, com threads, tasks e instruções de e
 - `operations/people/`: catálogo estruturado de pessoas
 - `agents/`: instruções operacionais dos agentes
 
-## Observação
+## Regra operacional única
 
-Este repo foi extraído de um acervo antes mantido dentro de `FocusTab/ALFREDO`.
-O conteúdo original foi preservado no `FocusTab` para migração controlada.
+- chats do Telegram/Web são canais de entrada e mantêm sessões conversacionais;
+- `operations/threads/` é o registro canônico de cada assunto operacional;
+- assunto ativo em chat deve apontar para uma thread operacional, e a thread deve registrar a origem real do canal quando existir.
 
 ## App local
 

@@ -3,6 +3,7 @@ import type {
   TaskRecord,
   TaskStorageKind,
   ThreadRecord,
+  ThreadSourceReference,
   ThreadStorageKind,
 } from "../../domain/models.js";
 
@@ -29,6 +30,7 @@ export function parseThreadRecord(
     status: readLastCapture(content, THREAD_STATUS_PATTERN),
     nextBlocker: readLastCapture(content, NEXT_BLOCKER_PATTERN),
     lastLogAt: readLastCapture(content, THREAD_LOG_PATTERN),
+    sourceReferences: readThreadSourceReferences(content),
     content,
   };
 }
@@ -99,4 +101,68 @@ function readMarkdownLinkTarget(content: string, sectionHeading: string): string
   const afterSection = content.slice(sectionIndex);
   const match = afterSection.match(/\[[^\]]+\]\(([^)]+)\)/);
   return match?.[1] ?? null;
+}
+
+function readThreadSourceReferences(content: string): ThreadSourceReference[] {
+  const section = readMarkdownSection(content, "## Referências de Origem");
+  if (!section) {
+    return [];
+  }
+
+  return section
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2).trim())
+    .map(parseThreadSourceReference)
+    .filter((reference): reference is ThreadSourceReference => reference !== null);
+}
+
+function readMarkdownSection(content: string, heading: string): string | null {
+  const start = content.indexOf(heading);
+  if (start === -1) {
+    return null;
+  }
+
+  const afterHeading = content.slice(start + heading.length);
+  const nextHeadingIndex = afterHeading.search(/\n##\s+/);
+  if (nextHeadingIndex === -1) {
+    return afterHeading.trim();
+  }
+
+  return afterHeading.slice(0, nextHeadingIndex).trim();
+}
+
+function parseThreadSourceReference(line: string): ThreadSourceReference | null {
+  if (line === "Não vinculada a um canal de origem específico ainda.") {
+    return null;
+  }
+
+  const fields = new Map(
+    [...line.matchAll(/([^:;]+):\s*`([^`]+)`/g)].map((match) => [
+      normalizeFieldLabel(match[1] ?? ""),
+      match[2]?.trim() ?? "",
+    ]),
+  );
+  const channel = fields.get("canal");
+  if (!channel) {
+    return null;
+  }
+
+  return {
+    channel,
+    account: fields.get("conta") ?? null,
+    chatId: fields.get("chat") ?? null,
+    messageId: fields.get("mensagem") ?? null,
+    threadRef: fields.get("referencia") ?? null,
+    note: fields.get("observacao") ?? null,
+  };
+}
+
+function normalizeFieldLabel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }

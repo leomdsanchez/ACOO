@@ -15,6 +15,8 @@ export type AgentSessionChannel = "cli" | "telegram" | "web";
 export type AgentSessionMode = "interactive" | "exec" | "exec-resume" | "ephemeral";
 export type AgentSessionStatus = "active" | "ended";
 export type AgentRunStatus = "completed" | "failed" | "aborted";
+export type AgentMessageRole = "user" | "assistant" | "system";
+export type AgentMessageAttachmentKind = "audio" | "document" | "file" | "image";
 
 export interface ProjectRecord {
   id: string;
@@ -47,10 +49,20 @@ export interface ThreadSummary {
   status: OperationalStatus | null;
   nextBlocker: string | null;
   lastLogAt: string | null;
+  sourceReferences: ThreadSourceReference[];
 }
 
 export interface ThreadRecord extends ThreadSummary {
   content: string;
+}
+
+export interface ThreadSourceReference {
+  channel: string;
+  account: string | null;
+  chatId: string | null;
+  messageId: string | null;
+  threadRef: string | null;
+  note: string | null;
 }
 
 export interface TaskSummary {
@@ -103,6 +115,7 @@ export interface CreateThreadInput {
   whatsapp?: string | null;
   emails?: string[];
   otherChannels?: string[];
+  sourceReferences?: ThreadSourceReference[];
   timestamp: string;
   status?: OperationalStatus;
   nextBlocker?: string;
@@ -218,6 +231,24 @@ export interface AgentRunRecord {
   resultSummary: string;
   status: AgentRunStatus;
   createdAt: string;
+}
+
+export interface AgentMessageRecord {
+  attachments: AgentMessageAttachmentRecord[];
+  id: string;
+  sessionId: string;
+  role: AgentMessageRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface AgentMessageAttachmentRecord {
+  assetId: string | null;
+  downloadPath: string | null;
+  id: string;
+  kind: AgentMessageAttachmentKind;
+  filename: string | null;
+  mediaType: string;
 }
 
 export interface AgentMcpProfileRecord {

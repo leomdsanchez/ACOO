@@ -162,3 +162,41 @@
 ### 2026-03-16 12:09 | Status atual
 - Estado mantido em `Aguardando terceiro`.
 - Próxima trava real permanece: retorno do `Ronel Obando` com confirmação do teste, novo `.pfx` exportado e a senha simples usada para validação com a `Facturando`.
+
+### 2026-03-19 11:15 | Validação de origem (WhatsApp + Gmail)
+- Conversa com `Ronel Obando` revisada diretamente no `WhatsApp`.
+- Há atividade nova no canal hoje, em `19/03/2026 11:08` e `11:09`, mas a evidência é outbound do Leonardo: mensagem sobre a dívida do `BPS`, celebração `🎉 🎉 🎉 🎉` e a frase `ainda estou na luta com isso do certificado`.
+- Não há resposta nova do `Ronel Obando` após esse contato; o último movimento do lado dele continua sem novo `.pfx` nem senha simples enviada para a prova.
+- Thread `Envío de firma digital - Neural Think` revisada diretamente no Gmail da conta `leosanchez@neuralthink.io`.
+- Não há novo e-mail da `Facturando` após a mensagem de `Paula | FACTURANDO.UY` em `11/03/2026 17:27` com `Perfecto, aguardamos.`
+- Thread `Consulta sobre reemisión o nueva solicitud de certificado digital - NEURAL THINK SAS - RUT 190328400019` revisada diretamente no Gmail da conta `contact@neuralthink.io`.
+- Não há novo e-mail do `Correo Uruguayo` após a instrução operacional de `13/03/2026 12:36`; a última mensagem da thread segue sendo o envio do Leonardo em `13/03/2026 21:48`, pedindo confirmação sobre se a nova prova exige reexportação local ou uso do fluxo/link anterior.
+- Estado mantido em `Aguardando terceiro`.
+- Próxima trava real mantida: retorno do `Ronel Obando` com confirmação do teste, novo `.pfx` exportado e a senha simples usada para validação com a `Facturando`.
+
+### 2026-03-19 11:32 | Convite de reunião enviado à Facturando por WhatsApp
+- Conversa `FACTURANDO.UY` revisada diretamente no `WhatsApp Business`.
+- Contato confirmado no cabeçalho como `FACTURANDO.UY`, conta comercial.
+- Agenda `leosanchez@neuralthink.io` revisada diretamente no `Google Calendar` em `Semana de 22 de março de 2026`.
+- Janela livre mais cedo identificada antes de `15h30`: `segunda-feira 23/03/2026 09:00`.
+- Evento criado na agenda com título `Meet certificado Neural Think UY - Facturando`, em `23/03/2026` de `09:00` a `09:30`, com Google Meet `https://meet.google.com/ohg-xfrb-cad`.
+- Mensagem enviada à `Facturando` às `11:32` propondo a chamada curta com `Facturando + Ronel + Leonardo`, oferecendo também `24/03/2026 09:00` e `25/03/2026 09:00` como alternativas.
+- Envio confirmado visualmente no WhatsApp com estado `Entregue`.
+
+### 2026-03-19 11:32 | Status atual
+- Estado mantido em `Aguardando terceiro`.
+- Próxima trava real ajustada para: resposta da `Facturando` confirmando o horário da reunião ou propondo alternativa antes de `15h30`, para então alinhar o `Ronel` no slot final.
+
+### 2026-03-19 11:33 | Correção operacional do convite
+- Após o envio de `11:32`, Leonardo corrigiu a regra operacional: não pré-agendar sem confirmação e só trabalhar com slots entre `09:30` e `15:30`.
+- Leonardo informou no chat operacional que o evento criado foi desfeito.
+- Mensagem corretiva enviada no `WhatsApp Business` para `FACTURANDO.UY` às `11:33`, anulando a proposta anterior como agenda fechada e pedindo apenas confirmação de disponibilidade.
+- Faixa confirmada no texto corretivo: `09:30` a `15:30`.
+- Opções objetivas enviadas: `23/03/2026 10:00`, `23/03/2026 11:30` e `24/03/2026 10:00`.
+- O texto deixou explícito que o `Google Meet` só será enviado após confirmação do horário pela `Facturando`.
+- Envio corretivo confirmado visualmente no WhatsApp com estado `Entregue`.
+
+### 2026-03-19 11:33 | Status atual
+- Estado mantido em `Aguardando terceiro`.
+- Registro de `11:32` fica preservado apenas como histórico do erro operacional, superado pela correção de `11:33`.
+- Próxima trava real ajustada para: resposta da `Facturando` confirmando um slot entre `09:30` e `15:30`, para então enviar o `Google Meet` e alinhar o `Ronel`.

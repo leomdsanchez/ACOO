@@ -7,6 +7,7 @@ import { AgentSessionStarter } from "./agents/AgentSessionStarter.js";
 import { OperationalBot } from "./bot/OperationalBot.js";
 import { AgentController } from "./controller/AgentController.js";
 import { OperationalWorkspace } from "./application/services/OperationalWorkspace.js";
+import { WebChatService } from "./application/services/WebChatService.js";
 import { loadAppConfig } from "./config/AppConfig.js";
 import { CodexCliService } from "./codex/CodexCliService.js";
 import { OperationalContextService } from "./context/OperationalContextService.js";
@@ -41,6 +42,7 @@ export interface OperationalRuntime {
   };
   status: RuntimeStatusService;
   transcription: LocalTranscriptionService;
+  webChat: WebChatService;
   workspace: OperationalWorkspace;
 }
 
@@ -88,6 +90,12 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   );
   const bot = new OperationalBot(controller);
   const mcpRegistry = new McpRegistryService();
+  const webChat = new WebChatService({
+    agentRegistry,
+    backupAgentSlug: config.backupAgentSlug,
+    controller,
+    defaultAgentSlug: config.defaultAgentSlug,
+  });
   const status = new RuntimeStatusService(
     config,
     codex,
@@ -117,6 +125,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     },
     status,
     transcription,
+    webChat,
     workspace,
   };
 }

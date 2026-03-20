@@ -31,6 +31,15 @@ test("returns a stable message for codex resume failures", () => {
   );
 });
 
+test("returns the underlying cause for non-retryable resume failures", () => {
+  assert.equal(
+    getUserFacingErrorMessage(
+      new CodexCliResumeError("resume failed", "Insufficient credits for this run.", false),
+    ),
+    "Insufficient credits for this run.",
+  );
+});
+
 test("returns a stable message for codex aborts", () => {
   assert.equal(
     getUserFacingErrorMessage(new CodexCliAbortedError()),

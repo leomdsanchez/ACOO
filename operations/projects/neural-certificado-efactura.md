@@ -23,4 +23,6 @@
 ## Observacoes
 
 - Esta frente e distinta do certificado da Nomades, que ja foi arquivado em outra thread.
-- O objetivo imediato hoje e concluir a prova com novo `.pfx` e senha simples para validacao na `Facturando`.
+- O objetivo imediato estrutural continua sendo concluir a prova com novo `.pfx` e senha simples para validacao na `Facturando`.
+- Em `19/03/2026 11:33`, o movimento tatico ativo desta frente passou a ser confirmar com a `Facturando` um slot de reuniao entre `09:30` e `15:30`, sem pre-agendar meet antes da confirmacao.
+- O registro anterior de convite com `09:00` e meet precriado ficou superado pela correcao operacional registrada na thread canonica.

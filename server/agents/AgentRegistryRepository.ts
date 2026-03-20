@@ -1,10 +1,12 @@
 import type {
   Agent,
+  AgentMessage,
   AgentMcpProfile,
   AgentRun,
   AgentSession,
 } from "@prisma/client";
 import type {
+  AgentMessageRecord,
   AgentMcpProfileRecord,
   AgentRecord,
   AgentRunRecord,
@@ -14,6 +16,7 @@ import { getPrismaClient } from "../prisma/client.js";
 
 export interface AgentRegistrySnapshot {
   agents: AgentRecord[];
+  messages: AgentMessageRecord[];
   mcpProfiles: AgentMcpProfileRecord[];
   runs: AgentRunRecord[];
   sessions: AgentSessionRecord[];
@@ -27,14 +30,15 @@ export class AgentRegistryRepository {
   }
 
   public async loadSnapshot(): Promise<AgentRegistrySnapshot> {
-    const [agents, mcpProfiles, runs, sessions] = await Promise.all([
+    const [agents, mcpProfiles, runs, sessions, messages] = await Promise.all([
       this.listAgents(),
       this.listMcpProfiles(),
       this.listRuns(),
       this.listSessions(),
+      this.listMessages(),
     ]);
 
-    return { agents, mcpProfiles, runs, sessions };
+    return { agents, messages, mcpProfiles, runs, sessions };
   }
 
   public async listAgents(): Promise<AgentRecord[]> {
@@ -153,6 +157,36 @@ export class AgentRegistryRepository {
     return mapSessionRecord(stored);
   }
 
+  public async deleteSessionsByChannelThread(
+    agentId: string,
+    channel: AgentSessionRecord["channel"],
+    channelThreadId: string,
+  ): Promise<number> {
+    const result = await this.prisma.agentSession.deleteMany({
+      where: {
+        agentId,
+        channel,
+        channelThreadId,
+      },
+    });
+    return result.count;
+  }
+
+  public async listMessages(sessionId?: string): Promise<AgentMessageRecord[]> {
+    const records = await this.prisma.agentMessage.findMany({
+      where: sessionId ? { sessionId } : undefined,
+      orderBy: { createdAt: "asc" },
+    });
+    return records.map(mapMessageRecord);
+  }
+
+  public async createMessage(record: AgentMessageRecord): Promise<AgentMessageRecord> {
+    const stored = await this.prisma.agentMessage.create({
+      data: serializeMessage(record),
+    });
+    return mapMessageRecord(stored);
+  }
+
   public async listRuns(): Promise<AgentRunRecord[]> {
     const records = await this.prisma.agentRun.findMany({ orderBy: { createdAt: "desc" } });
     return records.map(mapRunRecord);
@@ -232,6 +266,17 @@ function mapRunRecord(record: AgentRun): AgentRunRecord {
   };
 }
 
+function mapMessageRecord(record: AgentMessage): AgentMessageRecord {
+  return {
+    attachments: parseMessageAttachments(record.attachmentsJson),
+    id: record.id,
+    sessionId: record.sessionId,
+    role: record.role as AgentMessageRecord["role"],
+    content: record.content,
+    createdAt: record.createdAt.toISOString(),
+  };
+}
+
 function serializeSession(record: AgentSessionRecord) {
   return {
     id: record.id,
@@ -282,6 +327,60 @@ function serializeRun(record: AgentRunRecord) {
     status: record.status,
     createdAt: new Date(record.createdAt),
   };
+}
+
+function serializeMessage(record: AgentMessageRecord) {
+  return {
+    attachmentsJson: JSON.stringify(record.attachments),
+    id: record.id,
+    sessionId: record.sessionId,
+    role: record.role,
+    content: record.content,
+    createdAt: new Date(record.createdAt),
+  };
+}
+
+function parseMessageAttachments(raw: string | null): AgentMessageRecord["attachments"] {
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return [];
+      }
+      const candidate = entry as {
+        assetId?: unknown;
+        downloadPath?: unknown;
+        filename?: unknown;
+        id?: unknown;
+        kind?: unknown;
+        mediaType?: unknown;
+      };
+      if (
+        typeof candidate.id !== "string" ||
+        typeof candidate.kind !== "string" ||
+        typeof candidate.mediaType !== "string"
+      ) {
+        return [];
+      }
+      return [{
+        assetId: typeof candidate.assetId === "string" ? candidate.assetId : null,
+        downloadPath: typeof candidate.downloadPath === "string" ? candidate.downloadPath : null,
+        filename: typeof candidate.filename === "string" ? candidate.filename : null,
+        id: candidate.id,
+        kind: candidate.kind as AgentMessageRecord["attachments"][number]["kind"],
+        mediaType: candidate.mediaType,
+      }];
+    });
+  } catch {
+    return [];
+  }
 }
 
 function parseStringArray(raw: string): string[] {

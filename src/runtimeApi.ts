@@ -119,6 +119,72 @@ export interface RuntimeStatusSnapshot {
   };
 }
 
+export interface WebChatHistory {
+  agent: {
+    displayName: string;
+    id: string;
+    slug: string;
+  };
+  messages: Array<{
+    attachments: Array<{
+      assetId: string | null;
+      downloadPath: string | null;
+      filename: string | null;
+      id: string;
+      kind: "audio" | "document" | "file" | "image";
+      mediaType: string;
+    }>;
+    content: string;
+    createdAt: string;
+    id: string;
+    role: "assistant" | "system" | "user";
+  }>;
+  session: {
+    channelThreadId: string;
+    codexThreadId: string | null;
+    id: string | null;
+    mode: "ephemeral" | "exec" | "exec-resume" | "interactive" | null;
+    status: "active" | "ended" | null;
+  };
+}
+
+export interface SendWebChatMessageInput {
+  attachments?: Array<{
+    assetId?: string | null;
+    dataUrl?: string | null;
+    downloadPath?: string | null;
+    filename?: string | null;
+    kind?: "audio" | "document" | "file" | "image";
+    mediaType: string;
+  }>;
+  agentSlug?: string | null;
+  channelThreadId: string;
+  cwd?: string;
+  mode?: "ephemeral" | "resume";
+  message?: string;
+}
+
+export interface SendWebChatMessageResult extends WebChatHistory {
+  answer: string;
+}
+
+export interface DeleteWebChatHistoryResult {
+  deleted: boolean;
+}
+
+export interface ChatCatalogEntry {
+  active: boolean;
+  agentDisplayName: string | null;
+  agentSlug: string | null;
+  availableInChatUi: boolean;
+  channel: "telegram";
+  channelThreadId: string;
+  lastPreview: string | null;
+  lastUsedAt: string;
+  sessionId: string | null;
+  title: string | null;
+}
+
 interface ApiEnvelope<T> {
   data: T;
   error?: {
@@ -226,6 +292,53 @@ export async function deleteAgent(slug: string): Promise<AgentRecord> {
   return fetchJson<AgentRecord>(`/api/agents/${encodeURIComponent(slug)}`, {
     method: "DELETE",
   });
+}
+
+export async function fetchWebChatHistory(
+  channelThreadId: string,
+  options?: { agentSlug?: string | null },
+): Promise<WebChatHistory> {
+  const search = new URLSearchParams({ channelThreadId });
+  if (options?.agentSlug) {
+    search.set("agentSlug", options.agentSlug);
+  }
+  return fetchJson<WebChatHistory>(`/api/chat?${search.toString()}`);
+}
+
+export async function sendWebChatMessage(
+  input: SendWebChatMessageInput,
+): Promise<SendWebChatMessageResult> {
+  return fetchJson<SendWebChatMessageResult>("/api/chat", {
+    body: JSON.stringify(input),
+    headers: {
+      "content-type": "application/json",
+    },
+    method: "POST",
+  });
+}
+
+export async function deleteWebChatHistory(
+  channelThreadId: string,
+  options?: { agentSlug?: string | null },
+): Promise<DeleteWebChatHistoryResult> {
+  const search = new URLSearchParams({ channelThreadId });
+  if (options?.agentSlug) {
+    search.set("agentSlug", options.agentSlug);
+  }
+  return fetchJson<DeleteWebChatHistoryResult>(`/api/chat?${search.toString()}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchChatCatalog(
+  options?: { channel?: "telegram" },
+): Promise<ChatCatalogEntry[]> {
+  const search = new URLSearchParams();
+  if (options?.channel) {
+    search.set("channel", options.channel);
+  }
+  const suffix = search.size > 0 ? `?${search.toString()}` : "";
+  return fetchJson<ChatCatalogEntry[]>(`/api/chat/catalog${suffix}`);
 }
 
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {

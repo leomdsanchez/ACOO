@@ -12,13 +12,16 @@
 - Prazo: `2026-03-06`
 - Prioridade: `Alta`
 - Criada em: `2026-03-06 10:49`
-- Último contexto relevante: o `Correo Uruguayo` já orientou uma nova prova com reexportação do `.pfx` e senha mínima; em `13/03/2026 20:39`, `Alfredo` repassou a instrução detalhada ao `Ronel Obando` no WhatsApp e agora aguarda o novo arquivo para teste com a `Facturando`.
+- Último contexto relevante: em `19/03/2026 11:33`, o envio anterior de `11:32` foi corrigido; Leonardo informou que o evento criado foi desfeito e a `Facturando` recebeu mensagem nova pedindo apenas confirmação de slot entre `09:30` e `15:30`, com opções `23/03/2026 10:00`, `23/03/2026 11:30` e `24/03/2026 10:00`, deixando o envio do `Google Meet` para depois da confirmação.
 ### Histórico
 - `2026-03-09 10:41: follow-up enviado ao Ronel Obando no WhatsApp informando que a senha repassada não funcionou para o .pfx.`
 - `2026-03-11 16:49: validação de origem concluída; Gmail segue sem novo retorno da Facturando após 06/03/2026 13:59.`
 - `2026-03-11 17:08: contingência executada com e-mail ao Correo Uruguayo, resposta à Leticia Coronel e aviso ao Ronel Obando.`
 - `2026-03-13 12:36: Correo Uruguayo orientou reexportar o certificado para novo .pfx com senha mínima para prova com a Facturando.`
 - `2026-03-13 20:39: instrução detalhada enviada ao Ronel Obando no WhatsApp em nome do Alfredo, aguardando novo .pfx e senha usada.`
+- `2026-03-19 11:15: revisão operacional em origem confirmou novo contato outbound ao Ronel no WhatsApp, sem resposta dele, e ausência de novo retorno da Facturando e do Correo Uruguayo.`
+- `2026-03-19 11:32: meet criado para 23/03/2026 09:00-09:30 e proposta enviada por WhatsApp à FACTURANDO.UY para chamada com Facturando + Ronel + Leonardo; aguardando confirmação do horário ou contraproposta antes de 15h30.`
+- `2026-03-19 11:33: correção operacional enviada à FACTURANDO.UY anulando o pré-agendamento; Leonardo informou que o evento foi desfeito e a pendência voltou a ser só a confirmação de um slot entre 09:30 e 15:30 antes do envio do Google Meet.`
 
 ## 2026-03-06_task-utec-validar-assinatura-renovacao-contrato
 - ID: `task-utec-validar-renovacao-contrato-2026-03-06`
@@ -83,16 +86,18 @@
 - ID: `task-utec-curso-incubados-adaptar-enviar-2026-03-18`
 - Nome: `UTEC - adaptar proposta de curso para incubados e enviar ao Leonel`
 - Descrição: Adaptar a página/material atual da proposta de curso para incubados da UTEC e enviar a versão atualizada ao `Leonel` até `19/03/2026`.
-- Status: `Aguardando execução`
+- Status: `Concluído`
 - Thread associada: [2026-03-18_utec-curso-incubados-proposta.md](/Users/leosanchez/Documents/DEV/ACOO/operations/threads/2026-03-18_utec-curso-incubados-proposta.md)
 - Responsável: `Leonardo Sánchez`
 - Prazo: `2026-03-19`
 - Prioridade: `Alta`
 - Criada em: `2026-03-18 18:05`
-- Último contexto relevante: em `18/03/2026 14:13`, foi confirmado no grupo `Curso Incubados UTEC` que a página seria adaptada e enviada no dia seguinte; a execução agora depende de validar o material base, adaptar e enviar.
+- Último contexto relevante: em `18/03/2026 19:11`, a página adaptada `Propuesta Ejecutiva - Formación para Incubados y Preincubados UTEC` foi enviada no grupo `Curso Incubados UTEC`; em `19:14`, o PDF com logo da Neural foi anexado no mesmo grupo.
 ### Histórico
 - `2026-03-18 14:13: resposta enviada ao Leonel no grupo Curso Incubados UTEC comprometendo envio até 19/03/2026.`
 - `2026-03-18 18:05: task registrada como item ativo da fila via planejamento goal-to-slices.`
+- `2026-03-18 19:11: link da página adaptada enviado ao Leonel no grupo Curso Incubados UTEC.`
+- `2026-03-18 19:14: PDF com logo da Neural anexado no grupo; task concluída.`
 
 ## 2026-03-18_task-geaseg-agendar-reuniao-fernanda
 - ID: `task-geaseg-agendar-reuniao-fernanda-2026-03-18`
@@ -111,16 +116,17 @@
 
 ## 2026-03-18_task-acoo-revisar-vercel-chat-ui
 - ID: `task-acoo-revisar-vercel-chat-ui-2026-03-18`
-- Nome: `ACOO - revisar se Vercel Chat UI funciona no repo`
-- Descrição: Avaliar se a Vercel Chat UI pode ser instalada no repo do ACOO e funcionar com o sistema atual, com evidência suficiente para classificar o resultado como `funciona`, `não funciona` ou `bloqueado`.
-- Status: `Aguardando execução`
+- Nome: `ACOO - entregar página dedicada de chat no padrão AI SDK/Vercel`
+- Descrição: Transformar a validação da Vercel Chat UI em entrega concreta no repo atual do ACOO: página dedicada `/chat`, layout limpo, suporte a anexos e base de áudio, sem replatform do sistema.
+- Status: `Concluído`
 - Thread associada: `não aplicável`
 - Responsável: `Alfredo`
 - Prazo: `2026-03-19`
 - Prioridade: `Média`
 - Criada em: `2026-03-18 18:05`
-- Último contexto relevante: a frente foi incluída explicitamente por Leonardo na fila junto com UTEC e Geaseg, e precisa de validação técnica com base no repo atual do ACOO.
+- Último contexto relevante: em `18/03/2026 19:36`, a frente foi além do parecer técnico e entregou uma página dedicada `/chat`, com `useChat` + `TextStreamChatTransport`, asset layer local para anexos e captura de áudio como arquivo no canal `web`.
 ### Histórico
 - `2026-03-18 18:05: task registrada na fila via planejamento goal-to-slices.`
 - `2026-03-18 18:12: item passou a foco ativo por override do Leonardo.`
 - `2026-03-18 18:12: parecer tecnico fechado: fit com adaptacao relevante para bibliotecas AI SDK UI; replatform/incompativel para agora para o template/app Vercel Chat UI como encaixe direto.`
+- `2026-03-18 19:36: pagina dedicada de chat entregue com AI SDK no cliente, anexos persistidos, asset layer local e captura de audio; task concluida.`
