@@ -1,5 +1,6 @@
 import { createOperationalRuntime } from "../bootstrap.js";
 import { operationalRegistryBlueprint } from "../domain/OperationalRegistryBlueprint.js";
+import { LegacyOperationsRegistryImporter } from "../infrastructure/importers/LegacyOperationsRegistryImporter.js";
 
 interface ParsedArgs {
   flags: Set<string>;
@@ -57,8 +58,17 @@ async function main() {
         ),
       );
     }
+    case "import-legacy": {
+      const importer = new LegacyOperationsRegistryImporter(process.cwd());
+      const result = await importer.import();
+      return writeOutput(args, result, (value) => [
+        `imported projects=${value.projects} people=${value.people} threads=${value.threads} tasks=${value.tasks}`,
+      ]);
+    }
     default:
-      throw new Error("Usage: npm run server:registry -- [blueprint|summary|projects|people|threads|tasks] [--json]");
+      throw new Error(
+        "Usage: npm run server:registry -- [blueprint|summary|projects|people|threads|tasks|import-legacy] [--json]",
+      );
   }
 }
 

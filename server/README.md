@@ -54,9 +54,15 @@ Variáveis relevantes em `.env`:
 - `ACOO_CODEX_APPROVAL_POLICY`: política padrão de aprovação (`untrusted`, `on-request`, `never`, `on-failure`).
 - `ACOO_DEFAULT_AGENT_SLUG`: slug do agente default do ACOO quando o canal não informar um agente explicitamente.
 - `ACOO_BACKUP_AGENT_SLUG`: slug de backup opcional quando o default estiver indisponível. Sem backup válido, o sistema retorna erro operacional explícito.
-- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND`: comando de healthcheck usado para validar attach real do Playwright via CDP.
-- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint fallback usado para verificar se a sessão CDP do Brave já está ativa.
-- `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: comando usado no preflight automático para subir a sessão Brave do Playwright MCP quando necessário.
+- `ACOO_PLAYWRIGHT_MCP_OWN_SESSION`: quando `true`, o ACOO possui o lifecycle do browser MCP via `PlaywrightSessionOwner`.
+- `ACOO_PLAYWRIGHT_MCP_BROWSER_PATH`: caminho opcional do executável do `Brave` usado pelo owner local.
+- `ACOO_PLAYWRIGHT_MCP_PROFILE_DIR`: profile persistente do runtime `playwright`.
+- `ACOO_PLAYWRIGHT_MCP_OUTPUT_DIR`: diretório de saída e sessão usado por `@playwright/mcp`.
+- `ACOO_PLAYWRIGHT_MCP_CDP_PORT`: porta CDP publicada pelo browser possuído pelo ACOO.
+- `ACOO_PLAYWRIGHT_MCP_HEADLESS`: sobe a sessão local em `headless` quando necessário.
+- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND`: comando de healthcheck usado para validar a sessão anexável.
+- `ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL`: endpoint fallback do healthcheck para a checagem de metadata CDP.
+- `ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND`: launcher legado usado apenas como fallback quando o owner local não estiver ativo.
 - `ACOO_TELEGRAM_ENABLED`: habilita a prontidão de configuração do canal Telegram.
 - `ACOO_TELEGRAM_BOT_TOKEN`: token do bot Telegram.
 - `ACOO_TELEGRAM_BOT_USERNAME`: username público do bot.
@@ -114,6 +120,7 @@ npm run server:registry -- projects --json
 npm run server:registry -- people --json
 npm run server:registry -- threads --json
 npm run server:registry -- tasks --json
+npm run server:registry -- import-legacy --json
 ```
 
 Desenvolvimento local completo:
@@ -169,6 +176,7 @@ Tool operacional para o ACOO principal:
 - preferir a CLI com `direnv exec . bash -lc 'npm run server:registry -- <comando> --json'`;
 - usar a API `/api/registry/*` quando o servidor HTTP local ja estiver ativo;
 - nesta fase a superficie nova e `read-only`; escrita real do registry operacional fica para a proxima passada.
+- a importacao legada de `operations/*` para o SQLite existe apenas via CLI com `import-legacy`; ela repovoa `projects`, `people`, `threads` e `tasks`, sem mexer no registry de agentes.
 
 Estado das integrações MCP configuradas na Codex CLI e visíveis para o ACOO:
 
@@ -178,26 +186,28 @@ npm run server:mcp -- --pretty
 
 Sessão persistente oficial do browser para MCP:
 
-- launcher manual esperado: `~/.local/bin/playwright-mcp-brave-open`
-- wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
-- config da Codex: `~/.codex/config.toml`
-- profile persistente reutilizado pelo MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
-- endpoint CDP persistente: `http://127.0.0.1:9222`
+- owner principal do runtime: `PlaywrightSessionOwner` dentro do processo do ACOO
 - browser oficial para fluxos MCP: `Brave Browser`
+- config da Codex: `~/.codex/config.toml`
+- profile persistente operacional: `ACOO_PLAYWRIGHT_MCP_PROFILE_DIR`
+- output dir do MCP: `ACOO_PLAYWRIGHT_MCP_OUTPUT_DIR`
+- endpoint CDP publicado pelo owner local: `http://127.0.0.1:${ACOO_PLAYWRIGHT_MCP_CDP_PORT:-9222}`
+- wrapper ativo na Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
+- launcher legado/manual: `~/.local/bin/playwright-mcp-brave-open`
 
-No modo visivel, o launcher usa `open -na ... --args --new-window about:blank` para manter a sessao dedicada viva fora do shell no macOS.
+Quando `ACOO_PLAYWRIGHT_MCP_OWN_SESSION=true`, o ACOO abre o `Brave`, mantém o `profile`, segura o lease e ancora a conexão MCP no `BrowserContext` persistente do próprio processo. O launcher externo continua apenas como fallback legado.
 
 Fluxo operacional:
 
 1. o ACOO pode garantir automaticamente a sessão do `Brave` quando uma skill exigir `playwright`, desde que `ACOO_PLAYWRIGHT_MCP_AUTOSTART=true`;
-2. para forçar bootstrap/recovery fora do fluxo do agente, use `npm run server:mcp -- ensure playwright --pretty`;
-3. se houver processo velho/quebrado para o mesmo profile e voce quiser substituir a sessao dedicada, use `npm run server:mcp -- ensure playwright --force-restart --pretty`;
-4. se o runtime aparecer como `broken`, diagnosticar com `npm run server:mcp -- doctor playwright --pretty`;
-5. o MCP se anexa via `CDP` em vez de possuir a janela do browser;
-5. manter o profile `brave-profile` como profile operacional do MCP;
-6. concluir os logins manuais uma vez nesse profile;
+2. o caminho preferencial é o owner local: `profile + processo + BrowserContext` pertencem ao ACOO;
+3. para forçar bootstrap/recovery fora do fluxo do agente, use `npm run server:mcp -- ensure playwright --pretty`;
+4. se houver processo velho/quebrado para o mesmo profile e voce quiser substituir a sessao dedicada, use `npm run server:mcp -- ensure playwright --force-restart --pretty`;
+5. se o runtime aparecer como `broken`, diagnosticar com `npm run server:mcp -- doctor playwright --pretty`;
+6. concluir os logins manuais uma vez nesse profile persistente;
 7. nas tasks via MCP, reutilizar a sessão existente em vez de iniciar login novo;
-8. quando a janela precisar ser encerrada de verdade, fechar o `Brave` sem medo de auto-reabertura do wrapper.
+8. o wrapper/CDP continuam existindo como superfície de attach, mas deixaram de ser a fonte principal de verdade do runtime;
+9. quando a janela precisar ser encerrada de verdade, fechar o `Brave`; o owner local recria a sessão no próximo bootstrap se necessário.
 
 Com esse modelo, a janela do `Brave` deixa de depender do ciclo de vida do turno do Codex e não deve mais fechar ao final de cada resposta.
 
@@ -214,8 +224,8 @@ Uso operacional do browser:
 Notas práticas:
 
 - A profile operacional do MCP é exclusiva do fluxo automatizado.
-- O attach via `CDP` melhora bastante a estabilidade da janela entre turnos.
-- O wrapper da Codex só faz `attach`; ele não deve abrir o browser sozinho.
+- O owner local do ACOO é o modelo principal do runtime `playwright`.
+- O wrapper da Codex continua fazendo `attach`; ele não é mais a peça dona da sessão.
 - O autostart do runtime gerenciado do `playwright` é o default operacional atual para reduzir dependência de ritual manual no agente.
 - Em fluxos Bubble, a rota direta pode voltar para o dashboard; quando isso acontecer, preferir a navegação interna da própria UI.
 

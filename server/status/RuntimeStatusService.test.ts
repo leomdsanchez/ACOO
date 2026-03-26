@@ -45,6 +45,7 @@ test("status exposes backup as the effective default agent source when configure
       {
         getManagedRuntimeHealth: async () => [],
       } as never,
+      undefined,
       {
         loadAll: async () => [
           {
@@ -132,16 +133,20 @@ test("status classifies unhealthy playwright runtime with severity and next acti
         getManagedRuntimeHealth: async () => [
           {
             autostart: true,
+            detail: "ECONNREFUSED",
             doctorCommand: "npm run server:mcp -- doctor playwright --pretty",
             healthy: false,
             healthcheckCommand: null,
             healthcheckUrl: "http://127.0.0.1:9222/json/version",
             name: "playwright",
             state: "off",
+            statusCode: "context_missing",
             startupCommand: "/Users/leosanchez/.local/bin/playwright-mcp-brave-open",
+            summary: "O owner local existe, mas o contexto operacional ainda não ficou utilizável.",
           },
         ],
       } as never,
+      undefined,
       {
         loadAll: async () => [
           {
@@ -185,8 +190,8 @@ test("status classifies unhealthy playwright runtime with severity and next acti
     assert.ok(playwright);
     assert.equal(playwright.severity, "medium");
     assert.equal(playwright.state, "off");
-    assert.match(playwright.nextAction, /ensure playwright --pretty/);
-    assert.match(playwright.summary, /tentará recuperar no próximo uso/);
+    assert.match(playwright.nextAction, /doctor playwright --pretty/);
+    assert.match(playwright.summary, /contexto operacional/);
   } finally {
     await rm(repoRoot, { recursive: true, force: true });
   }
@@ -210,8 +215,14 @@ function makeConfig(repoRoot: string): AppConfig {
     defaultAgentSlug: "coo",
     playwrightMcp: {
       autostart: false,
+      browserExecutablePath: null,
+      cdpPort: 9222,
       healthcheckCommand: null,
       healthcheckUrl: "http://127.0.0.1:9222/json/version",
+      headless: false,
+      outputDir: path.join(repoRoot, ".acoo", "playwright-mcp"),
+      ownSession: true,
+      profileDir: path.join(repoRoot, ".acoo", "playwright-profile"),
       startupCommand: "/bin/true",
     },
     repoRoot,

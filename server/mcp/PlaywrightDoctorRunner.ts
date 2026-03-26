@@ -30,6 +30,18 @@ export interface PlaywrightDoctorModeResult {
 
 export interface PlaywrightDoctorPayload {
   ok: boolean;
+  operationalCheck?: PlaywrightDoctorModeResult;
+  operationalSession?: {
+    enabled: boolean;
+    executablePath: string | null;
+    executablePresent: boolean;
+    lockOwner: "none" | "current_process" | "other_process";
+    locked: boolean;
+    outputDir: string;
+    outputDirExists: boolean;
+    profileDir: string;
+    profileDirExists: boolean;
+  };
   results: PlaywrightDoctorModeResult[];
 }
 

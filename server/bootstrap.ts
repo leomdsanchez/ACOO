@@ -19,6 +19,7 @@ import { McpPolicyEvaluator } from "./mcp/McpPolicyEvaluator.js";
 import { McpRuntimeCatalog } from "./mcp/McpRuntimeCatalog.js";
 import { McpRegistryService } from "./mcp/McpRegistryService.js";
 import { McpSessionBootstrapper } from "./mcp/McpSessionBootstrapper.js";
+import { PlaywrightSessionOwner } from "./mcp/PlaywrightSessionOwner.js";
 import { RuntimeStatusService } from "./status/RuntimeStatusService.js";
 import { LocalTranscriptionService } from "./transcription/LocalTranscriptionService.js";
 import { SkillDependencyResolver } from "./skills/SkillDependencyResolver.js";
@@ -71,7 +72,14 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
   const agentPromptLoader = new AgentPromptLoader();
   const mcpPolicyEvaluator = new McpPolicyEvaluator(agentRegistry, codex);
   const mcpRuntimeCatalog = new McpRuntimeCatalog(config.playwrightMcp);
-  const mcpSessionBootstrapper = new McpSessionBootstrapper(mcpRuntimeCatalog, repoRoot);
+  const playwrightSessionOwner = config.playwrightMcp.ownSession
+    ? new PlaywrightSessionOwner(config.playwrightMcp)
+    : undefined;
+  const mcpSessionBootstrapper = new McpSessionBootstrapper(
+    mcpRuntimeCatalog,
+    repoRoot,
+    playwrightSessionOwner,
+  );
   const skillLoader = new SkillLoader({
     roots: config.skillRoots,
   });
@@ -108,6 +116,7 @@ export function createOperationalRuntime(repoRoot = resolveRepoRoot()): Operatio
     mcpRegistry,
     agentRegistry,
     mcpSessionBootstrapper,
+    playwrightSessionOwner,
     skillLoader,
     workspace,
     transcription,

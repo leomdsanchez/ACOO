@@ -13,27 +13,29 @@ O documento de arquitetura descreve o `estado alvo` e as decisões estruturais o
 
 ## Topologia real
 
-- launcher manual da sessao dedicada: `~/.local/bin/playwright-mcp-brave-open`
+- owner principal da sessao dedicada: `PlaywrightSessionOwner` no processo do ACOO
+- launcher manual legado: `~/.local/bin/playwright-mcp-brave-open`
 - wrapper MCP da Codex CLI: `~/.local/bin/playwright-mcp-brave-persistent`
 - healthcheck real do ACOO: `node scripts/playwright-mcp-healthcheck.mjs`
 - endpoint CDP esperado: `http://127.0.0.1:9222/json/version`
 - profile isolado do MCP: `~/Library/Application Support/PlaywrightMCP/brave-profile`
 - config da Codex: `~/.codex/config.toml`
 
-No modo visivel, o launcher usa `open -na ... --args` com `about:blank` para desacoplar a janela do shell no macOS e manter o CDP de pe.
-No modo `headless`, o launcher continua chamando o binario do `Brave` diretamente.
+Quando `ACOO_PLAYWRIGHT_MCP_OWN_SESSION=true`, o browser, o profile e o `BrowserContext` persistente passam a ser possuidos pelo ACOO. O launcher manual legado continua util apenas para recovery manual ou fallback.
 
 No ambiente local atual, o wrapper esta pinado em `@playwright/mcp@0.0.68`.
 Se for necessario atualizar, fazer isso de forma intencional, nao via `@latest`.
 
-O wrapper `playwright-mcp-brave-persistent` nao abre o browser sozinho.
-Ele apenas faz `attach` no endpoint CDP ja exposto pelo `Brave`.
+O wrapper `playwright-mcp-brave-persistent` nao e o dono da sessao.
+Ele continua servindo como superficie de attach da Codex CLI ao browser ja mantido pelo ACOO.
 
 ## Estado atual validado
 
 - o ACOO enxerga o MCP `playwright` corretamente na Codex CLI;
+- o runtime gerenciado agora possui `profile + processo + BrowserContext` localmente;
+- o healthcheck reconhece primeiro o lease da sessao operacional do owner local;
+- o `status` expoe evidencias do owner local (`profile`, `lock`, `output dir`, `hasContext`);
 - o runtime gerenciado agora valida `attach` real via CDP, nao apenas `GET /json/version`;
-- o launcher da sessao nao anuncia mais "started" com CDP efemero; ele espera prontidao sustentada;
 - o preflight atual pode subir a sessao automaticamente no primeiro uso ou na recuperacao;
 - a sessao abre com janela visivel por padrao, mas agora aceita modo `headless` quando isso for pedido explicitamente;
 - o profile do MCP e separado do browser pessoal e tem preferencias proprias.
@@ -56,14 +58,16 @@ Sinais de runtime saudavel:
 
 - `server:status` sem advisory de Playwright indisponivel
 - `node scripts/playwright-mcp-healthcheck.mjs` responde com `ok: true`
+- o bloco `owner` do runtime mostra `enabled: true` e, idealmente, `locked: true`
 - o MCP consegue listar tabs sem erro de attach
 
 O healthcheck do ACOO faz duas validacoes:
 
-1. `GET /json/version`
-2. `chromium.connectOverCDP(...)`
+1. evidencia da sessao operacional possuida pelo ACOO (`profile` + `lease`)
+2. `GET /json/version`
+3. `chromium.connectOverCDP(...)`
 
-Assim, `browser de pe` deixou de ser tratado como sinonimo de `runtime realmente anexavel`.
+Assim, `browser de pe` deixou de ser tratado como sinonimo de `runtime realmente anexavel`, e o caminho do owner local ganhou precedencia sobre a heuristica externa.
 
 ## Comportamentos que sao esperados
 
@@ -77,7 +81,7 @@ Significa apenas que o profile `brave-profile` tem configuracao propria.
 
 ### 2. Fechar abas nao e o mesmo que matar o Brave
 
-Como o MCP trabalha por `attach` no CDP, fechar tabs pode deixar uma aba `about:blank` residual ou uma janela vazia.
+Como a Codex continua entrando por `attach` no CDP sobre uma sessao persistente possuida pelo ACOO, fechar tabs pode deixar uma aba `about:blank` residual ou uma janela vazia.
 Isso nao deve ser interpretado como bug do agente por si so.
 
 Se a intencao for encerrar o processo inteiro do Brave dedicado, isso precisa ser tratado como encerramento do browser, nao apenas limpeza de tabs.
@@ -165,3 +169,4 @@ Toda skill que depende de `playwright` deve deixar explicito:
 - fato de o profile ser isolado
 - risco de `about:blank` residual ao fechar tabs
 - necessidade de esperar sincronizacao no WhatsApp antes de buscar conversa
+- fato de que o owner local do ACOO e o modelo principal e o launcher manual externo virou fallback

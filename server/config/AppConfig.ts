@@ -39,8 +39,14 @@ export interface TranscriptionConfig {
 
 export interface PlaywrightMcpRuntimeConfig {
   autostart: boolean;
+  browserExecutablePath: string | null;
+  cdpPort: number;
   healthcheckCommand: string | null;
   healthcheckUrl: string;
+  headless: boolean;
+  outputDir: string;
+  ownSession: boolean;
+  profileDir: string;
   startupCommand: string;
 }
 
@@ -66,6 +72,7 @@ export interface AppConfig {
 export function loadAppConfig(repoRoot: string): AppConfig {
   ensureEnvironmentLoaded(repoRoot);
   const transcriptionModel = readString("ACOO_STT_MODEL", "base");
+  const defaultPlaywrightCdpPort = readNumber("ACOO_PLAYWRIGHT_MCP_CDP_PORT", 9222);
   const defaultPlaywrightHealthcheckCommand = resolveDefaultPlaywrightHealthcheckCommand(repoRoot);
 
   return {
@@ -85,10 +92,26 @@ export function loadAppConfig(repoRoot: string): AppConfig {
     defaultAgentSlug: readAgentSlug("ACOO_DEFAULT_AGENT_SLUG", "coo"),
     playwrightMcp: {
       autostart: readBoolean("ACOO_PLAYWRIGHT_MCP_AUTOSTART", true),
+      browserExecutablePath: readOptionalString("ACOO_PLAYWRIGHT_MCP_BROWSER_PATH"),
+      cdpPort: defaultPlaywrightCdpPort,
       healthcheckCommand:
         readOptionalString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_COMMAND") ??
         defaultPlaywrightHealthcheckCommand,
-      healthcheckUrl: readString("ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL", "http://127.0.0.1:9222/json/version"),
+      healthcheckUrl: readString(
+        "ACOO_PLAYWRIGHT_MCP_HEALTHCHECK_URL",
+        `http://127.0.0.1:${defaultPlaywrightCdpPort}/json/version`,
+      ),
+      headless: readBoolean("ACOO_PLAYWRIGHT_MCP_HEADLESS", false),
+      outputDir: expandHome(
+        readString("ACOO_PLAYWRIGHT_MCP_OUTPUT_DIR", path.join(repoRoot, ".acoo", "playwright-mcp")),
+      ),
+      ownSession: readBoolean("ACOO_PLAYWRIGHT_MCP_OWN_SESSION", true),
+      profileDir: expandHome(
+        readString(
+          "ACOO_PLAYWRIGHT_MCP_PROFILE_DIR",
+          "~/Library/Application Support/PlaywrightMCP/brave-profile",
+        ),
+      ),
       startupCommand: expandHome(
         readString("ACOO_PLAYWRIGHT_MCP_STARTUP_COMMAND", "~/.local/bin/playwright-mcp-brave-open"),
       ),

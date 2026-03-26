@@ -22,17 +22,50 @@ export function assessManagedRuntimeHealth(
   const doctorStep = runtime.doctorCommand
     ? `Diagnostique com: ${runtime.doctorCommand}.`
     : "Diagnostique o runtime.";
-  const startupStep = runtime.autostart
-    ? "Se quiser antecipar a recuperação, rode: npm run server:mcp -- ensure playwright --pretty."
-    : `Se a sessão operacional realmente estiver ausente, inicie com: ${runtime.startupCommand}.`;
+  const startupStep = `Se a sessão operacional realmente estiver ausente, inicie com: ${runtime.startupCommand}.`;
 
-  return {
-    nextAction: runtime.autostart ? startupStep : `${doctorStep} ${startupStep}`.trim(),
-    severity: "medium",
-    summary: runtime.autostart
-      ? "Sessão persistente fora do ar; o sistema tentará recuperar no próximo uso."
-      : "Sessão persistente indisponível; pode ser ausência da sessão operacional.",
-  };
+  switch (runtime.statusCode) {
+    case "owner_absent":
+      return {
+        nextAction: runtime.autostart
+          ? "Se quiser antecipar a recuperação, rode: npm run server:mcp -- ensure playwright --pretty."
+          : `${doctorStep} ${startupStep}`.trim(),
+        severity: runtime.autostart ? "medium" : "low",
+        summary: runtime.autostart
+          ? "Sessão operacional do owner ausente; o sistema tentará recuperar no próximo uso."
+          : "Sessão operacional do owner ausente; depende de iniciar a sessão persistente.",
+      };
+    case "owner_locked_elsewhere":
+      return {
+        nextAction: `${doctorStep} Valide o outro processo antes de tentar novo bootstrap no mesmo profile.`,
+        severity: "medium",
+        summary: "O profile persistente está bloqueado por outro processo dono da sessão operacional.",
+      };
+    case "context_missing":
+      return {
+        nextAction: doctorStep,
+        severity: "medium",
+        summary: "O owner local existe, mas o contexto operacional ainda não ficou utilizável.",
+      };
+    case "mcp_connection_failed":
+      return {
+        nextAction: doctorStep,
+        severity: "high",
+        summary: "A sessão operacional existe, mas a conexão MCP/attach não ficou pronta.",
+      };
+    case "wrapper_missing":
+      return {
+        nextAction: doctorStep,
+        severity: "high",
+        summary: "O wrapper MCP do Playwright não está executável no ambiente atual.",
+      };
+    default:
+      return {
+        nextAction: doctorStep,
+        severity: "high",
+        summary: "Falha de healthcheck do runtime gerenciado.",
+      };
+  }
 }
 
 export function assessManagedRuntimeBootstrap(

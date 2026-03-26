@@ -1,10 +1,12 @@
 import { spawn } from "node:child_process";
+import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
 
 const BRAVE_BIN =
+  process.env.ACOO_PLAYWRIGHT_MCP_BROWSER_PATH ??
   process.env.PLAYWRIGHT_MCP_BRAVE_BIN ??
   "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser";
 const DEBUG_HOST = process.env.PLAYWRIGHT_MCP_BRAVE_DEBUG_HOST ?? "127.0.0.1";
@@ -12,6 +14,16 @@ const CONNECT_TIMEOUT_MS = Number(process.env.PLAYWRIGHT_MCP_DOCTOR_CONNECT_TIME
 const READY_TIMEOUT_MS = Number(process.env.PLAYWRIGHT_MCP_DOCTOR_READY_TIMEOUT_MS ?? "12000");
 const POLL_INTERVAL_MS = Number(process.env.PLAYWRIGHT_MCP_DOCTOR_POLL_INTERVAL_MS ?? "500");
 const RESULT_WORD_LIMIT = 40;
+const OWN_SESSION_ENABLED =
+  (process.env.ACOO_PLAYWRIGHT_MCP_OWN_SESSION ?? "true").toLowerCase() !== "false";
+const OPERATIONAL_PROFILE_DIR =
+  process.env.ACOO_PLAYWRIGHT_MCP_PROFILE_DIR ??
+  path.join(os.homedir(), "Library", "Application Support", "PlaywrightMCP", "brave-profile");
+const OPERATIONAL_OUTPUT_DIR =
+  process.env.ACOO_PLAYWRIGHT_MCP_OUTPUT_DIR ??
+  path.join(process.cwd(), ".acoo", "playwright-mcp");
+const OPERATIONAL_LOCK_PATH = path.join(OPERATIONAL_PROFILE_DIR, ".profile.lock");
+const OPERATIONAL_CDP_PORT = Number(process.env.ACOO_PLAYWRIGHT_MCP_CDP_PORT ?? "9222");
 
 function parseArgs(argv) {
   return {
@@ -24,14 +36,18 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const modes = ["visible", "headless"];
   const results = [];
+  const operationalSession = await inspectOperationalSession();
+  const operationalCheck = await runOperationalCheck(operationalSession);
 
   for (const mode of modes) {
     results.push(await runMode(mode));
   }
 
-  const overallOk = results.every((result) => result.ok);
+  const overallOk = operationalCheck.ok && results.every((result) => result.ok);
   const payload = {
     ok: overallOk,
+    operationalCheck,
+    operationalSession,
     results,
   };
 
@@ -157,6 +173,109 @@ async function runMode(mode) {
   }
 }
 
+async function runOperationalCheck(operationalSession) {
+  const stageResults = {
+    process: operationalSession.locked || operationalSession.profileDirExists,
+    port: false,
+    versionEndpoint: false,
+    connectOverCDP: false,
+  };
+  let versionPayload = null;
+
+  try {
+    const versionResponse = await fetch(`http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}/json/version`, {
+      method: "GET",
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+    });
+
+    stageResults.port = versionResponse.ok;
+    if (!versionResponse.ok) {
+      return {
+        contexts: 0,
+        endpoint: `http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}`,
+        failure: operationalSession.locked ? "operational_context_missing" : "operational_owner_absent",
+        logExcerpt: [],
+        mode: "operational",
+        ok: false,
+        pages: 0,
+        port: OPERATIONAL_CDP_PORT,
+        probableCause: operationalSession.locked
+          ? "operational_owner_present_but_unavailable"
+          : "operational_owner_absent",
+        recommendation: operationalSession.locked
+          ? "inspect owner session state before relying on ephemeral doctor results"
+          : "bootstrap the owned operational session before using MCP flows",
+        stageResults,
+        versionPayload: null,
+      };
+    }
+
+    versionPayload = await versionResponse.json();
+    stageResults.versionEndpoint = Boolean(versionPayload?.webSocketDebuggerUrl);
+    if (!stageResults.versionEndpoint) {
+      return {
+        contexts: 0,
+        endpoint: `http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}`,
+        failure: "operational_metadata_missing",
+        logExcerpt: [],
+        mode: "operational",
+        ok: false,
+        pages: 0,
+        port: OPERATIONAL_CDP_PORT,
+        probableCause: "operational_owner_missing_cdp_metadata",
+        recommendation: "inspect the owned operational session before using fallback launcher diagnostics",
+        stageResults,
+        versionPayload: null,
+      };
+    }
+
+    const browser = await chromium.connectOverCDP(`http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}`, {
+      timeout: CONNECT_TIMEOUT_MS,
+    });
+    stageResults.connectOverCDP = true;
+    const contexts = browser.contexts().length;
+    const pages = browser.contexts().reduce((sum, context) => sum + context.pages().length, 0);
+    await browser.close();
+
+    return {
+      contexts,
+      endpoint: `http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}`,
+      failure: null,
+      logExcerpt: [],
+      mode: "operational",
+      ok: true,
+      pages,
+      port: OPERATIONAL_CDP_PORT,
+      probableCause: "operational_owner_healthy",
+      recommendation: "owned_operational_session_ready",
+      stageResults,
+      versionPayload: {
+        browser: versionPayload?.Browser ?? null,
+        webSocketDebuggerUrl: versionPayload?.webSocketDebuggerUrl ?? null,
+      },
+    };
+  } catch {
+    return {
+      contexts: 0,
+      endpoint: `http://${DEBUG_HOST}:${OPERATIONAL_CDP_PORT}`,
+      failure: operationalSession.locked ? "operational_attach_failed" : "operational_owner_absent",
+      logExcerpt: [],
+      mode: "operational",
+      ok: false,
+      pages: 0,
+      port: OPERATIONAL_CDP_PORT,
+      probableCause: operationalSession.locked
+        ? "operational_owner_present_but_attach_failed"
+        : "operational_owner_absent",
+      recommendation: operationalSession.locked
+        ? "run ensure/doctor and inspect owner state before relying on fallback launcher"
+        : "bootstrap the owned operational session before using MCP flows",
+      stageResults,
+      versionPayload: null,
+    };
+  }
+}
+
 async function finalizeResult({
   cleanupPid,
   endpoint,
@@ -217,7 +336,9 @@ function classifyFailure(failure, stageResults) {
 
 function buildRecommendation(failure, mode) {
   if (!failure) {
-    return "runtime_ready";
+    return OWN_SESSION_ENABLED
+      ? "runtime_ready_and_operational_owner_can_be_trusted"
+      : "runtime_ready";
   }
   if (failure === "browser_process_exited") {
     return `check Brave startup flags and runtime logs for ${mode}`;
@@ -334,6 +455,81 @@ async function readLogExcerpt(logPath) {
     return lines.slice(-RESULT_WORD_LIMIT);
   } catch {
     return [];
+  }
+}
+
+async function inspectOperationalSession() {
+  const profileDirExists = await pathExists(OPERATIONAL_PROFILE_DIR);
+  const outputDirExists = await pathExists(OPERATIONAL_OUTPUT_DIR);
+  const lockState = await inspectProfileLock(OPERATIONAL_LOCK_PATH);
+
+  return {
+    enabled: OWN_SESSION_ENABLED,
+    executablePath: BRAVE_BIN,
+    executablePresent: await isExecutable(BRAVE_BIN),
+    lockOwner: lockState.lockOwner,
+    locked: lockState.locked,
+    outputDir: OPERATIONAL_OUTPUT_DIR,
+    outputDirExists,
+    profileDir: OPERATIONAL_PROFILE_DIR,
+    profileDirExists,
+  };
+}
+
+async function pathExists(targetPath) {
+  try {
+    await fs.access(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isExecutable(targetPath) {
+  try {
+    await fs.access(targetPath, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function inspectProfileLock(lockPath) {
+  if (!OWN_SESSION_ENABLED) {
+    return {
+      locked: false,
+      lockOwner: "none",
+    };
+  }
+
+  if (!(await pathExists(lockPath))) {
+    return {
+      locked: false,
+      lockOwner: "none",
+    };
+  }
+
+  try {
+    const raw = await fs.readFile(lockPath, "utf-8");
+    const parsed = JSON.parse(raw);
+    const pid = typeof parsed?.pid === "number" ? parsed.pid : null;
+    if (!isAlive(pid)) {
+      await fs.rm(lockPath, { force: true }).catch(() => {});
+      return {
+        locked: false,
+        lockOwner: "none",
+      };
+    }
+
+    return {
+      locked: true,
+      lockOwner: pid === process.pid ? "current_process" : "other_process",
+    };
+  } catch {
+    return {
+      locked: true,
+      lockOwner: "other_process",
+    };
   }
 }
 

@@ -101,10 +101,29 @@ export interface RuntimeStatusSnapshot {
     configured: number;
     managedRuntimeHealthy: string[];
     managedRuntimes: Array<{
+      detail?: string | null;
       healthy: boolean;
       name: string;
       nextAction: string;
+      owner?: {
+        enabled: boolean;
+        executablePath: string | null;
+        hasContext: boolean;
+        lockOwner: "none" | "current_process" | "other_process";
+        locked: boolean;
+        outputDir: string | null;
+        profileDir: string | null;
+        profileExists: boolean;
+      };
       severity: "low" | "medium" | "high" | null;
+      statusCode?:
+        | "ready"
+        | "owner_absent"
+        | "owner_locked_elsewhere"
+        | "context_missing"
+        | "mcp_connection_failed"
+        | "wrapper_missing"
+        | "healthcheck_failed";
       state: "off" | "ready" | "broken";
       summary: string;
     }>;

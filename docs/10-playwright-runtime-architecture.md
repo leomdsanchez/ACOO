@@ -82,28 +82,29 @@ O runtime `playwright` passa a ter quatro camadas explícitas:
 
 Hoje o ACOO já tem:
 
-- launcher operacional para Brave;
-- healthcheck real via `connectOverCDP`;
+- `PlaywrightSessionOwner` com ownership local de `profile + processo + BrowserContext`;
+- lease de profile para evitar concorrência local;
+- healthcheck real via `connectOverCDP` com evidência do owner local;
+- `doctor` oficial exposto como comando do servidor;
 - documentação operacional do runbook;
 - melhorias recentes para evitar falso positivo simples de CDP.
 
 Hoje o ACOO ainda não tem:
 
-- `doctor` oficial exposto como comando do servidor;
-- contrato único já consumido de forma consistente por `launcher`, `status`, `skills` e `bootstrap`;
-- skill atualizada para bloquear tentativa manual automaticamente;
-- isolamento completo entre fluxo operacional e fluxo de diagnóstico.
+- skill atualizada para tratar o owner local como contrato dominante sem recorrer a linguagem legada;
+- eliminação completa do launcher externo como fallback estrutural;
+- isolamento completo entre fluxo operacional e fluxo de diagnóstico em toda a superfície textual do projeto.
 
-### Arquitetura alvo
+### Arquitetura alvo restante
 
 O estado desejado é:
 
-- `doctor` oficial como superfície do ACOO;
-- `status`, `launcher`, `healthcheck` e `bootstrap` usando o mesmo contrato;
+- `status`, `launcher`, `healthcheck` e `bootstrap` usando o owner local como fonte principal de verdade;
 - skill chamando o caminho de diagnóstico em vez de improvisar;
-- revisão operacional impedida de entrar em depuração ad hoc.
+- revisão operacional impedida de entrar em depuração ad hoc;
+- fallback externo reduzido a contingência explícita, não mais a arquitetura implícita.
 
-Este documento descreve a arquitetura alvo, mas explicita acima o que já existe e o que ainda falta.
+Este documento descreve a arquitetura alvo remanescente, explicitando acima o que já existe e o que ainda falta.
 
 ## Contrato único de saúde
 
@@ -111,8 +112,8 @@ O ACOO precisa adotar uma única definição de `runtime saudável`.
 
 Um runtime `playwright` só é considerado saudável quando passa nesta ordem:
 
-1. `processo do browser existe`;
-2. `porta CDP está escutando`;
+1. o `owner local` existe e resolve `profile + lease + processo`;
+2. a sessão operacional publicada pelo owner responde como anexável;
 3. `GET /json/version` responde com `webSocketDebuggerUrl`;
 4. `chromium.connectOverCDP(...)` funciona.
 
@@ -166,6 +167,7 @@ npm run server:mcp -- doctor playwright --json
 
 Responsabilidades do `doctor`:
 
+- inspecionar primeiro a sessão operacional possuída pelo ACOO;
 - criar `porta temporária`;
 - criar `profile temporário`;
 - testar `visible` e `headless` separadamente;

@@ -5,6 +5,7 @@ import type { SkillLoader } from "../skills/SkillLoader.js";
 import type { McpRegistryService } from "../mcp/McpRegistryService.js";
 import type { AgentRegistryService } from "../agents/AgentRegistryService.js";
 import type { McpSessionBootstrapper } from "../mcp/McpSessionBootstrapper.js";
+import type { PlaywrightSessionOwner } from "../mcp/PlaywrightSessionOwner.js";
 import { resolveDefaultAgentResolution } from "./DefaultAgentResolution.js";
 import { TelegramSessionStore } from "../telegram/TelegramSessionStore.js";
 import type { LocalTranscriptionService } from "../transcription/LocalTranscriptionService.js";
@@ -40,13 +41,32 @@ export interface RuntimeStatus {
     customConfigured: number;
     managedRuntimes: Array<{
       autostart: boolean;
+      detail: string | null;
       doctorCommand: string | null;
       healthcheckCommand: string | null;
       healthcheckUrl: string;
       healthy: boolean;
       name: string;
       nextAction: string;
+      owner: {
+        enabled: boolean;
+        executablePath: string | null;
+        hasContext: boolean;
+        lockOwner: "none" | "current_process" | "other_process";
+        locked: boolean;
+        outputDir: string | null;
+        profileDir: string | null;
+        profileExists: boolean;
+      };
       severity: "low" | "medium" | "high" | null;
+      statusCode:
+        | "ready"
+        | "owner_absent"
+        | "owner_locked_elsewhere"
+        | "context_missing"
+        | "mcp_connection_failed"
+        | "wrapper_missing"
+        | "healthcheck_failed";
       state: "off" | "ready" | "broken";
       startupCommand: string;
       summary: string;
@@ -101,6 +121,7 @@ export class RuntimeStatusService {
     private readonly mcpRegistry: McpRegistryService,
     private readonly agentRegistry: AgentRegistryService,
     private readonly mcpSessionBootstrapper: McpSessionBootstrapper,
+    private readonly playwrightSessionOwner: PlaywrightSessionOwner | undefined,
     private readonly skills: SkillLoader,
     private readonly workspace: OperationalWorkspace,
     private readonly transcription: LocalTranscriptionService,
@@ -111,7 +132,7 @@ export class RuntimeStatusService {
       this.config.repoRoot,
       this.config.defaultAgentSlug,
     );
-    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription, agents, mcpProfiles, sessions, agentIntegrity, managedMcpRuntime, defaultAgent] = await Promise.all([
+    const [cli, loadedSkills, projects, contacts, threads, tasks, telegramSession, transcription, agents, mcpProfiles, sessions, agentIntegrity, managedMcpRuntime, defaultAgent, playwrightOwnerState] = await Promise.all([
       this.codex.getStatus(),
       this.skills.loadAll(),
       this.workspace.projects.listProjects(),
@@ -126,6 +147,7 @@ export class RuntimeStatusService {
       this.agentRegistry.getIntegrityReport(),
       this.mcpSessionBootstrapper.getManagedRuntimeHealth(),
       this.agentRegistry.getAgentBySlug(this.config.defaultAgentSlug),
+      this.playwrightSessionOwner?.getState() ?? null,
     ]);
     const mcp = this.mcpRegistry.getSnapshot(cli);
     const defaultAgentResolution = resolveDefaultAgentResolution(
@@ -226,11 +248,35 @@ export class RuntimeStatusService {
         managedRuntimes: managedMcpRuntime.map((runtime) => ({
           ...assessManagedRuntimeHealth(runtime),
           autostart: runtime.autostart,
+          detail: runtime.detail,
           doctorCommand: runtime.doctorCommand,
           healthcheckCommand: runtime.healthcheckCommand,
           healthcheckUrl: runtime.healthcheckUrl,
           healthy: runtime.healthy,
           name: runtime.name,
+          owner:
+            runtime.name === "playwright"
+              ? {
+                  enabled: Boolean(this.playwrightSessionOwner),
+                  executablePath: playwrightOwnerState?.executablePath ?? null,
+                  hasContext: playwrightOwnerState?.hasContext ?? false,
+                  lockOwner: playwrightOwnerState?.lockOwner ?? "none",
+                  locked: playwrightOwnerState?.locked ?? false,
+                  outputDir: playwrightOwnerState?.outputDir ?? null,
+                  profileDir: playwrightOwnerState?.profileDir ?? null,
+                  profileExists: playwrightOwnerState?.profileExists ?? false,
+                }
+              : {
+                  enabled: false,
+                  executablePath: null,
+                  hasContext: false,
+                  lockOwner: "none",
+                  locked: false,
+                  outputDir: null,
+                  profileDir: null,
+                  profileExists: false,
+                },
+          statusCode: runtime.statusCode,
           startupCommand: runtime.startupCommand,
           state: runtime.state,
         })),
